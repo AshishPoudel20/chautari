@@ -10,7 +10,7 @@ import { useNavigationGuard } from '../utils/navigation';
 import { timeAgo } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 
-const ICONS = { answer: '💬', milestone: '🎉', follow: '➕', expert: '🎓', expert_answer: '✓' };
+const ICONS = { answer: '💬', milestone: '🎉', follow: '➕', expert: '🎓', expert_answer: '✓', expert_karma: '🪔', digest: '📬' };
 const DAY = 24 * 60 * 60 * 1000;
 
 // Rich, grouped notifications. "An expert answered your question" is visually
@@ -53,7 +53,9 @@ export default function NotificationsScreen({ navigation }) {
       const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
       navigate(screen, { userId: n.actorId, title: u?.name });
     } else if (n.type === 'expert') {
-      navigate('Main', { screen: 'Experts' });
+      navigate('ExpertDirectory');
+    } else if (n.type === 'digest') {
+      navigate('Main', { screen: 'Circles' });
     } else {
       showToast('Nothing more to see on this one');
     }
@@ -61,7 +63,7 @@ export default function NotificationsScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     const actor = item.actorId ? userById(item.actorId) : null;
-    const elevated = item.type === 'expert_answer';
+    const elevated = item.type === 'expert_answer' || item.type === 'expert_karma';
     return (
       <Pressable
         style={[styles.row, !item.read && styles.rowUnread, elevated && styles.rowElevated]}
@@ -77,7 +79,9 @@ export default function NotificationsScreen({ navigation }) {
         <View style={{ flex: 1, marginLeft: spacing.md }}>
           {elevated && (
             <View style={styles.elevatedTag}>
-              <Text style={styles.elevatedTagText}>EXPERT ANSWER</Text>
+              <Text style={styles.elevatedTagText}>
+                {item.type === 'expert_karma' ? 'EXPERT UPVOTE' : 'EXPERT ANSWER'}
+              </Text>
             </View>
           )}
           <Text style={[styles.text, elevated && styles.textElevated]}>{item.text}</Text>

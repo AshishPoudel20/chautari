@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Switch } from 'react-native';
-import { useData } from '../data/store';
+import { useData, useSelectors } from '../data/store';
+import { composeDigestSummary, scheduleDigest, ensureNotificationPermissions } from '../services/digest';
 import { useNetwork } from '../data/network';
 import { useTheme } from '../theme/ThemeContext';
 
 // Settings: support links (real screens), account actions, and a demo offline toggle.
 export default function SettingsScreen({ navigation }) {
-  const { dispatch } = useData();
+  const { dispatch, state } = useData();
+  const { circleById } = useSelectors();
   const { online, setOnline } = useNetwork();
   const { colors, spacing, font, radius, isDark, setMode } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
@@ -41,6 +43,35 @@ export default function SettingsScreen({ navigation }) {
         <Row label="Edit profile" icon="✏️" onPress={() => navigation.navigate('EditProfile')} />
         <Row label="Log out" icon="🚪" onPress={logout} />
         <Row label="Delete account" icon="🗑️" danger onPress={() => navigation.navigate('DeleteAccount')} last />
+      </View>
+
+      <Text style={styles.section}>Digest</Text>
+      <View style={styles.group}>
+        {[
+          ['daily', 'Daily at 6pm'],
+          ['weekly', 'Weekly (Monday 6pm)'],
+          ['off', 'Off'],
+        ].map(([mode, label], i, arr) => (
+          <Pressable
+            key={mode}
+            style={({ pressed }) => [styles.row, i === arr.length - 1 && { borderBottomWidth: 0 }, pressed && { backgroundColor: colors.surfaceAlt }]}
+            onPress={async () => {
+              if (mode !== 'off') {
+                const ok = await ensureNotificationPermissions();
+                if (!ok) {
+                  Alert.alert('Notifications off', 'Enable notifications in system settings to receive circle digests.');
+                  return;
+                }
+              }
+              dispatch({ type: 'SET_DIGEST_MODE', mode });
+              const summary = composeDigestSummary(state, circleById);
+              await scheduleDigest(mode, summary);
+            }}
+          >
+            <Text style={styles.rowIcon}>{state.digestMode === mode ? '✓' : '○'}</Text>
+            <Text style={[styles.rowLabel, state.digestMode === mode && { color: colors.primary }]}>{label}</Text>
+          </Pressable>
+        ))}
       </View>
 
       <Text style={styles.section}>Appearance</Text>
