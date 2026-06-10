@@ -1,38 +1,193 @@
-import React, { useLayoutEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import QuestionFeedList from '../components/QuestionFeedList';
+import React, { useCallback, useLayoutEffect, useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, StatusBar } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QuestionCard from '../components/QuestionCard';
+import PinnedQuestionCard from '../components/PinnedQuestionCard';
+import CircleAboutSection from '../components/CircleAboutSection';
+import ExpertsHereRow from '../components/ExpertsHereRow';
+import MotifOverlay from '../components/MotifOverlay';
 import { EmptyState } from '../components/ui';
+import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor } from '../data/circles';
+import { circleAccentColor, circleBannerGradient } from '../data/circles';
+
+const BANNER_EXPANDED = 196;
+const COLLAPSE_RANGE = 130;
+const COMPACT_BAR = 52;
+
+const LIST_PERF = {
+  initialNumToRender: 8,
+  maxToRenderPerBatch: 6,
+  windowSize: 7,
+  removeClippedSubviews: true,
+};
 
 export default function CircleDetailScreen({ navigation, route }) {
   const circleId = route.params?.circleId;
   const { dispatch } = useData();
   const {
-    circleById, isJoinedCircle, questionsInCircle, hasUpvotedQuestion, joinedCirclesList,
+    circleById, isJoinedCircle, questionsInCircle, pinnedQuestionInCircle,
+    expertsInCircle, isCircleCreator, hasUpvotedQuestion, joinedCirclesList,
+    userById, answerCount, expertAnswerOn, firstAnswerLatency,
   } = useSelectors();
-  const { navigate } = useNavigationGuard(navigation);
+  const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow, insets), [colors, spacing, font, radius, shadow, insets]);
 
   const circle = circleById(circleId);
   const joined = isJoinedCircle(circleId);
   const data = questionsInCircle(circleId);
+  const pinned = pinnedQuestionInCircle(circleId);
+  const experts = expertsInCircle(circleId);
+  const creator = circle?.creatorId ? userById(circle.creatorId) : null;
+  const showCreatorTools = isCircleCreator(circleId);
   const accent = circle ? circleAccentColor(circle, isDark) : null;
+  const banner = circle ? circleBannerGradient(circle, isDark) : null;
+
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => { scrollY.value = e.contentOffset.y; },
+  });
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: circle?.name || 'Circle' });
-  }, [navigation, circle?.name]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
-  const toggleJoin = () => {
+  const toggleJoin = useCallback(() => {
     if (joined && joinedCirclesList().length <= 1) {
       Alert.alert('Keep one circle', 'Stay in at least one circle so your feed never feels empty.');
       return;
     }
     dispatch({ type: 'TOGGLE_JOIN_CIRCLE', circleId });
-  };
+  }, [joined, joinedCirclesList, dispatch, circleId]);
+
+  const openCreatorMenu = useCallback(() => {
+    Alert.alert('Circle settings', null, [
+      { text: 'Edit circle', onPress: () => navigate('EditCircle', { circleId }) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }, [navigate, circleId]);
+
+  const goToProfile = useCallback((userId) => {
+    if (userId === 'me') {
+      navigate('Main', { screen: 'Profile' });
+      return;
+    }
+    const u = userById(userId);
+    const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
+    navigate(screen, { userId, title: u?.name });
+  }, [navigate, userById]);
+
+  const openQuestion = useCallback(
+    (questionId) => navigate('QuestionDetail', { questionId }),
+    [navigate],
+  );
+
+  const bannerStyle = useAnimatedStyle(() => ({
+    height: interpolate(scrollY.value, [0, COLLAPSE_RANGE], [BANNER_EXPANDED, 72], Extrapolation.CLAMP),
+    opacity: interpolate(scrollY.value, [0, COLLAPSE_RANGE * 0.85], [1, 0.92], Extrapolation.CLAMP),
+  }));
+
+  const expandedContentStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [0, COLLAPSE_RANGE * 0.55], [1, 0], Extrapolation.CLAMP),
+    transform: [{
+      translateY: interpolate(scrollY.value, [0, COLLAPSE_RANGE], [0, -12], Extrapolation.CLAMP),
+    }],
+  }));
+
+  const compactBarStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [0, 1], Extrapolation.CLAMP),
+    transform: [{
+      translateY: interpolate(scrollY.value, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [-6, 0], Extrapolation.CLAMP),
+    }],
+  }));
+
+  const renderItem = useCallback(({ item, index }) => {
+    const ei = expertAnswerOn(item);
+    return (
+      <FadeRise index={index}>
+        <QuestionCard
+          question={item}
+          author={userById(item.authorId)}
+          circle={circle}
+          answerCount={answerCount(item)}
+          expert={ei?.expert || null}
+          firstAnswerMs={firstAnswerLatency(item)}
+          onPress={() => openQuestion(item.id)}
+          onCirclePress={() => {}}
+          onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
+          upvoteActive={hasUpvotedQuestion(item.id)}
+        />
+      </FadeRise>
+    );
+  }, [userById, circle, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, dispatch, hasUpvotedQuestion]);
+
+  const listHeader = useMemo(() => (
+    <View>
+      <Animated.View style={[styles.bannerShell, bannerStyle]}>
+        <LinearGradient
+          colors={banner?.colors || [colors.bg, colors.bg]}
+          locations={banner?.locations}
+          style={StyleSheet.absoluteFill}
+        />
+        <MotifOverlay color={accent?.onAccent || '#fff'} opacity={banner?.motifOpacity || 0.1} />
+        <Animated.View style={[styles.bannerInner, expandedContentStyle]}>
+          <Text style={[styles.bannerIcon, { color: accent?.onAccent }]}>{circle?.icon}</Text>
+          <View style={styles.bannerTextCol}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.bannerTitle, { color: accent?.onAccent }]} numberOfLines={2}>{circle?.name}</Text>
+              {circle?.isOfficial ? (
+                <View style={[styles.official, { backgroundColor: `${accent?.onAccent}22`, borderColor: `${accent?.onAccent}55` }]}>
+                  <Text style={[styles.officialText, { color: accent?.onAccent }]}>Official</Text>
+                </View>
+              ) : null}
+            </View>
+            <Text style={[styles.bannerMembers, { color: `${accent?.onAccent}cc` }]}>{circle?.memberCount} members</Text>
+          </View>
+          <Pressable
+            onPress={toggleJoin}
+            style={[styles.bannerJoin, { backgroundColor: `${accent?.onAccent}22`, borderColor: `${accent?.onAccent}66` }]}
+          >
+            <Text style={[styles.bannerJoinText, { color: accent?.onAccent }]}>{joined ? 'Joined' : 'Join'}</Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
+
+      <CircleAboutSection
+        circle={circle}
+        creator={creator}
+        onCreatorPress={() => creator && goToProfile(creator.id)}
+      />
+
+      <ExpertsHereRow experts={experts} onExpertPress={goToProfile} />
+
+      {pinned ? (
+        <PinnedQuestionCard
+          question={pinned}
+          author={userById(pinned.authorId)}
+          circle={circle}
+          answerCount={answerCount(pinned)}
+          expert={expertAnswerOn(pinned)?.expert || null}
+          firstAnswerMs={firstAnswerLatency(pinned)}
+          onPress={() => openQuestion(pinned.id)}
+          onCirclePress={() => {}}
+          onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
+          upvoteActive={hasUpvotedQuestion(pinned.id)}
+        />
+      ) : null}
+    </View>
+  ), [styles, bannerStyle, banner, colors, accent, circle, expandedContentStyle, joined, toggleJoin, creator, goToProfile, experts, pinned, userById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, dispatch, hasUpvotedQuestion]);
 
   if (!circle) {
     return (
@@ -42,38 +197,38 @@ export default function CircleDetailScreen({ navigation, route }) {
     );
   }
 
-  const header = (
-    <View style={[styles.header, { borderBottomColor: accent.color }]}>
-      <View style={[styles.accentBar, { backgroundColor: accent.color }]} />
-      <View style={styles.headerTop}>
-        <Text style={styles.headerIcon}>{circle.icon}</Text>
-        <View style={{ flex: 1 }}>
-          <View style={styles.titleRow}>
-            <Text style={styles.headerTitle}>{circle.name}</Text>
-            {circle.isOfficial ? (
-              <View style={[styles.official, { backgroundColor: accent.color }]}>
-                <Text style={[styles.officialText, { color: accent.onAccent }]}>Official</Text>
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.members}>{circle.memberCount} members</Text>
-        </View>
-        <Pressable onPress={toggleJoin} style={[styles.joinBtn, joined && { backgroundColor: colors.primaryTint }]}>
-          <Text style={[styles.joinText, { color: accent.color }]}>{joined ? 'Joined' : 'Join'}</Text>
-        </Pressable>
-      </View>
-      <Text style={styles.desc}>{circle.description}</Text>
-    </View>
-  );
-
   return (
     <View style={styles.container}>
-      <QuestionFeedList
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+
+      <Animated.View style={[styles.compactBar, compactBarStyle, { paddingTop: insets.top }]}>
+        <View style={styles.compactInner}>
+          <View style={styles.compactTitleWrap}>
+            <Text style={styles.compactIcon}>{circle.icon}</Text>
+            <Text style={styles.compactTitle} numberOfLines={1}>{circle.name}</Text>
+          </View>
+          <Pressable onPress={toggleJoin} style={[styles.compactJoin, joined && styles.compactJoinOn]}>
+            <Text style={[styles.compactJoinText, joined && { color: accent?.color }]}>{joined ? 'Joined' : 'Join'}</Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+
+      <View style={[styles.navRow, { paddingTop: insets.top + 6 }]}>
+        <Pressable onPress={goBack} style={styles.backBtn} hitSlop={8}>
+          <Text style={styles.backIcon}>←</Text>
+        </Pressable>
+        {showCreatorTools ? (
+          <Pressable onPress={openCreatorMenu} style={styles.backBtn} hitSlop={8}>
+            <Text style={styles.gearIcon}>⚙</Text>
+          </Pressable>
+        ) : <View style={styles.gearBtn} />}
+      </View>
+
+      <Animated.FlatList
         data={data}
-        navigation={navigation}
-        ListHeaderComponent={header}
-        onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
-        hasUpvotedQuestion={hasUpvotedQuestion}
+        keyExtractor={(q) => q.id}
+        renderItem={renderItem}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={(
           <EmptyState
             icon={circle.icon}
@@ -86,7 +241,12 @@ export default function CircleDetailScreen({ navigation, route }) {
           />
         )}
         contentContainerStyle={{ paddingBottom: 110 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        {...LIST_PERF}
       />
+
       <Pressable
         style={({ pressed }) => [styles.fab, { backgroundColor: accent.color }, pressed && { opacity: 0.9 }]}
         onPress={() => navigate('AskComposer', { circleId })}
@@ -97,21 +257,91 @@ export default function CircleDetailScreen({ navigation, route }) {
   );
 }
 
-const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
+const createStyles = (colors, spacing, font, radius, shadow, insets) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   missing: { padding: spacing.xl, color: colors.textMuted, textAlign: 'center' },
-  header: { backgroundColor: colors.surface, padding: spacing.lg, borderBottomWidth: 2, marginBottom: spacing.sm },
-  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  headerTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  headerIcon: { fontSize: 36 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  headerTitle: { fontSize: font.h2, fontWeight: '800', color: colors.text, flexShrink: 1 },
-  official: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
+
+  navRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadow.card,
+  },
+  backIcon: { fontSize: 22, fontWeight: '700', color: colors.text },
+  gearBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  gearIcon: { fontSize: 20, color: colors.text },
+
+  compactBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 15,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    ...shadow.card,
+  },
+  compactInner: {
+    height: COMPACT_BAR,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingLeft: spacing.lg + 44,
+  },
+  compactTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: spacing.sm },
+  compactIcon: { fontSize: 18 },
+  compactTitle: { fontSize: font.body, fontWeight: '800', color: colors.text, flexShrink: 1 },
+  compactJoin: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  compactJoinOn: { backgroundColor: colors.primaryTint },
+  compactJoinText: { fontWeight: '800', fontSize: font.tiny, color: colors.text },
+
+  bannerShell: { overflow: 'hidden', marginBottom: 0 },
+  bannerInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: insets.top + 52,
+    gap: spacing.md,
+  },
+  bannerIcon: { fontSize: 40 },
+  bannerTextCol: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  bannerTitle: { fontSize: font.h2, fontWeight: '800', flexShrink: 1 },
+  official: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, borderWidth: 1 },
   officialText: { fontSize: font.tiny, fontWeight: '900', letterSpacing: 0.3 },
-  members: { fontSize: font.caption, color: colors.textMuted, marginTop: 4, fontWeight: '600' },
-  joinBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.border },
-  joinText: { fontWeight: '800', fontSize: font.caption },
-  desc: { fontSize: font.body, color: colors.textSecondary, lineHeight: 22, marginTop: spacing.md },
+  bannerMembers: { fontSize: font.caption, fontWeight: '600', marginTop: 4 },
+  bannerJoin: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    alignSelf: 'flex-end',
+  },
+  bannerJoinText: { fontWeight: '800', fontSize: font.caption },
+
   fab: { position: 'absolute', right: spacing.lg, bottom: spacing.xl, paddingHorizontal: 22, paddingVertical: 14, borderRadius: radius.pill, ...shadow.floating },
   fabText: { fontWeight: '800', fontSize: font.bodyLg },
 });
