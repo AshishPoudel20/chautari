@@ -1,0 +1,90 @@
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Switch } from 'react-native';
+import { useData } from '../data/store';
+import { useNetwork } from '../data/network';
+import { useTheme } from '../theme/ThemeContext';
+
+// Settings: support links (real screens), account actions, and a demo offline toggle.
+export default function SettingsScreen({ navigation }) {
+  const { dispatch } = useData();
+  const { online, setOnline } = useNetwork();
+  const { colors, spacing, font, radius, isDark, setMode } = useTheme();
+  const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
+
+  const logout = () => {
+    Alert.alert('Log out?', 'You can sign back in anytime with your phone number.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Log out', style: 'destructive', onPress: () => dispatch({ type: 'LOGOUT' }) },
+    ]);
+  };
+
+  const Row = ({ label, icon, onPress, danger, last }) => (
+    <Pressable style={({ pressed }) => [styles.row, last && { borderBottomWidth: 0 }, pressed && { backgroundColor: colors.surfaceAlt }]} onPress={onPress}>
+      <Text style={styles.rowIcon}>{icon}</Text>
+      <Text style={[styles.rowLabel, danger && { color: colors.danger }]}>{label}</Text>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={{ padding: spacing.lg }}>
+      <Text style={styles.section}>Support</Text>
+      <View style={styles.group}>
+        <Row label="Help & FAQ" icon="❓" onPress={() => navigation.navigate('Help')} />
+        <Row label="About Chautari" icon="🌳" onPress={() => navigation.navigate('About')} />
+        <Row label="Terms & Conditions" icon="📄" onPress={() => navigation.navigate('Terms')} />
+        <Row label="Privacy Policy" icon="🔒" onPress={() => navigation.navigate('Privacy')} last />
+      </View>
+
+      <Text style={styles.section}>Account</Text>
+      <View style={styles.group}>
+        <Row label="Edit profile" icon="✏️" onPress={() => navigation.navigate('EditProfile')} />
+        <Row label="Log out" icon="🚪" onPress={logout} />
+        <Row label="Delete account" icon="🗑️" danger onPress={() => navigation.navigate('DeleteAccount')} last />
+      </View>
+
+      <Text style={styles.section}>Appearance</Text>
+      <View style={styles.group}>
+        <View style={[styles.row, { borderBottomWidth: 0 }]}>
+          <Text style={styles.rowIcon}>{isDark ? '🌙' : '☀️'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Dark mode</Text>
+            <Text style={styles.rowSub}>{isDark ? 'On — easier on the eyes at night.' : 'Off — warm light theme.'}</Text>
+          </View>
+          <Switch
+            value={isDark}
+            onValueChange={(v) => setMode(v ? 'dark' : 'light')}
+            trackColor={{ true: colors.primary, false: colors.borderStrong }}
+            thumbColor={colors.onPrimary}
+          />
+        </View>
+      </View>
+
+      <Text style={styles.section}>Developer · demo</Text>
+      <View style={styles.group}>
+        <View style={[styles.row, { borderBottomWidth: 0 }]}>
+          <Text style={styles.rowIcon}>{online ? '📶' : '✈️'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rowLabel}>Simulate offline mode</Text>
+            <Text style={styles.rowSub}>Test how posting behaves with no connection.</Text>
+          </View>
+          <Switch value={!online} onValueChange={(v) => setOnline(!v)} trackColor={{ true: colors.primary, false: colors.borderStrong }} thumbColor={colors.onPrimary} />
+        </View>
+      </View>
+
+      <Text style={styles.version}>Chautari prototype · v1.0.0 · mock data</Text>
+    </ScrollView>
+  );
+}
+
+const createStyles = (colors, spacing, font, radius) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  section: { fontSize: font.tiny, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginTop: spacing.lg, marginBottom: spacing.sm, marginLeft: 4 },
+  group: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  rowIcon: { fontSize: 18, width: 30 },
+  rowLabel: { flex: 1, fontSize: font.body, color: colors.text, fontWeight: '700' },
+  rowSub: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2 },
+  chevron: { fontSize: 22, color: colors.textFaint },
+  version: { textAlign: 'center', color: colors.textFaint, fontSize: font.tiny, marginTop: spacing.xl, fontWeight: '600' },
+});
