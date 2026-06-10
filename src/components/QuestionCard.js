@@ -4,27 +4,28 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import ExpertMarker from './ExpertMarker';
 import UpvoteButton from './UpvoteButton';
-import { Pill } from './ui';
+import CircleChip from './CircleChip';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor, shortDuration } from '../utils/format';
-import { categoryName } from '../data/categories';
 
 const FAST_ANSWER_MS = 3 * 60 * 60 * 1000;
 
 function QuestionCard({
-  question, author, answerCount, expert, firstAnswerMs,
-  onPress, onUpvoteToggle, upvoteActive,
+  question, author, circle, answerCount, expert, firstAnswerMs,
+  onPress, onCirclePress, onUpvoteToggle, upvoteActive,
 }) {
   const { colors, shadow, spacing, radius, font, line } = useTheme();
   const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font, line), [colors, shadow, spacing, radius, font, line]);
 
   const a = displayAuthor(author, question.anonymous);
   const hasExpert = !!expert;
+  const authorIsExpert = !question.anonymous && !!author?.verified;
+  const highlighted = authorIsExpert || hasExpert;
   const answeredFast = firstAnswerMs != null && firstAnswerMs <= FAST_ANSWER_MS;
 
   return (
-    <View style={[styles.card, hasExpert && styles.cardExpert]}>
-      {hasExpert && <View style={styles.accentBar} />}
+    <View style={[styles.card, highlighted && styles.cardExpert]}>
+      {highlighted && <View style={styles.accentBar} />}
 
       <Pressable onPress={onPress} style={({ pressed }) => [styles.tapArea, pressed && styles.pressed]}>
         <View style={styles.headerRow}>
@@ -40,15 +41,18 @@ function QuestionCard({
               <Text style={styles.meta}>{timeAgo(question.createdAt)}</Text>
             </View>
           </View>
-          <Pill label={categoryName(question.category)} tone="category" />
+          {circle ? (
+            <CircleChip circle={circle} compact onPress={onCirclePress} showOfficial />
+          ) : null}
         </View>
 
         <Text style={styles.title} numberOfLines={2}>{question.title}</Text>
         <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
-        {(hasExpert || answeredFast) && (
+        {(authorIsExpert || hasExpert || answeredFast) && (
           <View style={styles.signalRow}>
-            {hasExpert ? <ExpertMarker name={expert.name?.split(' ')[0]} compact /> : null}
+            {authorIsExpert ? <ExpertMarker name={a.name?.split(' ')[0]} compact mode="posted" /> : null}
+            {hasExpert ? <ExpertMarker name={expert.name?.split(' ')[0]} compact mode="answered" /> : null}
             {answeredFast ? (
               <View style={styles.fastPill}>
                 <Text style={styles.fastText}>⚡ First answer in {shortDuration(firstAnswerMs)}</Text>

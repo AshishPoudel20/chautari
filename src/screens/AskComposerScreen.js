@@ -3,27 +3,29 @@ import { View, Text, StyleSheet, Pressable, Switch, Animated, Easing, Alert } fr
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
 import Button from '../components/Button';
-import { Field, Input, Chip, CharCount } from '../components/ui';
+import { Field, Input, CharCount } from '../components/ui';
+import ExpertPostQuota from '../components/ExpertPostQuota';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useNavigationGuard } from '../utils/navigation';
-import { CATEGORIES, categoryName } from '../data/categories';
+import CircleChip from '../components/CircleChip';
 import { useTheme } from '../theme/ThemeContext';
 
 const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000, MAX_PHOTOS = 5;
 
-export default function AskComposerScreen({ navigation }) {
+export default function AskComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
   const { dispatch } = useData();
-  const { me } = useSelectors();
+  const { me, canExpertPostToday, joinedCirclesList, state, circleById, isJoinedCircle } = useSelectors();
   const { online } = useNetwork();
   const { replace } = useNavigationGuard(navigation);
   const user = me();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
-  const [category, setCategory] = useState(null);
+  const [circleId, setCircleId] = useState(route.params?.circleId || null);
+  const [circleQuery, setCircleQuery] = useState('');
   const [photos, setPhotos] = useState([]);
   const [anonymous, setAnonymous] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -34,7 +36,18 @@ export default function AskComposerScreen({ navigation }) {
 
   const titleOk = title.trim().length >= TITLE_MIN && title.trim().length <= TITLE_MAX;
   const bodyOk = body.trim().length >= BODY_MIN && body.trim().length <= BODY_MAX;
-  const valid = titleOk && bodyOk && !!category;
+  const atDailyLimit = user?.verified && !canExpertPostToday();
+  const valid = titleOk && bodyOk && !!circleId && !atDailyLimit;
+  const selectedCircle = circleById(circleId);
+
+  const circleOptions = useMemo(() => {
+    const joined = joinedCirclesList();
+    const joinedIds = new Set(joined.map((c) => c.id));
+    const rest = state.circles.filter((c) => !joinedIds.has(c.id));
+    const q = circleQuery.trim().toLowerCase();
+    const filter = (list) => (q ? list.filter((c) => c.name.toLowerCase().includes(q)) : list);
+    return [...filter(joined), ...filter(rest)];
+  }, [joinedCirclesList, state.circles, circleQuery]);
 
   const addPhoto = () => {
     if (photos.length >= MAX_PHOTOS) return;
@@ -43,6 +56,13 @@ export default function AskComposerScreen({ navigation }) {
 
   const submit = () => {
     setTouched(true);
+    if (atDailyLimit) {
+      Alert.alert(
+        'Daily limit reached',
+        'Verified experts can post up to 2 questions per day. Your limit resets tomorrow.',
+      );
+      return;
+    }
     if (!valid || posting) return;
     if (!online) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your question — your draft stays here.');
@@ -51,7 +71,7 @@ export default function AskComposerScreen({ navigation }) {
     const id = `q_${Date.now().toString(36)}`;
     // Optimistic: write to the store immediately, then play a brief confirmation
     // and drop the asker straight into the live thread.
-    dispatch({ type: 'ASK_QUESTION', id, title, body, category, anonymous, photos });
+    dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos });
     setPosting(true);
     Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
@@ -67,10 +87,17 @@ export default function AskComposerScreen({ navigation }) {
       contentStyle={styles.body}
       footer={(
         <View style={styles.footer}>
-          <Button title="Post question" icon="✍️" onPress={submit} disabled={touched && !valid} />
+          <Button
+            title={atDailyLimit ? 'Daily limit reached' : 'Post question'}
+            icon="✍️"
+            onPress={submit}
+            disabled={atDailyLimit || (touched && !valid)}
+          />
         </View>
       )}
     >
+        <ExpertPostQuota variant="banner" />
+
         <Field
           label="Your question"
           error={touched && !titleOk ? `Keep the title between ${TITLE_MIN} and ${TITLE_MAX} characters.` : null}
@@ -87,10 +114,27 @@ export default function AskComposerScreen({ navigation }) {
           <View style={styles.counterRow}><CharCount value={body} min={BODY_MIN} max={BODY_MAX} /></View>
         </Field>
 
-        <Field label="Category" error={touched && !category ? 'Pick the category that fits best.' : null}>
+        <Field label="Circle" error={touched && !circleId ? 'Pick a circle for your question.' : null}>
+          <Input
+            placeholder="Search circles…"
+            value={circleQuery}
+            onChangeText={setCircleQuery}
+            style={{ marginBottom: spacing.sm }}
+          />
           <View style={styles.chips}>
-            {CATEGORIES.map((c) => (
-              <Chip key={c.id} label={c.name} icon={c.icon} active={category === c.id} onPress={() => setCategory(c.id)} />
+            {circleOptions.map((c) => (
+              <Pressable key={c.id} onPress={() => setCircleId(c.id)} style={{ marginBottom: spacing.sm }}>
+                <CircleChip
+                  circle={c}
+                  compact
+                  showOfficial
+                  onPress={() => setCircleId(c.id)}
+                />
+                {circleId === c.id ? <Text style={styles.selectedMark}>✓ selected</Text> : null}
+                {!isJoinedCircle(c.id) ? (
+                  <Text style={styles.joinHint}>Not joined — you can still post here</Text>
+                ) : null}
+              </Pressable>
             ))}
           </View>
         </Field>
@@ -134,7 +178,7 @@ export default function AskComposerScreen({ navigation }) {
             <View style={{ marginLeft: spacing.sm }}>
               <Text style={styles.previewName}>{previewName}</Text>
               <Text style={styles.previewMeta}>
-                {previewSuburb ? `${previewSuburb} · ` : ''}just now{category ? ` · ${categoryName(category)}` : ''}
+                {previewSuburb ? `${previewSuburb} · ` : ''}just now{selectedCircle ? ` · ${selectedCircle.name}` : ''}
               </Text>
             </View>
           </View>
@@ -157,7 +201,9 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   wrap: { flex: 1, backgroundColor: colors.bg },
   body: { padding: spacing.lg, paddingBottom: spacing.xl },
   counterRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 6 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chips: { gap: spacing.xs },
+  selectedMark: { fontSize: font.tiny, color: colors.primary, fontWeight: '800', marginTop: 4, marginLeft: 4 },
+  joinHint: { fontSize: font.tiny, color: colors.textFaint, marginTop: 2, marginLeft: 4 },
   photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   photoTile: { width: 68, height: 68, borderRadius: radius.md, backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
   photoEmoji: { fontSize: 26 },

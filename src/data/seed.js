@@ -2,6 +2,8 @@
 // Timestamps are computed relative to load time so the feed always looks fresh
 // and "alive" on first launch (Build Brief v2): a mix of just-now, hours and days.
 
+import { buildOfficialCircles, seedUserCircles, seedJoinedCircles } from './circles';
+
 const MIN = 60 * 1000;
 const H = 60 * MIN;
 const D = 24 * H;
@@ -59,9 +61,22 @@ export const seedUsers = [
   { id: 'u_niraj', name: 'Niraj Poudel', suburb: 'Craigieburn', photo: null, bio: 'Civil engineer, weekend futsal organiser.', verified: false, followers: 33, createdAt: ago(45 * D) },
 ];
 
+export const seedCircles = [...buildOfficialCircles(), ...seedUserCircles];
+export { seedJoinedCircles };
+
 // ---- Questions ---------------------------------------------------------
 // answers[] are inline; replies are one level deep under an answer.
+// circleId maps to official circle ids or user-created circle ids.
 export const seedQuestions = [
+  {
+    id: 'q1b', authorId: 'u_raj', anonymous: false, category: 'tax_super',
+    title: 'Tax time PSA: lodge even if you earned under the threshold',
+    body: 'Every June I see the same confusion. If your employer withheld tax (check the PAYG line on your payslip), you almost certainly want to lodge a return to get it back — even below $18,200. Non-lodgement advice is only when no tax was withheld. Happy to clarify in the comments.',
+    photos: [], createdAt: ago(8 * MIN), upvotes: 15, views: 142,
+    answers: [
+      { id: 'a_raj_psa', authorId: 'u_bibek', anonymous: false, body: 'Wish someone had told me this last year. Got a nice refund after assuming I did not need to lodge.', createdAt: ago(5 * MIN), upvotes: 6, replies: [] },
+    ],
+  },
   {
     id: 'q1', authorId: 'u_dipesh', anonymous: false, category: 'migration',
     title: 'Can I apply for the 485 visa if my course finishes in December?',
@@ -225,7 +240,7 @@ export const seedQuestions = [
     id: 'q16', authorId: 'u_bishal', anonymous: false, category: 'loans',
     title: 'PSA: how much deposit do you really need as a temp resident?',
     body: 'I get this question daily so posting it here. Short version: many lenders cap temp residents at 80% (so ~20% deposit), some go higher with LMI, and FIRB approval may be required for certain properties. Ask me anything below.',
-    photos: [], createdAt: ago(3.4 * D), upvotes: 22, views: 415,
+    photos: [], createdAt: ago(34 * MIN), upvotes: 22, views: 415,
     answers: [
       { id: 'a27', authorId: 'u_dipesh', anonymous: false, body: 'Does the FIRB fee apply if I am buying an established home to live in on a 482?', createdAt: ago(3.3 * D), upvotes: 4, replies: [
         { id: 'r9', authorId: 'u_bishal', anonymous: false, body: 'Generally temp residents can buy one established dwelling to live in, but you must apply for FIRB approval and pay the fee first. Budget for it early — it is not small.', createdAt: ago(3.2 * D), upvotes: 8 },
@@ -245,7 +260,7 @@ export const seedQuestions = [
     id: 'q18', authorId: 'u_sunita', anonymous: false, category: 'migration',
     title: 'Reminder: keep certified copies of EVERYTHING you submit',
     body: 'A pattern I see constantly: people lodge a visa, then cannot find what they submitted months later when asked for more info. Keep a dated folder (digital + a backup) of every form, payslip and letter. It will save you weeks. What else trips people up?',
-    photos: [], createdAt: ago(4.3 * D), upvotes: 37, views: 690,
+    photos: [], createdAt: ago(50 * MIN), upvotes: 37, views: 690,
     answers: [
       { id: 'a29', authorId: 'u_bibek', anonymous: false, body: 'Underrated: keep your old passports. Travel history questions come up years later for citizenship.', createdAt: ago(4.2 * D), upvotes: 15, replies: [] },
       { id: 'a30', authorId: 'u_dipesh', anonymous: false, body: 'And screenshot your visa grant + conditions (VEVO) — do not rely on email alone.', createdAt: ago(4.1 * D), upvotes: 9, replies: [] },
@@ -275,7 +290,7 @@ export const seedQuestions = [
     id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers',
     title: 'Resume tip that doubled my callbacks (and might help you)',
     body: 'Reviewing community resumes, the #1 fix: replace duty lists with outcomes. "Responsible for backend APIs" → "Built and shipped 6 REST APIs serving 40k daily users, cut latency 30%". Same job, completely different read. Share yours and I will give quick feedback.',
-    photos: [], createdAt: ago(6 * D), upvotes: 44, views: 905,
+    photos: [], createdAt: ago(66 * MIN), upvotes: 44, views: 905,
     answers: [
       { id: 'a33', authorId: 'u_dipesh', anonymous: false, body: 'This reframed how I think about my whole CV. Posting mine — any feedback appreciated.', createdAt: ago(5.9 * D), upvotes: 8, replies: [
         { id: 'r11', authorId: 'u_anil', anonymous: false, body: 'Good start — quantify the impact of your final-year project and move it above your part-time retail job. Recruiters scan the top third.', createdAt: ago(5.8 * D), upvotes: 12 },
@@ -287,12 +302,19 @@ export const seedQuestions = [
     id: 'q22', authorId: 'u_sangita', anonymous: false, category: 'real_estate',
     title: 'Breaking a lease in Victoria — what does it actually cost?',
     body: 'Tenants ask me this constantly. You are generally liable for reasonable re-letting costs and rent until a new tenant is found, not an arbitrary "X weeks penalty". Landlords must try to re-let promptly. Know your rights before you sign anything. Questions welcome.',
-    photos: [], createdAt: ago(6.6 * D), upvotes: 21, views: 377,
+    photos: [], createdAt: ago(82 * MIN), upvotes: 21, views: 377,
     answers: [
       { id: 'a35', authorId: 'u_manish', anonymous: false, body: 'Wish I had known this last year — an agent tried to charge me a flat 6 weeks. Is that allowed?', createdAt: ago(6.5 * D), upvotes: 5, replies: [
         { id: 'r12', authorId: 'u_sangita', anonymous: false, body: 'A fixed penalty like that is generally not enforceable for leases under the current rules — costs must be reasonable and itemised. Ask for the breakdown in writing and contact Consumer Affairs Victoria if they refuse.', createdAt: ago(6.4 * D), upvotes: 14 },
       ] },
     ],
+  },
+  {
+    id: 'q_tiny', authorId: 'u_sabina', anonymous: false, circleId: 'c_tiny',
+    title: 'How long should gundruk ferment before drying?',
+    body: 'Trying my first batch at home in a Melbourne winter. How many days in the jar before I sun-dry, and does indoor drying work if it is cloudy all week?',
+    photos: [], createdAt: ago(2 * H), upvotes: 3, views: 28,
+    answers: [],
   },
   {
     id: 'q23', authorId: 'u_bibek', anonymous: false, category: 'general',
@@ -313,6 +335,8 @@ export const seedFollowing = ['u_sunita', 'u_anita'];
 // Notifications addressed to the signed-in user. The expert-answer entry is the
 // visually elevated type in the Activity screen.
 export const seedNotifications = [
+  { id: 'n0', type: 'digest', text: 'Your circles today: 5 new questions in Visa & Migration, 2 expert answers in Tax & Super.', createdAt: ago(6 * H), read: false },
+  { id: 'n0b', type: 'expert_karma', actorId: 'u_sunita', questionId: 'q1', text: 'Sunita found your answer helpful (+25 karma)', createdAt: ago(9 * H), read: false },
   { id: 'n1', type: 'expert_answer', actorId: 'u_sunita', questionId: 'q1', text: 'Sunita Gurung, a verified Migration Agent, answered a question you’re following', createdAt: ago(11 * MIN), read: false },
   { id: 'n2', type: 'answer', actorId: 'u_anita', questionId: 'q3', text: 'Dr. Anita Thapa answered “Bulk-billing GP near Footscray…”', createdAt: ago(80 * MIN), read: false },
   { id: 'n3', type: 'milestone', questionId: 'q15', milestone: 50, text: 'A question you upvoted passed 50 upvotes 🎉', createdAt: ago(20 * H), read: false },

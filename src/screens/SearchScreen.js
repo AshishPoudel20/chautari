@@ -6,7 +6,8 @@ import QuestionCard from '../components/QuestionCard';
 import { Input, Chip, EmptyState } from '../components/ui';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
-import { CATEGORIES, SUBURBS } from '../data/categories';
+import { SUBURBS } from '../data/categories';
+import CircleChip from '../components/CircleChip';
 import { useTheme } from '../theme/ThemeContext';
 
 const DATE_RANGES = [
@@ -29,10 +30,10 @@ export default function SearchScreen({ navigation, route }) {
   const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
 
   const { dispatch } = useData();
-  const { state, userById, answerCount, expertAnswerOn, firstAnswerLatency, hasUpvotedQuestion } = useSelectors();
+  const { feedQuestions, userById, circleById, state, answerCount, expertAnswerOn, firstAnswerLatency, hasUpvotedQuestion } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const [query, setQuery] = useState('');
-  const [category, setCategory] = useState(null);
+  const [circleFilter, setCircleFilter] = useState(null);
   const [suburb, setSuburb] = useState(null);
   const [range, setRange] = useState('any');
   const [showFilters, setShowFilters] = useState(true);
@@ -42,7 +43,7 @@ export default function SearchScreen({ navigation, route }) {
     useCallback(() => {
       if (route.params?.reset) {
         setQuery('');
-        setCategory(null);
+        setCircleFilter(null);
         setSuburb(null);
         setRange('any');
         navigation.setParams({ reset: undefined });
@@ -53,9 +54,9 @@ export default function SearchScreen({ navigation, route }) {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const rangeMs = DATE_RANGES.find((r) => r.id === range)?.ms ?? Infinity;
-    return state.questions.filter((item) => {
+    return feedQuestions().filter((item) => {
       if (q && !(item.title.toLowerCase().includes(q) || item.body.toLowerCase().includes(q))) return false;
-      if (category && item.category !== category) return false;
+      if (circleFilter && item.circleId !== circleFilter) return false;
       if (suburb) {
         const author = userById(item.authorId);
         if (item.anonymous || author?.suburb !== suburb) return false;
@@ -63,9 +64,9 @@ export default function SearchScreen({ navigation, route }) {
       if (Date.now() - item.createdAt > rangeMs) return false;
       return true;
     });
-  }, [query, category, suburb, range, state.questions, userById]);
+  }, [query, circleFilter, suburb, range, feedQuestions, userById]);
 
-  const activeFilters = (category ? 1 : 0) + (suburb ? 1 : 0) + (range !== 'any' ? 1 : 0);
+  const activeFilters = (circleFilter ? 1 : 0) + (suburb ? 1 : 0) + (range !== 'any' ? 1 : 0);
   const headerHeight = useHeaderHeight();
 
   const renderItem = useCallback(
@@ -73,7 +74,9 @@ export default function SearchScreen({ navigation, route }) {
       <QuestionCard
         question={item}
         author={userById(item.authorId)}
+        circle={circleById(item.circleId)}
         answerCount={answerCount(item)}
+        onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
         expert={expertAnswerOn(item)?.expert || null}
         firstAnswerMs={firstAnswerLatency(item)}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
@@ -81,7 +84,7 @@ export default function SearchScreen({ navigation, route }) {
         upvoteActive={hasUpvotedQuestion(item.id)}
       />
     ),
-    [userById, answerCount, expertAnswerOn, firstAnswerLatency, navigate, dispatch, hasUpvotedQuestion],
+    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, navigate, dispatch, hasUpvotedQuestion],
   );
 
   return (
@@ -97,7 +100,7 @@ export default function SearchScreen({ navigation, route }) {
       <Pressable style={styles.filterToggle} onPress={() => setShowFilters((s) => !s)}>
         <Text style={styles.filterToggleText}>{showFilters ? '▾' : '▸'} Filters{activeFilters ? ` (${activeFilters})` : ''}</Text>
         {activeFilters > 0 && (
-          <Pressable onPress={() => { setCategory(null); setSuburb(null); setRange('any'); }}>
+          <Pressable onPress={() => { setCircleFilter(null); setSuburb(null); setRange('any'); }}>
             <Text style={styles.clear}>Clear</Text>
           </Pressable>
         )}
@@ -105,10 +108,12 @@ export default function SearchScreen({ navigation, route }) {
 
       {showFilters && (
         <View style={styles.filters}>
-          <Text style={styles.filterLabel}>Category</Text>
+          <Text style={styles.filterLabel}>Circle</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rowChips}>
-            {CATEGORIES.map((c) => (
-              <Chip key={c.id} label={c.name} active={category === c.id} onPress={() => setCategory(category === c.id ? null : c.id)} />
+            {state.circles.map((c) => (
+              <Pressable key={c.id} onPress={() => setCircleFilter(circleFilter === c.id ? null : c.id)} style={{ opacity: circleFilter && circleFilter !== c.id ? 0.55 : 1 }}>
+                <CircleChip circle={c} compact showOfficial />
+              </Pressable>
             ))}
           </ScrollView>
           <Text style={styles.filterLabel}>Suburb</Text>

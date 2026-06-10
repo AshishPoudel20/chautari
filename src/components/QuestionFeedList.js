@@ -26,7 +26,7 @@ export default function QuestionFeedList({
   hasUpvotedQuestion,
   renderCardFooter,
 }) {
-  const { userById, answerCount, expertAnswerOn, firstAnswerLatency } = useSelectors();
+  const { userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { spacing } = useTheme();
 
@@ -43,10 +43,12 @@ export default function QuestionFeedList({
           <QuestionCard
             question={item}
             author={userById(item.authorId)}
+            circle={circleById(item.circleId)}
             answerCount={answerCount(item)}
             expert={ei?.expert || null}
             firstAnswerMs={firstAnswerLatency(item)}
             onPress={() => openQuestion(item.id)}
+            onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
             onUpvoteToggle={onUpvoteToggle}
             upvoteActive={hasUpvotedQuestion?.(item.id)}
           />
@@ -54,7 +56,7 @@ export default function QuestionFeedList({
         </FadeRise>
       );
     },
-    [userById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, replayKey, onUpvoteToggle, hasUpvotedQuestion, renderCardFooter],
+    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, navigate, replayKey, onUpvoteToggle, hasUpvotedQuestion, renderCardFooter],
   );
 
   const empty = useMemo(

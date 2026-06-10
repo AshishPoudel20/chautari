@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager } from 'react-native';
+import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionFeedList from '../components/QuestionFeedList';
 import Avatar from '../components/Avatar';
@@ -16,8 +16,9 @@ import { professionLabel } from '../data/categories';
 
 export default function HomeScreen({ navigation }) {
   const {
-    state, userById, followingFeed,
-    newTodayCount, suggestedExperts, hasUpvotedQuestion,
+    userById, me, forYouFeed, followingFeed,
+    newTodayCount, suggestedExperts, hasUpvotedQuestion, canExpertPostToday,
+    expertPostsToday, expertDailyPostLimit,
   } = useSelectors();
   const { dispatch } = useData();
   const { online } = useNetwork();
@@ -40,8 +41,21 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
-  const data = tab === 'foryou' ? state.questions : followingFeed();
+  const user = me();
+  const data = tab === 'foryou' ? forYouFeed() : followingFeed();
   const newToday = newTodayCount();
+  const expertAtLimit = user?.verified && !canExpertPostToday();
+
+  const openAsk = () => {
+    if (expertAtLimit) {
+      Alert.alert(
+        'Daily limit reached',
+        `You've used ${expertPostsToday()}/${expertDailyPostLimit} expert posts today. Try again tomorrow.`,
+      );
+      return;
+    }
+    navigate('AskComposer');
+  };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -86,8 +100,8 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.brandDot} />
         </View>
         <View style={styles.topActions}>
-          <Pressable onPress={() => navigate('Categories')} hitSlop={10} style={styles.topBtn}>
-            <Text style={styles.topIcon}>▦</Text>
+          <Pressable onPress={() => navigate('Circles')} hitSlop={10} style={styles.topBtn}>
+            <Text style={styles.topIcon}>◎</Text>
           </Pressable>
           <Pressable onPress={() => navigate('Search', { reset: true })} hitSlop={10} style={styles.topBtn}>
             <Text style={styles.topIcon}>🔍</Text>
@@ -122,7 +136,7 @@ export default function HomeScreen({ navigation }) {
                 icon="🌱"
                 title="The chautari is quiet"
                 subtitle="Be the first to ask. Someone in the community will know the answer."
-                action={{ label: 'Ask a question', onPress: () => navigate('AskComposer') }}
+                action={{ label: 'Ask a question', onPress: openAsk }}
               />
             )
           }
@@ -131,9 +145,21 @@ export default function HomeScreen({ navigation }) {
         />
       )}
 
-      <Pressable style={({ pressed }) => [styles.fab, pressed && { transform: [{ scale: 0.96 }] }]} onPress={() => navigate('AskComposer')}>
-        <Text style={styles.fabPlus}>＋</Text>
-        <Text style={styles.fabText}>Ask</Text>
+      {expertAtLimit ? (
+        <View style={styles.fabLimitWrap}>
+          <Text style={styles.fabLimitHint}>2/2 posts today</Text>
+        </View>
+      ) : null}
+      <Pressable
+        style={({ pressed }) => [
+          styles.fab,
+          expertAtLimit && styles.fabMuted,
+          pressed && { transform: [{ scale: 0.96 }] },
+        ]}
+        onPress={openAsk}
+      >
+        <Text style={[styles.fabPlus, expertAtLimit && styles.fabTextMuted]}>＋</Text>
+        <Text style={[styles.fabText, expertAtLimit && styles.fabTextMuted]}>Ask</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -200,9 +226,13 @@ const createStyles = (colors, shadow, spacing, font, radius) => StyleSheet.creat
   livePill: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'center', marginTop: spacing.md, backgroundColor: colors.secondaryTint, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.pill },
   liveText: { color: colors.secondaryDark, fontSize: font.tiny, fontWeight: '800', letterSpacing: 0.2 },
 
+  fabLimitWrap: { position: 'absolute', right: spacing.lg, bottom: spacing.xl + 58, alignItems: 'flex-end' },
+  fabLimitHint: { fontSize: font.tiny, fontWeight: '800', color: colors.danger, backgroundColor: colors.dangerTint, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill, overflow: 'hidden' },
   fab: { position: 'absolute', right: spacing.lg, bottom: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.primary, paddingLeft: 18, paddingRight: 22, paddingVertical: 14, borderRadius: radius.pill, ...shadow.floating },
+  fabMuted: { backgroundColor: colors.borderStrong },
   fabPlus: { color: colors.onPrimary, fontWeight: '700', fontSize: 20, marginTop: -2 },
   fabText: { color: colors.onPrimary, fontWeight: '800', fontSize: font.bodyLg, letterSpacing: 0.3 },
+  fabTextMuted: { color: colors.textMuted },
 
   suggestWrap: { marginTop: spacing.sm, marginBottom: spacing.xl },
   suggestLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8, marginBottom: spacing.md, marginLeft: 4 },

@@ -4,11 +4,12 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import UpvoteButton from '../components/UpvoteButton';
-import { Pill } from '../components/ui';
+import CircleChip from '../components/CircleChip';
+import KarmaBadge from '../components/KarmaBadge';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
-import { categoryName } from '../data/categories';
+import { professionLabel } from '../data/categories';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -27,7 +28,7 @@ function BodyText({ children, style, linkStyle }) {
 export default function QuestionDetailScreen({ navigation, route }) {
   const { questionId, justPosted } = route.params;
   const { dispatch } = useData();
-  const { questionById, userById, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, state } = useSelectors();
+  const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, state } = useSelectors();
   const showToast = useToast();
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
@@ -98,6 +99,9 @@ export default function QuestionDetailScreen({ navigation, route }) {
   }
 
   const qAuthor = displayAuthor(userById(question.authorId), question.anonymous);
+  const qAuthorUser = userById(question.authorId);
+  const circle = circleById(question.circleId);
+  const isExpertPost = qAuthor.verified && !question.anonymous;
   const totalAnswers = question.answers.length;
 
   const goToProfile = (authorId, anonymous) => {
@@ -131,6 +135,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
             <View style={styles.nameRow}>
               <Text style={styles.answerAuthor}>{aAuthor.name}</Text>
               {aAuthor.verified ? <VerifiedBadge compact /> : null}
+              <KarmaBadge karma={karmaFor(ans.authorId)} compact />
             </View>
             <Text style={styles.metaText}>{aAuthor.suburb ? `${aAuthor.suburb} · ` : ''}{timeAgo(ans.createdAt)}</Text>
           </View>
@@ -219,8 +224,20 @@ export default function QuestionDetailScreen({ navigation, route }) {
         )}
 
         {/* Question */}
-        <View style={styles.qBlock}>
-          <Pill label={categoryName(question.category)} tone="category" />
+        <View style={[styles.qBlock, isExpertPost && styles.qBlockExpert]}>
+          {isExpertPost && (
+            <View style={styles.expertPostBanner}>
+              <Text style={styles.expertPostBannerText}>✓ VERIFIED EXPERT POST</Text>
+              <Text style={styles.expertPostBannerSub}>{professionLabel(qAuthorUser)}</Text>
+            </View>
+          )}
+          {circle ? (
+            <CircleChip
+              circle={circle}
+              showOfficial
+              onPress={() => navigate('CircleDetail', { circleId: circle.id })}
+            />
+          ) : null}
           <Text style={styles.qTitle}>{question.title}</Text>
 
           <Pressable style={styles.authorRow} onPress={() => goToProfile(question.authorId, question.anonymous)}>
@@ -297,6 +314,14 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   postedText: { color: colors.success, fontWeight: '800', fontSize: font.caption, textAlign: 'center' },
 
   qBlock: { backgroundColor: colors.surface, padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  qBlockExpert: { borderBottomColor: colors.expertCardBorder, borderBottomWidth: 2 },
+  expertPostBanner: {
+    alignSelf: 'flex-start', backgroundColor: colors.secondaryTint,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill, marginBottom: spacing.md,
+    borderWidth: 1, borderColor: colors.expertMarkerBorder,
+  },
+  expertPostBannerText: { color: colors.secondaryDark, fontWeight: '800', fontSize: font.tiny, letterSpacing: 0.5 },
+  expertPostBannerSub: { color: colors.secondaryDark, fontSize: font.tiny, fontWeight: '600', marginTop: 2, opacity: 0.9 },
   qTitle: { fontSize: font.title, fontWeight: '800', color: colors.text, marginTop: spacing.sm, marginBottom: spacing.md, lineHeight: 28 },
   authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

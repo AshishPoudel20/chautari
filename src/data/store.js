@@ -2,27 +2,88 @@
 // This is the single mock "backend" — no network anywhere.
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { seedUsers, seedQuestions, seedFollowing, seedNotifications } from './seed';
-import { milestoneCrossed } from '../utils/format';
+import {
+  seedUsers, seedQuestions, seedFollowing, seedNotifications,
+  seedCircles, seedJoinedCircles,
+} from './seed';
+import { milestoneCrossed, startOfLocalDay } from '../utils/format';
+import { computeKarmaForUser } from '../utils/karma';
+import { slugify, isCircleNameTaken } from './circles';
 
-const STORAGE_KEY = 'chautari.state.v1';
+export const EXPERT_DAILY_POST_LIMIT = 2;
+
+const STORAGE_KEY = 'chautari.state.v2';
 const DataContext = createContext(null);
 
 let idCounter = 1;
 const uid = (p = 'id') => `${p}_${Date.now().toString(36)}_${idCounter++}`;
+
+const sortQuestions = (list) => [...list].sort((a, b) => b.createdAt - a.createdAt);
+
+function normalizeQuestion(q) {
+  const circleId = q.circleId || q.category;
+  return circleId ? { ...q, circleId } : q;
+}
+
+// Pull in new seed questions and refresh relative timestamps on every launch.
+function mergeQuestions(persisted = []) {
+  const byId = new Map(persisted.map((q) => [q.id, normalizeQuestion(q)]));
+  for (const sq of seedQuestions) {
+    const existing = byId.get(sq.id);
+    const normalized = normalizeQuestion(sq);
+    byId.set(sq.id, existing ? { ...existing, createdAt: normalized.createdAt, circleId: normalized.circleId } : normalized);
+  }
+  return sortQuestions([...byId.values()]);
+}
+
+function mergeCircles(persisted = []) {
+  const byId = new Map(persisted.map((c) => [c.id, c]));
+  for (const sc of seedCircles) {
+    if (!byId.has(sc.id)) byId.set(sc.id, sc);
+  }
+  return [...byId.values()];
+}
+
+function defaultJoinedCircles() {
+  return [...seedJoinedCircles];
+}
+
+function mergeUsers(persisted = []) {
+  const byId = new Map(persisted.map((u) => [u.id, u]));
+  for (const su of seedUsers) {
+    const existing = byId.get(su.id);
+    if (!existing) byId.set(su.id, su);
+    else if (su.id !== 'me') {
+      byId.set(su.id, {
+        ...existing,
+        verified: su.verified,
+        profession: su.profession,
+        verifiedCategory: su.verifiedCategory,
+        bio: su.bio,
+        name: su.name,
+        suburb: su.suburb,
+      });
+    }
+  }
+  return [...byId.values()];
+}
 
 function buildInitialState() {
   return {
     booted: false,
     currentUserId: null, // null = signed out
     users: seedUsers,
-    questions: seedQuestions,
+    circles: seedCircles,
+    joinedCircles: defaultJoinedCircles(),
+    questions: sortQuestions(seedQuestions.map(normalizeQuestion)),
     following: [], // ids the current user follows
     notifications: [],
     myUpvotes: { questions: [], answers: [], replies: [] },
     savedQuestions: [], // bookmarked question ids
     reports: [],
     expertApplication: null, // { category, customCategory, status }
+    expertUpvoteBonuses: { u_bibek: 2, u_pratima: 1, u_dipesh: 3, u_sunita: 1 },
+    digestMode: 'daily', // 'daily' | 'weekly' | 'off'
   };
 }
 
@@ -34,6 +95,8 @@ function reducer(state, action) {
         ...state,
         ...p,
         booted: true,
+        users: mergeUsers(p.users || []),
+        questions: mergeQuestions(p.questions || []),
         myUpvotes: {
           questions: [],
           answers: [],
@@ -41,6 +104,10 @@ function reducer(state, action) {
           ...(p.myUpvotes || {}),
         },
         savedQuestions: p.savedQuestions || [],
+        circles: mergeCircles(p.circles || []),
+        joinedCircles: p.joinedCircles?.length ? p.joinedCircles : defaultJoinedCircles(),
+        expertUpvoteBonuses: p.expertUpvoteBonuses || {},
+        digestMode: p.digestMode || 'daily',
       };
     }
     case 'BOOTED':
@@ -64,6 +131,7 @@ function reducer(state, action) {
         users: [me, ...state.users.filter((u) => u.id !== 'me')],
         following: seedFollowing,
         notifications: seedNotifications,
+        joinedCircles: defaultJoinedCircles(),
       };
     }
 
@@ -82,11 +150,19 @@ function reducer(state, action) {
     }
 
     case 'ASK_QUESTION': {
+      const author = state.users.find((u) => u.id === 'me');
+      if (author?.verified) {
+        const dayStart = startOfLocalDay();
+        const todayCount = state.questions.filter(
+          (q) => q.authorId === 'me' && q.createdAt >= dayStart,
+        ).length;
+        if (todayCount >= EXPERT_DAILY_POST_LIMIT) return state;
+      }
       const q = {
         id: action.id || uid('q'),
         authorId: 'me',
         anonymous: action.anonymous,
-        category: action.category,
+        circleId: action.circleId,
         title: action.title.trim(),
         body: action.body.trim(),
         photos: action.photos || [],
@@ -170,12 +246,17 @@ function reducer(state, action) {
     case 'TOGGLE_UPVOTE_ANSWER': {
       const has = state.myUpvotes.answers.includes(action.answerId);
       const delta = has ? -1 : 1;
-      // Detect a milestone crossing so we can drop a celebratory notification.
+      const meUser = state.users.find((u) => u.id === 'me');
       let milestoneNote = null;
+      let answerAuthorId = null;
+      let questionIdForBonus = null;
+
       const questions = state.questions.map((q) => ({
         ...q,
         answers: q.answers.map((a) => {
           if (a.id !== action.answerId) return a;
+          answerAuthorId = a.authorId;
+          questionIdForBonus = q.id;
           const next = Math.max(0, a.upvotes + delta);
           const m = milestoneCrossed(a.upvotes, next);
           if (m) {
@@ -192,6 +273,15 @@ function reducer(state, action) {
           return { ...a, upvotes: next };
         }),
       }));
+
+      let expertUpvoteBonuses = { ...state.expertUpvoteBonuses };
+      if (!has && delta > 0 && meUser?.verified && answerAuthorId && answerAuthorId !== 'me') {
+        expertUpvoteBonuses[answerAuthorId] = (expertUpvoteBonuses[answerAuthorId] || 0) + 1;
+      } else if (has && meUser?.verified && answerAuthorId && answerAuthorId !== 'me') {
+        expertUpvoteBonuses[answerAuthorId] = Math.max(0, (expertUpvoteBonuses[answerAuthorId] || 0) - 1);
+      }
+
+      const newNotifs = [milestoneNote].filter(Boolean);
       return {
         ...state,
         myUpvotes: {
@@ -201,7 +291,8 @@ function reducer(state, action) {
             : [...state.myUpvotes.answers, action.answerId],
         },
         questions,
-        notifications: milestoneNote ? [milestoneNote, ...state.notifications] : state.notifications,
+        expertUpvoteBonuses,
+        notifications: newNotifs.length ? [...newNotifs, ...state.notifications] : state.notifications,
       };
     }
 
@@ -276,6 +367,54 @@ function reducer(state, action) {
 
     case 'ADD_REPORT':
       return { ...state, reports: [...state.reports, { id: uid('rep'), ...action.report, createdAt: Date.now() }] };
+
+    case 'ADD_NOTIFICATION': {
+      const n = { id: uid('n'), read: false, ...action.notification };
+      return { ...state, notifications: [n, ...state.notifications] };
+    }
+
+    case 'CREATE_CIRCLE': {
+      const name = action.name.trim();
+      if (!name || isCircleNameTaken(name, state.circles)) return state;
+      const id = action.id || uid('c');
+      const circle = {
+        id,
+        name,
+        handle: slugify(name),
+        description: action.description.trim(),
+        icon: action.icon,
+        accentId: action.accentId,
+        creatorId: 'me',
+        memberCount: 1,
+        createdAt: Date.now(),
+        isOfficial: false,
+      };
+      return {
+        ...state,
+        circles: [circle, ...state.circles],
+        joinedCircles: [...state.joinedCircles, id],
+      };
+    }
+
+    case 'TOGGLE_JOIN_CIRCLE': {
+      const { circleId } = action;
+      const has = state.joinedCircles.includes(circleId);
+      if (has && state.joinedCircles.length <= 1) return state;
+      const joinedCircles = has
+        ? state.joinedCircles.filter((id) => id !== circleId)
+        : [...state.joinedCircles, circleId];
+      const delta = has ? -1 : 1;
+      return {
+        ...state,
+        joinedCircles,
+        circles: state.circles.map((c) =>
+          c.id === circleId ? { ...c, memberCount: Math.max(0, (c.memberCount || 0) + delta) } : c
+        ),
+      };
+    }
+
+    case 'SET_DIGEST_MODE':
+      return { ...state, digestMode: action.mode };
 
     default:
       return state;
@@ -368,31 +507,81 @@ export function useSelectors() {
       .sort((a, b) => (b.followers || 0) - (a.followers || 0))
       .slice(0, limit);
 
-  // Following tab: questions whose author is followed, or that have an answer from a followed user.
-  const followingFeed = () =>
-    state.questions.filter((q) => {
-      if (state.following.includes(q.authorId)) return true;
-      return (q.answers || []).some((a) => state.following.includes(a.authorId));
-    });
+  const circleById = (id) => state.circles.find((c) => c.id === id) || null;
+  const isJoinedCircle = (id) => state.joinedCircles.includes(id);
+  const joinedCirclesList = () =>
+    state.joinedCircles.map((id) => circleById(id)).filter(Boolean);
+  const officialCircles = () => state.circles.filter((c) => c.isOfficial);
+  const userCircles = () => state.circles.filter((c) => !c.isOfficial);
 
-  const categoryCounts = () => {
-    const counts = {};
-    state.questions.forEach((q) => {
-      counts[q.category] = (counts[q.category] || 0) + 1;
-    });
-    return counts;
+  const circleQuestionCount = (circleId) =>
+    state.questions.filter((q) => q.circleId === circleId).length;
+
+  const circleActivitySince = (circleId, sinceMs = 24 * 60 * 60 * 1000) => {
+    const cutoff = Date.now() - sinceMs;
+    return state.questions.filter((q) => q.circleId === circleId && q.createdAt >= cutoff).length;
   };
 
+  const questionsInCircle = (circleId) =>
+    sortQuestions(state.questions.filter((q) => q.circleId === circleId));
+
+  const feedQuestions = () => sortQuestions(state.questions);
+
+  // For You: joined circles boosted, but ALL circles eligible (liquidity protection).
+  const forYouFeed = () => {
+    const joined = new Set(state.joinedCircles);
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    return [...state.questions]
+      .map((q) => {
+        let score = (q.upvotes || 0) * 2 + (q.answers?.length || 0) * 4;
+        if (joined.has(q.circleId)) score += 40;
+        if (q.createdAt >= dayAgo) score += 25;
+        score += q.createdAt / 1e12;
+        return { q, score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.q);
+  };
+
+  const followingFeed = () =>
+    sortQuestions(
+      state.questions.filter((q) => {
+        if (state.following.includes(q.authorId)) return true;
+        return (q.answers || []).some((a) => state.following.includes(a.authorId));
+      }),
+    );
+
+  const karmaFor = (userId) => computeKarmaForUser(state, userId);
+
   const experts = () => state.users.filter((u) => u.verified);
-  const myQuestions = () => state.questions.filter((q) => q.authorId === 'me');
-  const questionsByAuthor = (id) => state.questions.filter((q) => q.authorId === id);
+  const myQuestions = () => sortQuestions(state.questions.filter((q) => q.authorId === 'me'));
+  const questionsByAuthor = (id) => sortQuestions(state.questions.filter((q) => q.authorId === id));
+  const expertAuthoredQuestions = () =>
+    sortQuestions(
+      state.questions.filter((q) => !q.anonymous && userById(q.authorId)?.verified),
+    );
+
+  const expertPostsToday = (userId = 'me') => {
+    const dayStart = startOfLocalDay();
+    return state.questions.filter((q) => q.authorId === userId && q.createdAt >= dayStart).length;
+  };
+  const expertPostsRemaining = (userId = 'me') =>
+    Math.max(0, EXPERT_DAILY_POST_LIMIT - expertPostsToday(userId));
+  const canExpertPostToday = () => {
+    const user = me();
+    if (!user?.verified) return true;
+    return expertPostsToday() < EXPERT_DAILY_POST_LIMIT;
+  };
   const unreadNotifs = () => state.notifications.filter((n) => !n.read).length;
 
   return {
     state, userById, me, isFollowing,
     hasUpvotedQuestion, hasUpvotedAnswer, hasUpvotedReply, isSaved,
-    questionById, answerCount, followingFeed, categoryCounts, experts,
-    myQuestions, questionsByAuthor, savedQuestionsList, unreadNotifs,
+    questionById, answerCount, feedQuestions, forYouFeed, followingFeed, experts,
+    myQuestions, questionsByAuthor, expertAuthoredQuestions, savedQuestionsList, unreadNotifs,
     expertAnswerOn, hasExpertAnswer, firstAnswerLatency, newTodayCount, suggestedExperts,
+    expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
+    circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
+    circleQuestionCount, circleActivitySince, questionsInCircle, karmaFor,
   };
 }

@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import DigestManager from '../components/DigestManager';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';
@@ -14,8 +15,10 @@ import MainTabs from './MainTabs';
 import QuestionDetailScreen from '../screens/QuestionDetailScreen';
 import AskComposerScreen from '../screens/AskComposerScreen';
 import AnswerComposerScreen from '../screens/AnswerComposerScreen';
-import CategoriesScreen from '../screens/CategoriesScreen';
-import CategoryFeedScreen from '../screens/CategoryFeedScreen';
+import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
+import CircleDetailScreen from '../screens/CircleDetailScreen';
+import CreateCircleScreen from '../screens/CreateCircleScreen';
+import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
@@ -44,6 +47,7 @@ const modalOptions = {
 function AppNavigator() {
   const { colors, isDark } = useTheme();
   const { state } = useData();
+  const navRef = useRef(null);
   const [minTimePassed, setMinTimePassed] = React.useState(false);
 
   React.useEffect(() => {
@@ -83,7 +87,8 @@ function AppNavigator() {
   }), [colors]);
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navRef} theme={navTheme}>
+      <DigestManager navigationRef={navRef} />
       <Stack.Navigator screenOptions={headerOptions}>
         {!ready ? (
           <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false, animation: 'fade' }} />
@@ -99,8 +104,10 @@ function AppNavigator() {
           <Stack.Group>
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false, animation: 'fade' }} />
             <Stack.Screen name="QuestionDetail" component={QuestionDetailScreen} options={{ title: 'Question' }} />
-            <Stack.Screen name="Categories" component={CategoriesScreen} options={{ title: 'Categories' }} />
-            <Stack.Screen name="CategoryFeed" component={CategoryFeedScreen} options={{ title: '' }} />
+            <Stack.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles' }} />
+            <Stack.Screen name="CircleDetail" component={CircleDetailScreen} options={{ title: '' }} />
+            <Stack.Screen name="CreateCircle" component={CreateCircleScreen} options={{ title: 'Create a Circle' }} />
+            <Stack.Screen name="ExpertDirectory" component={ExpertDirectoryScreen} options={{ title: 'Experts' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
             <Stack.Screen name="ExpertProfile" component={ExpertProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Expert' })} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Profile' })} />

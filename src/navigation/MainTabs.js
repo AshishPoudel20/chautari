@@ -6,7 +6,7 @@ import { useSelectors } from '../data/store';
 import { CountBadge } from '../components/ui';
 
 import HomeScreen from '../screens/HomeScreen';
-import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
+import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import MyProfileScreen from '../screens/MyProfileScreen';
 
@@ -43,7 +43,7 @@ export default function MainTabs() {
   return (
     <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
-      <Tab.Screen name="Experts" component={ExpertDirectoryScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" focused={focused} /> }} />
+      <Tab.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles', tabBarIcon: ({ focused }) => <TabIcon emoji="◎" focused={focused} /> }} />
       <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ title: 'Alerts', tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} badge={unread} /> }} />
       <Tab.Screen name="Profile" component={MyProfileScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }} />
     </Tab.Navigator>
