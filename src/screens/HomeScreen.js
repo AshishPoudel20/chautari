@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionFeedList from '../components/QuestionFeedList';
+import CirclesRecommendRow from '../components/CirclesRecommendRow';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import FollowButton from '../components/FollowButton';
@@ -126,6 +127,8 @@ export default function HomeScreen({ navigation }) {
           navigation={navigation}
           replayKey={replayKey}
           ListHeaderComponent={header}
+          insertAfterIndex={tab === 'foryou' && data.length > 5 ? 4 : null}
+          InsertComponent={tab === 'foryou' ? () => <CirclesRecommendRow navigation={navigation} /> : null}
           onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
           hasUpvotedQuestion={hasUpvotedQuestion}
           ListEmptyComponent={

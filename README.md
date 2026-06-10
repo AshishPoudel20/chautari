@@ -22,6 +22,11 @@ The app launches to an animated splash, then the welcome/onboarding flow. State 
 - `npx expo export --platform ios` bundles the full module graph with **no errors** (1039 modules).
 - `npx expo start` boots Metro and serves on `:8081`.
 
+### Pass 4 — Circle polish (rich hub, creator tools, recommendations)
+- **Circle hub** — each circle detail is one scroll surface: accent-gradient banner with Nepali motif overlay (richer on Official circles), **collapsing header** (Reanimated) into a compact nav bar, About (collapsible description, creator link, created date), **Experts Here** row (verified experts with ≥1 answer in the circle; hidden if none), **pinned question** (max one, accent edge + quiet marker), then the question feed. FAB pre-selects the circle in Ask.
+- **Creator tools** — circle creators see ⚙ on their circle page (not on Official circles). **Edit circle**: name (uniqueness + similar suggestions), description, accent preset — changes propagate everywhere. **Pin / unpin** any question in their circle from the question ⋯ menu (one max; toast on change). Seed: mock user is creator of **First Home Buyers AU** with pinned PSA + sample questions.
+- **Circles you might like** — horizontal recommendation row in **For You only**, inserted once after the ~5th question card. 3–5 non-joined circles, one-tap Join (optimistic; joined circles slide out). Ranked by size/activity with a boost for name/description overlap with joined circles. Hidden when no candidates remain.
+
 ### Pass 3 — Circles, Karma, Digest
 - **Circles** replace categories as the bundling system. Eight **Official** circles (auto-joined on signup) plus user-created circles (seed includes Footscray Nepali Community, First Home Buyers AU, Monash students, Cricket Melbourne, and tiny Gundruk Recipe Club). **Circles** tab + directory: join/leave, create with similar-circle suggestions, circle detail feed, circle chip on every card. **For You** mixes joined-circle posts with popular posts from *all* circles (liquidity protection — never joined-only).
 - **Karma** (derived, not stored): +10 per answer upvote received, +2 per question upvote, +1 per reply upvote, +25 when a verified expert upvotes your answer. Shown on profiles and subtly on answer rows in question detail. Expert-upvote notifications are elevated in Activity.

@@ -25,6 +25,8 @@ export default function QuestionFeedList({
   onUpvoteToggle,
   hasUpvotedQuestion,
   renderCardFooter,
+  insertAfterIndex = null,
+  InsertComponent = null,
 }) {
   const { userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
@@ -38,7 +40,7 @@ export default function QuestionFeedList({
   const renderItem = useCallback(
     ({ item, index }) => {
       const ei = expertAnswerOn(item);
-      return (
+      const card = (
         <FadeRise index={index} replayKey={replayKey}>
           <QuestionCard
             question={item}
@@ -55,8 +57,17 @@ export default function QuestionFeedList({
           {renderCardFooter ? renderCardFooter(item.id) : null}
         </FadeRise>
       );
+      if (InsertComponent && insertAfterIndex != null && index === insertAfterIndex) {
+        return (
+          <View>
+            {card}
+            <InsertComponent />
+          </View>
+        );
+      }
+      return card;
     },
-    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, navigate, replayKey, onUpvoteToggle, hasUpvotedQuestion, renderCardFooter],
+    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, navigate, replayKey, onUpvoteToggle, hasUpvotedQuestion, renderCardFooter, insertAfterIndex, InsertComponent],
   );
 
   const empty = useMemo(
