@@ -11,11 +11,11 @@ RootNavigator (native-stack)
 └── [signed-in]
     ├── Main (bottom-tabs, headerShown: false)
     │   ├── Home
-    │   ├── Experts (ExpertDirectoryScreen)
+    │   ├── Circles (CirclesDirectoryScreen)
     │   ├── Alerts (NotificationsScreen)
     │   └── Profile (MyProfileScreen)
     ├── QuestionDetail
-    ├── Categories
+    ├── Circles / CircleDetail / CreateCircle / ExpertDirectory
     ├── Search
     ├── ExpertProfile / UserProfile
     ├── VerifiedApplication / EditProfile / Settings

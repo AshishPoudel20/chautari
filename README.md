@@ -2,7 +2,7 @@
 
 A mobile-first community Q&A app for the Nepali diaspora in Australia (Greater Melbourne, v1). Users ask questions and get answers from community members and **verified local experts** — migration agents, accountants, GPs, mortgage brokers, and more.
 
-Built with **React Native (Expo SDK 54)**. English only, light mode only. **Everything is mocked locally** — no backend, no Twilio/Supabase/Firebase, no API keys.
+Built with **React Native (Expo SDK 54)**. English only, **light + dark mode**. **Everything is mocked locally** — no backend, no Twilio/Supabase/Firebase, no API keys.
 
 > *A "chautari" is the shaded resting place under a tree where villagers gather to talk — the spirit of the app.*
 
@@ -19,18 +19,24 @@ npx expo start     # then press i (iOS), a (Android), or scan the QR in Expo Go
 The app launches to an animated splash, then the welcome/onboarding flow. State persists between launches via **AsyncStorage**. To reset to a fresh seeded state, use **Settings → Delete account** (hard delete) or clear the app's storage.
 
 ### Verified clean
-- `npx expo export --platform ios` bundles the full module graph with **no errors** (893 modules).
+- `npx expo export --platform ios` bundles the full module graph with **no errors** (1039 modules).
 - `npx expo start` boots Metro and serves on `:8081`.
+
+### Pass 3 — Circles, Karma, Digest
+- **Circles** replace categories as the bundling system. Eight **Official** circles (auto-joined on signup) plus user-created circles (seed includes Footscray Nepali Community, First Home Buyers AU, Monash students, Cricket Melbourne, and tiny Gundruk Recipe Club). **Circles** tab + directory: join/leave, create with similar-circle suggestions, circle detail feed, circle chip on every card. **For You** mixes joined-circle posts with popular posts from *all* circles (liquidity protection — never joined-only).
+- **Karma** (derived, not stored): +10 per answer upvote received, +2 per question upvote, +1 per reply upvote, +25 when a verified expert upvotes your answer. Shown on profiles and subtly on answer rows in question detail. Expert-upvote notifications are elevated in Activity.
+- **Digest** — local `expo-notifications` summary at 6pm (daily/weekly/off in Settings). Tap opens Circles tab; digest also appears in in-app notifications.
 
 ### Targeted pass (upvote, dark mode, profile, expert entry)
 - **Upvote fix** — `QuestionCard` splits tap area from `UpvoteButton` (44×44 target); question upvotes persist in store; works on feeds, detail, answers, replies, and other users' profiles.
 - **Dark mode** — semantic tokens in `src/theme/palettes.js`, `ThemeProvider` + `useTheme()`, persisted in AsyncStorage. Toggle in **Settings → Appearance**. Navigator backgrounds follow the active palette.
 - **My Profile** — identity only + options list: **My Posts**, **Saved Posts** (bookmark on question detail 🔖). Saves persist in mock store.
 - **Verified expert** — quiet row at bottom of profile options ("Are you a professional? Apply for verification"), not a primary CTA.
+- **Expert post cap UI** — verified experts see a live **2 posts/day** quota on profile, My Posts, Ask composer, and home FAB (muted + hint when limit reached).
 
 ### Polish pass (navigation + motion)
 See `BUGS.md` for the full audit. Highlights:
-- **Category browse** — tapping a category opens a dedicated `CategoryFeed` screen (not Search).
+- **Circle browse** — Circles tab replaces the old category grid; each circle has a dedicated feed.
 - **Navigation guard** — double-tap debounce on list cards and primary nav actions.
 - **Transitions** — native-stack `slide_from_right` / modal `slide_from_bottom`; `enableScreens()` at entry.
 - **Feed performance** — memoized `QuestionCard`, shared `QuestionFeedList`, FlatList windowing; home tab switch no longer remounts the whole list (fixes flicker).
