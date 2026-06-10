@@ -28,7 +28,7 @@ function BodyText({ children, style, linkStyle }) {
 export default function QuestionDetailScreen({ navigation, route }) {
   const { questionId, justPosted } = route.params;
   const { dispatch } = useData();
-  const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, state } = useSelectors();
+  const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, state } = useSelectors();
   const showToast = useToast();
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
@@ -46,6 +46,23 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const openMenu = useCallback(() => {
     if (!question) return;
     const options = [];
+    const circle = circleById(question.circleId);
+    const canPin = isCircleCreator(question.circleId);
+    if (canPin) {
+      const pinned = circle?.pinnedQuestionId === questionId;
+      options.push({
+        text: pinned ? 'Unpin from circle' : 'Pin to circle',
+        onPress: () => {
+          if (pinned) {
+            dispatch({ type: 'UNPIN_QUESTION_FROM_CIRCLE', circleId: question.circleId, questionId });
+            showToast('Unpinned from circle', { tone: 'default' });
+          } else {
+            dispatch({ type: 'PIN_QUESTION_TO_CIRCLE', circleId: question.circleId, questionId });
+            showToast('Pinned to circle', { tone: 'success' });
+          }
+        },
+      });
+    }
     if (isMine) {
       options.push({
         text: 'Delete question',
@@ -61,7 +78,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     options.push({ text: 'Cancel', style: 'cancel' });
     Alert.alert(isMine ? 'Your question' : 'Question options', null, options);
-  }, [question, isMine, dispatch, questionId, navigation, showToast, navigate]);
+  }, [question, isMine, dispatch, questionId, navigation, showToast, navigate, circleById, isCircleCreator]);
 
   const toggleSave = useCallback(() => {
     const wasSaved = isSaved(questionId);

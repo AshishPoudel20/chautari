@@ -18,6 +18,7 @@ import AnswerComposerScreen from '../screens/AnswerComposerScreen';
 import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
 import CircleDetailScreen from '../screens/CircleDetailScreen';
 import CreateCircleScreen from '../screens/CreateCircleScreen';
+import EditCircleScreen from '../screens/EditCircleScreen';
 import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
@@ -107,6 +108,7 @@ function AppNavigator() {
             <Stack.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles' }} />
             <Stack.Screen name="CircleDetail" component={CircleDetailScreen} options={{ title: '' }} />
             <Stack.Screen name="CreateCircle" component={CreateCircleScreen} options={{ title: 'Create a Circle' }} />
+            <Stack.Screen name="EditCircle" component={EditCircleScreen} options={{ title: 'Edit circle' }} />
             <Stack.Screen name="ExpertDirectory" component={ExpertDirectoryScreen} options={{ title: 'Experts' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
             <Stack.Screen name="ExpertProfile" component={ExpertProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Expert' })} />
