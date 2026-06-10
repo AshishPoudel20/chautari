@@ -32,6 +32,11 @@ const OFFICIAL_ACCENTS = ['crimson', 'saffron', 'teal', 'ocean', 'forest', 'plum
 const DAY = 24 * 60 * 60 * 1000;
 const ago = (ms) => Date.now() - ms;
 
+const OFFICIAL_PINNED = {
+  migration: 'q1',
+  loans: 'q16',
+};
+
 export function buildOfficialCircles() {
   return CATEGORIES.map((c, i) => ({
     id: c.id,
@@ -44,6 +49,7 @@ export function buildOfficialCircles() {
     memberCount: 800 + i * 220,
     createdAt: ago(400 * DAY),
     isOfficial: true,
+    pinnedQuestionId: OFFICIAL_PINNED[c.id] || null,
   }));
 }
 
@@ -67,10 +73,11 @@ export const seedUserCircles = [
     description: 'Deposits, FHOG, stamp duty and the emotional rollercoaster of buying.',
     icon: '🏠',
     accentId: 'teal',
-    creatorId: 'u_bishal',
+    creatorId: 'me',
     memberCount: 120,
     createdAt: ago(60 * DAY),
     isOfficial: false,
+    pinnedQuestionId: 'q_fhb_pin',
   },
   {
     id: 'c_monash',
@@ -114,6 +121,7 @@ export const seedJoinedCircles = [
   ...CATEGORIES.map((c) => c.id),
   'c_footscray',
   'c_monash',
+  'c_fhb',
 ];
 
 export function accentById(accentId) {
@@ -168,7 +176,33 @@ export function findSimilarCircles(name, circles, limit = 3) {
     .map((x) => x.circle);
 }
 
-export function isCircleNameTaken(name, circles) {
+export function isCircleNameTaken(name, circles, exceptId = null) {
   const n = name.trim().toLowerCase();
-  return circles.some((c) => c.name.trim().toLowerCase() === n);
+  return circles.some((c) => c.id !== exceptId && c.name.trim().toLowerCase() === n);
+}
+
+// Banner gradient stops tuned per theme (accent-derived, no hardcoded UI outside tokens).
+export function circleBannerGradient(circle, isDark) {
+  const accent = circleAccentColor(circle, isDark);
+  const rich = circle?.isOfficial ? 1 : 0;
+  if (isDark) {
+    return {
+      colors: [
+        accent.color,
+        `${accent.color}cc`,
+        rich ? '#1a1412' : '#141110',
+      ],
+      locations: rich ? [0, 0.45, 1] : [0, 0.55, 1],
+      motifOpacity: rich ? 0.14 : 0.1,
+    };
+  }
+  return {
+    colors: [
+      accent.color,
+      `${accent.color}dd`,
+      rich ? '#FAF6F0' : '#F2ECE3',
+    ],
+    locations: rich ? [0, 0.4, 1] : [0, 0.5, 1],
+    motifOpacity: rich ? 0.12 : 0.08,
+  };
 }

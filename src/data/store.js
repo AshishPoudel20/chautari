@@ -39,7 +39,18 @@ function mergeQuestions(persisted = []) {
 function mergeCircles(persisted = []) {
   const byId = new Map(persisted.map((c) => [c.id, c]));
   for (const sc of seedCircles) {
-    if (!byId.has(sc.id)) byId.set(sc.id, sc);
+    const existing = byId.get(sc.id);
+    if (!existing) {
+      byId.set(sc.id, sc);
+    } else {
+      byId.set(sc.id, {
+        ...existing,
+        pinnedQuestionId: sc.isOfficial
+          ? sc.pinnedQuestionId
+          : (existing.pinnedQuestionId ?? sc.pinnedQuestionId ?? null),
+        creatorId: sc.id === 'c_fhb' ? 'me' : existing.creatorId,
+      });
+    }
   }
   return [...byId.values()];
 }
@@ -132,6 +143,9 @@ function reducer(state, action) {
         following: seedFollowing,
         notifications: seedNotifications,
         joinedCircles: defaultJoinedCircles(),
+        circles: state.circles.map((c) =>
+          c.id === 'c_fhb' ? { ...c, creatorId: 'me' } : c
+        ),
       };
     }
 
@@ -416,6 +430,52 @@ function reducer(state, action) {
     case 'SET_DIGEST_MODE':
       return { ...state, digestMode: action.mode };
 
+    case 'UPDATE_CIRCLE': {
+      const circle = state.circles.find((c) => c.id === action.circleId);
+      if (!circle || circle.isOfficial || circle.creatorId !== 'me') return state;
+      const name = action.name?.trim();
+      if (!name || isCircleNameTaken(name, state.circles, action.circleId)) return state;
+      return {
+        ...state,
+        circles: state.circles.map((c) =>
+          c.id === action.circleId
+            ? {
+                ...c,
+                name,
+                handle: slugify(name),
+                description: action.description.trim(),
+                accentId: action.accentId,
+              }
+            : c
+        ),
+      };
+    }
+
+    case 'PIN_QUESTION_TO_CIRCLE': {
+      const circle = state.circles.find((c) => c.id === action.circleId);
+      const question = state.questions.find((q) => q.id === action.questionId);
+      if (!circle || circle.isOfficial || circle.creatorId !== 'me') return state;
+      if (!question || question.circleId !== action.circleId) return state;
+      return {
+        ...state,
+        circles: state.circles.map((c) =>
+          c.id === action.circleId ? { ...c, pinnedQuestionId: action.questionId } : c
+        ),
+      };
+    }
+
+    case 'UNPIN_QUESTION_FROM_CIRCLE': {
+      const circle = state.circles.find((c) => c.id === action.circleId);
+      if (!circle || circle.isOfficial || circle.creatorId !== 'me') return state;
+      if (circle.pinnedQuestionId !== action.questionId) return state;
+      return {
+        ...state,
+        circles: state.circles.map((c) =>
+          c.id === action.circleId ? { ...c, pinnedQuestionId: null } : c
+        ),
+      };
+    }
+
     default:
       return state;
   }
@@ -522,8 +582,61 @@ export function useSelectors() {
     return state.questions.filter((q) => q.circleId === circleId && q.createdAt >= cutoff).length;
   };
 
-  const questionsInCircle = (circleId) =>
-    sortQuestions(state.questions.filter((q) => q.circleId === circleId));
+  const pinnedQuestionInCircle = (circleId) => {
+    const circle = circleById(circleId);
+    if (!circle?.pinnedQuestionId) return null;
+    return questionById(circle.pinnedQuestionId);
+  };
+
+  const questionsInCircle = (circleId, { excludePinned = true } = {}) => {
+    const circle = circleById(circleId);
+    const pinned = excludePinned ? circle?.pinnedQuestionId : null;
+    return sortQuestions(
+      state.questions.filter((q) => q.circleId === circleId && q.id !== pinned),
+    );
+  };
+
+  const expertsInCircle = (circleId) => {
+    const expertIds = new Set();
+    for (const q of state.questions) {
+      if (q.circleId !== circleId) continue;
+      for (const a of q.answers || []) {
+        if (a.anonymous) continue;
+        const u = userById(a.authorId);
+        if (u?.verified) expertIds.add(u.id);
+      }
+    }
+    return [...expertIds].map((id) => userById(id)).filter(Boolean);
+  };
+
+  const isCircleCreator = (circleId) => {
+    const c = circleById(circleId);
+    return !!c && !c.isOfficial && c.creatorId === 'me';
+  };
+
+  const recommendedCircles = (limit = 5) => {
+    const joined = new Set(state.joinedCircles);
+    const joinedWords = new Set();
+    state.circles
+      .filter((c) => joined.has(c.id))
+      .forEach((c) => {
+        `${c.name} ${c.description}`.toLowerCase().split(/\W+/).forEach((w) => {
+          if (w.length > 3) joinedWords.add(w);
+        });
+      });
+    return state.circles
+      .filter((c) => !joined.has(c.id))
+      .map((c) => {
+        let score = c.memberCount || 0;
+        `${c.name} ${c.description}`.toLowerCase().split(/\W+/).forEach((w) => {
+          if (joinedWords.has(w)) score += 45;
+        });
+        return { c, score };
+      })
+      .sort((a, b) => b.score - a.score || b.c.createdAt - a.c.createdAt)
+      .slice(0, limit)
+      .map((x) => x.c);
+  };
 
   const feedQuestions = () => sortQuestions(state.questions);
 
@@ -582,6 +695,7 @@ export function useSelectors() {
     expertAnswerOn, hasExpertAnswer, firstAnswerLatency, newTodayCount, suggestedExperts,
     expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
     circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
-    circleQuestionCount, circleActivitySince, questionsInCircle, karmaFor,
+    circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
+    expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,
   };
 }

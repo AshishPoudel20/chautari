@@ -30,9 +30,21 @@ export function shortDuration(ms) {
   return `${d} day${d === 1 ? '' : 's'}`;
 }
 
+// Circle "created" line — short month + year, not feed-relative.
+export function formatShortDate(ts) {
+  return new Date(ts).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' });
+}
+
 // Posted within the last ~24h → eligible for the recency "new" treatment.
 export function isRecent(ts, withinMs = 24 * 60 * 60 * 1000) {
   return Date.now() - ts < withinMs;
+}
+
+// Local calendar day start — used for expert daily post caps.
+export function startOfLocalDay(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x.getTime();
 }
 
 export function compactNumber(n) {

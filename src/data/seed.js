@@ -310,6 +310,34 @@ export const seedQuestions = [
     ],
   },
   {
+    id: 'q_fhb_pin', authorId: 'u_bishal', anonymous: false, circleId: 'c_fhb',
+    title: 'PSA: stamp duty concessions for first home buyers in Victoria',
+    body: 'If you are buying your first home under $750k in Victoria, you may qualify for a full or partial stamp duty exemption — but the rules differ for off-the-plan vs established, and PR/citizenship matters for FHOG. Pinning this so newcomers see it first.',
+    photos: [], createdAt: ago(3 * H), upvotes: 19, views: 312,
+    answers: [
+      { id: 'a_fhb1', authorId: 'u_sangita', anonymous: false, body: 'Off-the-plan can be tricky — duty is often assessed on the contract price at settlement, and concessions phase in by price bracket. Always get your conveyancer to model the numbers before you sign.', createdAt: ago(2.5 * H), upvotes: 11, replies: [] },
+      { id: 'a_fhb2', authorId: 'u_raj', anonymous: false, body: 'From a tax angle: the FHOG is not taxable income, but keep your settlement statement — you will need it for capital gains later if this is not your forever home.', createdAt: ago(2 * H), upvotes: 7, replies: [] },
+    ],
+  },
+  {
+    id: 'q_fhb_1', authorId: 'u_manish', anonymous: false, circleId: 'c_fhb',
+    title: 'How much should we save before even looking at open homes?',
+    body: 'Partner and I on combined ~$115k, renting in Footscray. Everyone says 20% deposit but that feels years away. Is 10% + LMI realistic for a townhouse in Wyndham, or are we kidding ourselves?',
+    photos: [], createdAt: ago(9 * H), upvotes: 14, views: 198,
+    answers: [
+      { id: 'a_fhb3', authorId: 'u_bishal', anonymous: false, body: '10% + LMI is doable with several lenders if your employment is stable and debts are low. Run a borrowing-capacity check first — sometimes the deposit is not the bottleneck, serviceability is. Also budget ~5% for stamp duty, legal, and moving.', createdAt: ago(8 * H), upvotes: 16, replies: [] },
+    ],
+  },
+  {
+    id: 'q_fhb_2', authorId: 'u_dipesh', anonymous: false, circleId: 'c_fhb',
+    title: 'Pre-approval expired — do I need to reapply from scratch?',
+    body: 'Got pre-approval in January, found a place, but settlement got delayed and the letter expired last week. Same lender — is it a quick refresh or a whole new application?',
+    photos: [], createdAt: ago(22 * H), upvotes: 6, views: 87,
+    answers: [
+      { id: 'a_fhb4', authorId: 'u_bishal', anonymous: false, body: 'Usually a refresh if your circumstances have not changed — updated payslips and bank statements, sometimes a new credit check. Do not wait until auction day; start the refresh now.', createdAt: ago(20 * H), upvotes: 9, replies: [] },
+    ],
+  },
+  {
     id: 'q_tiny', authorId: 'u_sabina', anonymous: false, circleId: 'c_tiny',
     title: 'How long should gundruk ferment before drying?',
     body: 'Trying my first batch at home in a Melbourne winter. How many days in the jar before I sun-dry, and does indoor drying work if it is cloudy all week?',
