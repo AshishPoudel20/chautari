@@ -7,6 +7,8 @@ import Button from '../components/Button';
 import { useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
 import { useNavigationGuard } from '../utils/navigation';
+import ExpertPostQuota from '../components/ExpertPostQuota';
+import KarmaBadge from '../components/KarmaBadge';
 import { compactNumber } from '../utils/format';
 
 function formatJoined(ts) {
@@ -16,7 +18,7 @@ function formatJoined(ts) {
 }
 
 export default function MyProfileScreen({ navigation }) {
-  const { me, state } = useSelectors();
+  const { me, state, karmaFor } = useSelectors();
   const user = me();
   const { colors, shadow, spacing, font, radius } = useTheme();
   const { navigate } = useNavigationGuard(navigation);
@@ -54,6 +56,7 @@ export default function MyProfileScreen({ navigation }) {
           <View style={styles.nameRow}>
             <Text style={styles.name}>{user?.name || 'You'}</Text>
             {user?.verified ? <VerifiedBadge compact /> : null}
+            <KarmaBadge karma={karmaFor('me')} />
           </View>
           {user?.suburb ? <Text style={styles.suburb}>📍 {user.suburb}</Text> : null}
           <Text style={styles.joined}>Joined {formatJoined(user?.createdAt)}</Text>
@@ -74,7 +77,9 @@ export default function MyProfileScreen({ navigation }) {
 
         {user?.verified ? (
           <View style={styles.verifiedNote}>
-            <Text style={styles.verifiedNoteText}>✓ Verified expert · posts capped at 2/day</Text>
+            <Text style={styles.verifiedNoteText}>
+              ✓ Verified expert · <ExpertPostQuota variant="inline" />
+            </Text>
           </View>
         ) : null}
 
