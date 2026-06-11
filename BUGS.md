@@ -12,15 +12,15 @@ RootNavigator (native-stack)
     ├── Main (bottom-tabs, headerShown: false)
     │   ├── Home
     │   ├── Circles (CirclesDirectoryScreen)
-    │   ├── Alerts (NotificationsScreen)
+    │   ├── Experts (ExpertsStack → ExpertDirectory / ExpertProfile)
     │   └── Profile (MyProfileScreen)
     ├── QuestionDetail
-    ├── Circles / CircleDetail / CreateCircle / ExpertDirectory
+    ├── CircleDetail / CreateCircle / EditCircle
     ├── Search
-    ├── ExpertProfile / UserProfile
+    ├── Notifications (pushed from Home bell)
+    ├── ExpertProfile / UserProfile (root stack — opened from feeds, search, notifications)
     ├── VerifiedApplication / EditProfile / Settings
     ├── Help / Terms / Privacy / About / DeleteAccount
-    ├── Notifications (duplicate of Alerts tab — unused entry)
     └── [modal] AskComposer / AnswerComposer / Report / ImageViewer
 ```
 
@@ -48,7 +48,7 @@ RootNavigator (native-stack)
 
 | ID | Reason |
 |----|--------|
-| NAV-D1 | Root stack registers `Notifications` screen duplicating Alerts tab. Nothing navigates to it today; removing is harmless cleanup but not user-visible. Left registered to avoid scope creep. |
+| NAV-D1 | **Fixed (Pass 8)** | Notifications moved off tab bar; pushed from Home bell. Alerts tab removed. |
 | ANIM-D1 | Splash → auth → main navigator swap replaces screen tree on auth state change. Intentional; smoothing would need a cross-fade overlay (new UI work). |
 | ANIM-D2 | `react-native-reanimated` not added — existing `Animated` + native driver covers this pass; reanimated only needed for gesture-linked motion we don't have. |
 

@@ -90,9 +90,6 @@ export default function CirclesDirectoryScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topbar}>
         <Text style={styles.title}>Circles</Text>
-        <Pressable onPress={() => navigate('ExpertDirectory')} hitSlop={10}>
-          <Text style={styles.expertsLink}>Experts</Text>
-        </Pressable>
       </View>
 
       <View style={styles.searchWrap}>
@@ -141,9 +138,8 @@ export default function CirclesDirectoryScreen({ navigation }) {
 
 const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
+  topbar: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text },
-  expertsLink: { color: colors.primary, fontWeight: '700', fontSize: font.small },
   searchWrap: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   search: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11, color: colors.text, fontSize: font.body },
   createRow: { marginHorizontal: spacing.lg, marginBottom: spacing.md, paddingVertical: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, borderStyle: 'dashed' },

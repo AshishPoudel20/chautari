@@ -22,6 +22,11 @@ The app launches to an animated splash, then the welcome/onboarding flow. State 
 - `npx expo export --platform ios` bundles the full module graph with **no errors** (1039 modules).
 - `npx expo start` boots Metro and serves on `:8081`.
 
+### Pass 8 — Navigation restructure
+- **Home header** — wordmark left; top-right **search** then **bell** (rightmost). Bell pushes **Activity** (notifications) on the root stack with unread count badge; mark-read-on-view unchanged.
+- **Tab bar** — **Home · Circles · Experts · Profile**. Alerts tab removed; Experts tab hosts `ExpertsStack` (directory → expert profile within tab). Verified-check tab icon.
+- **Re-plumbing** — digest tap and in-app notification routes target `Main` → `Circles` or `Experts`; orphaned root `Circles` / `ExpertDirectory` screens removed.
+
 ### Pass 7 — Circle dark-mode accents, newcomer gate
 - **Circle colors (dark mode)** — accents are palette keys resolved through one theme-aware map (`light` / `dark` hex per key + contrast clamp on dark surfaces). All icon, chip, banner, swatch, and recommendation surfaces use `resolveCircleAccent`. Root cause of near-black circles: dark variants were derived too dim from light hex and some surfaces applied low-opacity light fills on dark backgrounds.
 - **Newcomer checklist gate** — onboarding toggle “I'm new to Australia” stores `newcomer` + timestamp. First-30-Days checklist (For You card, My Profile row, screen) shows only when newcomer is active and within `NEWCOMER_WINDOW_DAYS` (60). Demo user hydrates with newcomer on. Dismiss on the feed card still applies.
@@ -167,7 +172,8 @@ src/
     network.js              # mock connectivity (drives the offline demo)
   navigation/
     RootNavigator.js        # splash → auth stack ↔ signed-in stack (+ modals)
-    MainTabs.js             # Home · Experts · Alerts · Profile
+    MainTabs.js             # Home · Circles · Experts · Profile
+    ExpertsStack.js         # Expert directory + profiles (tab stack)
   components/
     QuestionCard, UpvoteButton, ExpertMarker, FollowButton, VerifiedBadge,
     Avatar, Button, ProfileView, Motif, Motion (FadeRise/PulseDot),

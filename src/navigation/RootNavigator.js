@@ -15,11 +15,9 @@ import MainTabs from './MainTabs';
 import QuestionDetailScreen from '../screens/QuestionDetailScreen';
 import AskComposerScreen from '../screens/AskComposerScreen';
 import AnswerComposerScreen from '../screens/AnswerComposerScreen';
-import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
 import CircleDetailScreen from '../screens/CircleDetailScreen';
 import CreateCircleScreen from '../screens/CreateCircleScreen';
 import EditCircleScreen from '../screens/EditCircleScreen';
-import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
@@ -106,16 +104,14 @@ function AppNavigator() {
           <Stack.Group>
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false, animation: 'fade' }} />
             <Stack.Screen name="QuestionDetail" component={QuestionDetailScreen} options={{ title: 'Question' }} />
-            <Stack.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles' }} />
             <Stack.Screen name="CircleDetail" component={CircleDetailScreen} options={{ title: '' }} />
             <Stack.Screen name="CreateCircle" component={CreateCircleScreen} options={{ title: 'Create a Circle' }} />
             <Stack.Screen name="EditCircle" component={EditCircleScreen} options={{ title: 'Edit circle' }} />
-            <Stack.Screen name="ExpertDirectory" component={ExpertDirectoryScreen} options={{ title: 'Experts' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
             <Stack.Screen name="ExpertProfile" component={ExpertProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Expert' })} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Profile' })} />
             <Stack.Screen name="VerifiedApplication" component={VerifiedApplicationScreen} options={{ title: 'Become a Verified Expert' }} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Activity' }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
             <Stack.Screen name="MyPosts" component={MyPostsScreen} options={{ title: 'My Posts' }} />
             <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Posts' }} />

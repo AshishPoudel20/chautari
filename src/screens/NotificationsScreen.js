@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import { EmptyState } from '../components/ui';
@@ -53,7 +52,7 @@ export default function NotificationsScreen({ navigation }) {
       const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
       navigate(screen, { userId: n.actorId, title: u?.name });
     } else if (n.type === 'expert') {
-      navigate('ExpertDirectory');
+      navigate('Main', { screen: 'Experts' });
     } else if (n.type === 'digest') {
       navigate('Main', { screen: 'Circles' });
     } else {
@@ -93,8 +92,7 @@ export default function NotificationsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.topbar}><Text style={styles.title}>Activity</Text></View>
+    <View style={styles.container}>
       <SectionList
         sections={sections}
         keyExtractor={(n) => n.id}
@@ -104,14 +102,12 @@ export default function NotificationsScreen({ navigation }) {
         ListEmptyComponent={<EmptyState icon="🔔" title="You're all caught up" subtitle="Answers, follows and milestones will show up here as the community responds." />}
         contentContainerStyle={{ paddingBottom: spacing.xl }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  topbar: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  title: { fontSize: font.title, fontWeight: '800', color: colors.text },
   sectionHeader: { fontSize: font.tiny, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8, textTransform: 'uppercase', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border },
   rowUnread: { backgroundColor: colors.surfaceAlt },
