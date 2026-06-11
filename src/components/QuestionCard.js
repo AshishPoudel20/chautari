@@ -5,6 +5,7 @@ import VerifiedBadge from './VerifiedBadge';
 import ExpertMarker from './ExpertMarker';
 import UpvoteButton from './UpvoteButton';
 import CircleChip from './CircleChip';
+import ResolvedChip from './ResolvedChip';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor, shortDuration } from '../utils/format';
 
@@ -46,7 +47,10 @@ function QuestionCard({
           ) : null}
         </View>
 
-        <Text style={styles.title} numberOfLines={2}>{question.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={[styles.title, question.resolved && { flex: 1 }]} numberOfLines={2}>{question.title}</Text>
+          {question.resolved ? <ResolvedChip compact style={styles.resolvedChip} /> : null}
+        </View>
         <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
         {(authorIsExpert || hasExpert || answeredFast) && (
@@ -106,7 +110,9 @@ const createStyles = (colors, shadow, spacing, radius, font, line) => StyleSheet
   meta: { color: colors.textMuted, fontSize: font.tiny, fontWeight: '600' },
   metaDot: { color: colors.textFaint, fontSize: font.tiny },
 
-  title: { fontSize: font.subtitle, fontWeight: '800', color: colors.text, marginTop: spacing.md, marginBottom: 5, lineHeight: 23 },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginTop: spacing.md, marginBottom: 5 },
+  title: { fontSize: font.subtitle, fontWeight: '800', color: colors.text, lineHeight: 23, flexShrink: 1 },
+  resolvedChip: { marginTop: 2 },
   body: { fontSize: font.caption, color: colors.textMuted, lineHeight: line.caption },
 
   signalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },

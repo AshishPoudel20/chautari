@@ -22,6 +22,13 @@ The app launches to an animated splash, then the welcome/onboarding flow. State 
 - `npx expo export --platform ios` bundles the full module graph with **no errors** (1039 modules).
 - `npx expo start` boots Metro and serves on `:8081`.
 
+### Pass 5 — Arrival checklist, founding badge, mark resolved
+- **First 30 Days checklist** — 10 newcomer tasks (TFN, bank, SIM, Myki, health cover, GP, renting, licence, job hunt, emergency numbers). Featured card on For You (dismissible, persists in AsyncStorage) + permanent row on My Profile with progress. Each item deep-links to a seeded community thread; back returns to the checklist. Completion triggers a saffron celebration moment.
+- **Founding Member badge** — mock flag for the first 1,000 users (`isFoundingMember`). Current user + ~half of seed users. Quiet saffron chip on **profiles only** (after Verified badge); tap opens info sheet. Never shown on feed cards or answers.
+- **Mark resolved** — question-level only (not best-answer). Asker sees control once ≥1 answer exists; ✓ Resolved chip on detail + all feed/search cards. Toggle to un-resolve with confirm. No karma changes; threads stay visible and answerable. Seed marks 8 threads resolved (most checklist-linked).
+
+**Checklist → thread mapping:** TFN `q_chk_tfn` · Bank `q_chk_bank` · SIM `q17` · Myki `q_chk_myki` · Health cover `q_chk_health` · GP `q3` · Renting `q_chk_rent` · Licence `q14` · Job hunt `q21` · Emergency `q_chk_emergency`
+
 ### Pass 4 — Circle polish (rich hub, creator tools, recommendations)
 - **Circle hub** — each circle detail is one scroll surface: accent-gradient banner with Nepali motif overlay (richer on Official circles), **collapsing header** (Reanimated) into a compact nav bar, About (collapsible description, creator link, created date), **Experts Here** row (verified experts with ≥1 answer in the circle; hidden if none), **pinned question** (max one, accent edge + quiet marker), then the question feed. FAB pre-selects the circle in Ask.
 - **Creator tools** — circle creators see ⚙ on their circle page (not on Official circles). **Edit circle**: name (uniqueness + similar suggestions), description, accent preset — changes propagate everywhere. **Pin / unpin** any question in their circle from the question ⋯ menu (one max; toast on change). Seed: mock user is creator of **First Home Buyers AU** with pinned PSA + sample questions.
