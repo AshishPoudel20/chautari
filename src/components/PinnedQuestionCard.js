@@ -5,8 +5,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { circleAccentColor } from '../data/circles';
 
 export default function PinnedQuestionCard({
-  question, author, circle, answerCount, expert, firstAnswerMs,
-  onPress, onCirclePress, onUpvoteToggle, upvoteActive,
+  question, author, circle, answerCount, expert,
+  onPress, onCirclePress,
 }) {
   const { colors, spacing, font, radius, isDark } = useTheme();
   const accent = circle ? circleAccentColor(circle, isDark) : null;
@@ -25,11 +25,8 @@ export default function PinnedQuestionCard({
           circle={circle}
           answerCount={answerCount}
           expert={expert}
-          firstAnswerMs={firstAnswerMs}
           onPress={onPress}
           onCirclePress={onCirclePress}
-          onUpvoteToggle={onUpvoteToggle}
-          upvoteActive={upvoteActive}
         />
       </View>
     </View>

@@ -7,7 +7,7 @@ import FoundingMemberBadge from './FoundingMemberBadge';
 import Button from './Button';
 import QuestionCard from './QuestionCard';
 import { EmptyState } from './ui';
-import { useData, useSelectors } from '../data/store';
+import { useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { categoryName } from '../data/categories';
 import { compactNumber } from '../utils/format';
@@ -16,8 +16,7 @@ import { useTheme } from '../theme/ThemeContext';
 // Shared profile layout for My / Other / Expert profiles.
 // `actions` is rendered under the stats row; `mode` tweaks copy.
 export default function ProfileView({ userId, navigation, actions, showFollowers }) {
-  const { dispatch } = useData();
-  const { userById, circleById, questionsByAuthor, answerCount, state, expertAnswerOn, firstAnswerLatency, hasUpvotedQuestion, karmaFor } = useSelectors();
+  const { userById, circleById, questionsByAuthor, answerCount, state, expertAnswerOn, karmaFor } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
@@ -83,13 +82,10 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
         expert={expertAnswerOn(item)?.expert || null}
-        firstAnswerMs={firstAnswerLatency(item)}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
-        onUpvoteToggle={(questionId) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId })}
-        upvoteActive={hasUpvotedQuestion(item.id)}
       />
     ),
-    [user, circleById, answerCount, expertAnswerOn, firstAnswerLatency, navigate, dispatch, hasUpvotedQuestion],
+    [user, circleById, answerCount, expertAnswerOn, navigate],
   );
 
   return (

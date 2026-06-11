@@ -19,17 +19,6 @@ export function timeAgo(ts) {
   return `${Math.floor(d / 365)} yr ago`;
 }
 
-// Tight duration label for the "answered fast" cue: "18 min", "3 hr", "2 days".
-export function shortDuration(ms) {
-  const m = Math.round(ms / 60000);
-  if (m < 1) return 'under a minute';
-  if (m < 60) return `${m} min`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h} hr`;
-  const d = Math.round(h / 24);
-  return `${d} day${d === 1 ? '' : 's'}`;
-}
-
 // Circle "created" line — short month + year, not feed-relative.
 export function formatShortDate(ts) {
   return new Date(ts).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' });

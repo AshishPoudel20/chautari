@@ -22,13 +22,11 @@ export default function QuestionFeedList({
   ListEmptyComponent,
   contentContainerStyle,
   refreshControl,
-  onUpvoteToggle,
-  hasUpvotedQuestion,
   renderCardFooter,
   insertAfterIndex = null,
   InsertComponent = null,
 }) {
-  const { userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency } = useSelectors();
+  const { userById, circleById, answerCount, expertAnswerOn } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { spacing } = useTheme();
 
@@ -48,11 +46,8 @@ export default function QuestionFeedList({
             circle={circleById(item.circleId)}
             answerCount={answerCount(item)}
             expert={ei?.expert || null}
-            firstAnswerMs={firstAnswerLatency(item)}
             onPress={() => openQuestion(item.id)}
             onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
-            onUpvoteToggle={onUpvoteToggle}
-            upvoteActive={hasUpvotedQuestion?.(item.id)}
           />
           {renderCardFooter ? renderCardFooter(item.id) : null}
         </FadeRise>
@@ -67,7 +62,7 @@ export default function QuestionFeedList({
       }
       return card;
     },
-    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, navigate, replayKey, onUpvoteToggle, hasUpvotedQuestion, renderCardFooter, insertAfterIndex, InsertComponent],
+    [userById, circleById, answerCount, expertAnswerOn, openQuestion, navigate, replayKey, renderCardFooter, insertAfterIndex, InsertComponent],
   );
 
   const empty = useMemo(

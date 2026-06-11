@@ -8,7 +8,7 @@ import { useToast } from '../components/Toast';
 
 export default function SavedPostsScreen({ navigation }) {
   const { dispatch } = useData();
-  const { savedQuestionsList, hasUpvotedQuestion } = useSelectors();
+  const { savedQuestionsList } = useSelectors();
   const { colors, spacing, font, radius } = useTheme();
   const showToast = useToast();
   const data = savedQuestionsList();
@@ -33,8 +33,6 @@ export default function SavedPostsScreen({ navigation }) {
       <QuestionFeedList
         data={data}
         navigation={navigation}
-        onUpvoteToggle={(questionId) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId })}
-        hasUpvotedQuestion={hasUpvotedQuestion}
         renderCardFooter={renderUnsave}
         ListEmptyComponent={(
           <EmptyState

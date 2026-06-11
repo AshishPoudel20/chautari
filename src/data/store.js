@@ -585,13 +585,6 @@ export function useSelectors() {
   };
   const hasExpertAnswer = (q) => !!expertAnswerOn(q);
 
-  // Latency from question posted to its first answer (for the "answered fast" cue).
-  const firstAnswerLatency = (q) => {
-    if (!q.answers || q.answers.length === 0) return null;
-    const first = Math.min(...q.answers.map((a) => a.createdAt));
-    return Math.max(0, first - q.createdAt);
-  };
-
   // Questions posted in the last 24h — drives the "X new today" live pill.
   const newTodayCount = () => {
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -735,7 +728,7 @@ export function useSelectors() {
     hasUpvotedQuestion, hasUpvotedAnswer, hasUpvotedReply, isSaved,
     questionById, answerCount, feedQuestions, forYouFeed, followingFeed, experts,
     myQuestions, questionsByAuthor, expertAuthoredQuestions, savedQuestionsList, unreadNotifs,
-    expertAnswerOn, hasExpertAnswer, firstAnswerLatency, newTodayCount, suggestedExperts,
+    expertAnswerOn, hasExpertAnswer, newTodayCount, suggestedExperts,
     expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
     circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,

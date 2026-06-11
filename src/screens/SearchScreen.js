@@ -30,7 +30,7 @@ export default function SearchScreen({ navigation, route }) {
   const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
 
   const { dispatch } = useData();
-  const { feedQuestions, userById, circleById, state, answerCount, expertAnswerOn, firstAnswerLatency, hasUpvotedQuestion } = useSelectors();
+  const { feedQuestions, userById, circleById, state, answerCount, expertAnswerOn } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const [query, setQuery] = useState('');
   const [circleFilter, setCircleFilter] = useState(null);
@@ -78,13 +78,10 @@ export default function SearchScreen({ navigation, route }) {
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
         expert={expertAnswerOn(item)?.expert || null}
-        firstAnswerMs={firstAnswerLatency(item)}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
-        onUpvoteToggle={(questionId) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId })}
-        upvoteActive={hasUpvotedQuestion(item.id)}
       />
     ),
-    [userById, circleById, answerCount, expertAnswerOn, firstAnswerLatency, navigate, dispatch, hasUpvotedQuestion],
+    [userById, circleById, answerCount, expertAnswerOn, navigate],
   );
 
   return (

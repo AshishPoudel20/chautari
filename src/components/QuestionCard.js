@@ -1,131 +1,96 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Avatar from './Avatar';
-import VerifiedBadge from './VerifiedBadge';
-import ExpertMarker from './ExpertMarker';
-import UpvoteButton from './UpvoteButton';
 import CircleChip from './CircleChip';
-import ResolvedChip from './ResolvedChip';
 import { useTheme } from '../theme/ThemeContext';
-import { timeAgo, compactNumber, displayAuthor, shortDuration } from '../utils/format';
-
-const FAST_ANSWER_MS = 3 * 60 * 60 * 1000;
+import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
 
 function QuestionCard({
-  question, author, circle, answerCount, expert, firstAnswerMs,
-  onPress, onCirclePress, onUpvoteToggle, upvoteActive,
+  question, author, circle, expert,
+  onPress, onCirclePress,
 }) {
-  const { colors, shadow, spacing, radius, font, line } = useTheme();
-  const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font, line), [colors, shadow, spacing, radius, font, line]);
+  const { colors, shadow, spacing, radius, font } = useTheme();
+  const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font), [colors, shadow, spacing, radius, font]);
 
   const a = displayAuthor(author, question.anonymous);
   const hasExpert = !!expert;
-  const authorIsExpert = !question.anonymous && !!author?.verified;
-  const highlighted = authorIsExpert || hasExpert;
-  const answeredFast = firstAnswerMs != null && firstAnswerMs <= FAST_ANSWER_MS;
+  const rawAnswers = question.answers?.length || 0;
 
   return (
-    <View style={[styles.card, highlighted && styles.cardExpert]}>
-      {highlighted && <View style={styles.accentBar} />}
-
+    <View style={styles.card}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.tapArea, pressed && styles.pressed]}>
-        <View style={styles.headerRow}>
-          <Avatar name={a.name} photo={a.photo} anon={a.anon} size={38} />
-          <View style={{ flex: 1, marginLeft: spacing.sm }}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name} numberOfLines={1}>{a.name}</Text>
-              {a.verified ? <VerifiedBadge compact /> : null}
-            </View>
-            <View style={styles.metaRow}>
-              {a.suburb ? <Text style={styles.meta}>{a.suburb}</Text> : null}
-              {a.suburb ? <Text style={styles.metaDot}>·</Text> : null}
-              <Text style={styles.meta}>{timeAgo(question.createdAt)}</Text>
-            </View>
-          </View>
-          {circle ? (
-            <CircleChip circle={circle} compact onPress={onCirclePress} showOfficial />
-          ) : null}
+        <View style={styles.authorRow}>
+          <Avatar name={a.name} photo={a.photo} anon={a.anon} size={32} />
+          <Text style={styles.authorName} numberOfLines={1}>{a.name}</Text>
+          <Text style={styles.metaDot}>·</Text>
+          <Text style={styles.metaTime}>{timeAgo(question.createdAt)}</Text>
         </View>
 
         <View style={styles.titleRow}>
-          <Text style={[styles.title, question.resolved && { flex: 1 }]} numberOfLines={2}>{question.title}</Text>
-          {question.resolved ? <ResolvedChip compact style={styles.resolvedChip} /> : null}
+          {question.resolved ? (
+            <Text style={styles.resolvedMark}>✓</Text>
+          ) : null}
+          <Text style={styles.title} numberOfLines={2}>{question.title}</Text>
         </View>
-        <Text style={styles.body} numberOfLines={2}>{question.body}</Text>
 
-        {(authorIsExpert || hasExpert || answeredFast) && (
-          <View style={styles.signalRow}>
-            {authorIsExpert ? <ExpertMarker name={a.name?.split(' ')[0]} compact mode="posted" /> : null}
-            {hasExpert ? <ExpertMarker name={expert.name?.split(' ')[0]} compact mode="answered" /> : null}
-            {answeredFast ? (
-              <View style={styles.fastPill}>
-                <Text style={styles.fastText}>⚡ First answer in {shortDuration(firstAnswerMs)}</Text>
-              </View>
-            ) : null}
-          </View>
-        )}
-      </Pressable>
+        <Text style={styles.body} numberOfLines={1}>{question.body}</Text>
 
-      <View style={styles.footerRow}>
-        {onUpvoteToggle ? (
-          <UpvoteButton
-            count={question.upvotes}
-            active={upvoteActive}
-            onToggle={() => onUpvoteToggle(question.id)}
-          />
-        ) : (
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>▲</Text>
-            <Text style={styles.statText}>{compactNumber(question.upvotes)}</Text>
+        {circle ? (
+          <View style={styles.chipRow}>
+            <CircleChip circle={circle} compact onPress={onCirclePress} />
           </View>
-        )}
-        <View style={styles.stat}>
-          <Text style={[styles.statIcon, answerCount > 0 && styles.statIconActive]}>💬</Text>
-          <Text style={[styles.statText, answerCount > 0 && styles.statTextActive]}>
-            {answerCount} {answerCount === 1 ? 'answer' : 'answers'}
+        ) : null}
+
+        <Text style={styles.footer}>
+          <Text style={[styles.footerStat, hasExpert && styles.footerExpert]}>
+            {rawAnswers} {rawAnswers === 1 ? 'answer' : 'answers'}
+            {hasExpert ? ' ✓' : ''}
           </Text>
-        </View>
-        <View style={{ flex: 1 }} />
-        <Text style={styles.views}>{compactNumber(question.views)} views</Text>
-      </View>
+          <Text style={styles.footerDot}> · </Text>
+          <Text style={styles.footerStat}>{compactNumber(question.upvotes)} upvotes</Text>
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
-const createStyles = (colors, shadow, spacing, radius, font, line) => StyleSheet.create({
+const createStyles = (colors, shadow, spacing, radius, font) => StyleSheet.create({
   card: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg,
-    marginHorizontal: spacing.lg, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border,
-    overflow: 'hidden', ...shadow.card,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    paddingBottom: spacing.md + 2,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadow.card,
   },
-  cardExpert: { borderColor: colors.expertCardBorder, ...shadow.raised },
-  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, backgroundColor: colors.secondary },
-  tapArea: { marginBottom: spacing.md },
+  tapArea: {},
   pressed: { opacity: 0.96 },
 
-  headerRow: { flexDirection: 'row', alignItems: 'center' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontWeight: '800', fontSize: font.caption, color: colors.text, maxWidth: 150 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  meta: { color: colors.textMuted, fontSize: font.tiny, fontWeight: '600' },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  authorName: { fontWeight: '700', fontSize: font.caption, color: colors.text, flexShrink: 1 },
   metaDot: { color: colors.textFaint, fontSize: font.tiny },
+  metaTime: { color: colors.textMuted, fontSize: font.tiny, fontWeight: '600' },
 
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginTop: spacing.md, marginBottom: 5 },
-  title: { fontSize: font.subtitle, fontWeight: '800', color: colors.text, lineHeight: 23, flexShrink: 1 },
-  resolvedChip: { marginTop: 2 },
-  body: { fontSize: font.caption, color: colors.textMuted, lineHeight: line.caption },
+  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: spacing.sm },
+  resolvedMark: { color: colors.success, fontSize: font.body, fontWeight: '900', marginTop: 2 },
+  title: { flex: 1, fontSize: font.subtitle, fontWeight: '800', color: colors.text, lineHeight: 23 },
 
-  signalRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
-  fastPill: { backgroundColor: colors.successTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill },
-  fastText: { color: colors.success, fontSize: font.tiny, fontWeight: '800' },
+  body: {
+    fontSize: font.caption,
+    color: colors.textMuted,
+    lineHeight: 20,
+    marginTop: spacing.xs,
+  },
 
-  footerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  stat: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  statIcon: { fontSize: font.caption, color: colors.textFaint },
-  statIconActive: { color: colors.text },
-  statText: { color: colors.textMuted, fontSize: font.caption, fontWeight: '700' },
-  statTextActive: { color: colors.text },
-  views: { color: colors.textFaint, fontSize: font.tiny, fontWeight: '600' },
+  chipRow: { marginTop: spacing.sm },
+
+  footer: { marginTop: spacing.md, fontSize: font.caption, fontWeight: '700' },
+  footerStat: { color: colors.textMuted },
+  footerExpert: { color: colors.secondaryDark },
+  footerDot: { color: colors.textFaint },
 });
 
 export default React.memo(QuestionCard);

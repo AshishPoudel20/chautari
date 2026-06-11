@@ -14,15 +14,15 @@ export default function CategoryFeedScreen({ navigation, route }) {
   const categoryId = route.params?.categoryId;
   const category = categoryById(categoryId);
   const { dispatch } = useData();
-  const { state, hasUpvotedQuestion } = useSelectors();
+  const { feedQuestions } = useSelectors();
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: category?.name || 'Category' });
   }, [navigation, category?.name]);
 
   const data = useMemo(
-    () => state.questions.filter((q) => q.category === categoryId),
-    [state.questions, categoryId],
+    () => feedQuestions().filter((q) => q.category === categoryId),
+    [feedQuestions, categoryId],
   );
 
   const header = (
@@ -40,8 +40,6 @@ export default function CategoryFeedScreen({ navigation, route }) {
         data={data}
         navigation={navigation}
         ListHeaderComponent={header}
-        onUpvoteToggle={(questionId) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId })}
-        hasUpvotedQuestion={hasUpvotedQuestion}
       />
     </View>
   );

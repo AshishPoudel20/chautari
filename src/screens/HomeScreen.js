@@ -19,7 +19,7 @@ import { professionLabel } from '../data/categories';
 export default function HomeScreen({ navigation }) {
   const {
     userById, me, forYouFeed, followingFeed,
-    newTodayCount, suggestedExperts, hasUpvotedQuestion, canExpertPostToday,
+    newTodayCount, suggestedExperts, canExpertPostToday,
     expertPostsToday, expertDailyPostLimit, checklistDoneCount, state,
   } = useSelectors();
   const { dispatch } = useData();
@@ -139,8 +139,6 @@ export default function HomeScreen({ navigation }) {
           ListHeaderComponent={header}
           insertAfterIndex={tab === 'foryou' && data.length > 5 ? 4 : null}
           InsertComponent={tab === 'foryou' ? () => <CirclesRecommendRow navigation={navigation} /> : null}
-          onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
-          hasUpvotedQuestion={hasUpvotedQuestion}
           ListEmptyComponent={
             tab === 'following' ? (
               <FollowingEmpty experts={suggestedExperts(3)} navigate={navigate} userById={userById} />
