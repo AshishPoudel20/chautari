@@ -36,6 +36,7 @@ import DeleteAccountScreen from '../screens/DeleteAccountScreen';
 import ImageViewerScreen from '../screens/ImageViewerScreen';
 import MyPostsScreen from '../screens/MyPostsScreen';
 import SavedPostsScreen from '../screens/SavedPostsScreen';
+import ArrivalChecklistScreen from '../screens/ArrivalChecklistScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -118,6 +119,7 @@ function AppNavigator() {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
             <Stack.Screen name="MyPosts" component={MyPostsScreen} options={{ title: 'My Posts' }} />
             <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Posts' }} />
+            <Stack.Screen name="ArrivalChecklist" component={ArrivalChecklistScreen} options={{ title: 'First 30 Days' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
             <Stack.Screen name="Help" component={HelpScreen} options={{ title: 'Help & FAQ' }} />
             <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms & Conditions' }} />

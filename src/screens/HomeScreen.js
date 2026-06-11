@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionFeedList from '../components/QuestionFeedList';
 import CirclesRecommendRow from '../components/CirclesRecommendRow';
+import ChecklistFeedCard from '../components/ChecklistFeedCard';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import FollowButton from '../components/FollowButton';
@@ -19,7 +20,7 @@ export default function HomeScreen({ navigation }) {
   const {
     userById, me, forYouFeed, followingFeed,
     newTodayCount, suggestedExperts, hasUpvotedQuestion, canExpertPostToday,
-    expertPostsToday, expertDailyPostLimit,
+    expertPostsToday, expertDailyPostLimit, checklistDoneCount, state,
   } = useSelectors();
   const { dispatch } = useData();
   const { online } = useNetwork();
@@ -66,6 +67,8 @@ export default function HomeScreen({ navigation }) {
     }, 650);
   }, []);
 
+  const showChecklistCard = tab === 'foryou' && !state.checklistCardDismissed;
+
   const header = (
     <View style={styles.headerBlock}>
       <View style={styles.segment}>
@@ -90,6 +93,13 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.liveText}>{newToday} new {newToday === 1 ? 'question' : 'questions'} today</Text>
         </View>
       )}
+      {showChecklistCard ? (
+        <ChecklistFeedCard
+          doneCount={checklistDoneCount()}
+          onOpen={() => navigate('ArrivalChecklist')}
+          onDismiss={() => dispatch({ type: 'DISMISS_CHECKLIST_CARD' })}
+        />
+      ) : null}
     </View>
   );
 

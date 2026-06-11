@@ -31,7 +31,12 @@ function mergeQuestions(persisted = []) {
   for (const sq of seedQuestions) {
     const existing = byId.get(sq.id);
     const normalized = normalizeQuestion(sq);
-    byId.set(sq.id, existing ? { ...existing, createdAt: normalized.createdAt, circleId: normalized.circleId } : normalized);
+    byId.set(sq.id, existing ? {
+      ...existing,
+      createdAt: normalized.createdAt,
+      circleId: normalized.circleId,
+      resolved: existing.resolved ?? normalized.resolved ?? false,
+    } : normalized);
   }
   return sortQuestions([...byId.values()]);
 }
@@ -73,6 +78,7 @@ function mergeUsers(persisted = []) {
         bio: su.bio,
         name: su.name,
         suburb: su.suburb,
+        isFoundingMember: existing.isFoundingMember ?? su.isFoundingMember ?? false,
       });
     }
   }
@@ -95,6 +101,8 @@ function buildInitialState() {
     expertApplication: null, // { category, customCategory, status }
     expertUpvoteBonuses: { u_bibek: 2, u_pratima: 1, u_dipesh: 3, u_sunita: 1 },
     digestMode: 'daily', // 'daily' | 'weekly' | 'off'
+    checklistDone: [],
+    checklistCardDismissed: false,
   };
 }
 
@@ -106,7 +114,9 @@ function reducer(state, action) {
         ...state,
         ...p,
         booted: true,
-        users: mergeUsers(p.users || []),
+        users: mergeUsers(p.users || []).map((u) =>
+          u.id === 'me' ? { ...u, isFoundingMember: u.isFoundingMember ?? true } : u
+        ),
         questions: mergeQuestions(p.questions || []),
         myUpvotes: {
           questions: [],
@@ -119,6 +129,8 @@ function reducer(state, action) {
         joinedCircles: p.joinedCircles?.length ? p.joinedCircles : defaultJoinedCircles(),
         expertUpvoteBonuses: p.expertUpvoteBonuses || {},
         digestMode: p.digestMode || 'daily',
+        checklistDone: p.checklistDone || [],
+        checklistCardDismissed: !!p.checklistCardDismissed,
       };
     }
     case 'BOOTED':
@@ -135,6 +147,7 @@ function reducer(state, action) {
         verified: false,
         followers: 7,
         createdAt: Date.now(),
+        isFoundingMember: true,
       };
       return {
         ...state,
@@ -464,6 +477,32 @@ function reducer(state, action) {
       };
     }
 
+    case 'TOGGLE_CHECKLIST_ITEM': {
+      const has = state.checklistDone.includes(action.itemId);
+      return {
+        ...state,
+        checklistDone: has
+          ? state.checklistDone.filter((id) => id !== action.itemId)
+          : [...state.checklistDone, action.itemId],
+      };
+    }
+
+    case 'DISMISS_CHECKLIST_CARD':
+      return { ...state, checklistCardDismissed: true };
+
+    case 'TOGGLE_QUESTION_RESOLVED': {
+      const q = state.questions.find((x) => x.id === action.questionId);
+      if (!q) return state;
+      const isOwner = q.authorId === 'me' || q.authorId === 'me_seed_anon';
+      if (!isOwner) return state;
+      return {
+        ...state,
+        questions: state.questions.map((x) =>
+          x.id === action.questionId ? { ...x, resolved: !x.resolved } : x
+        ),
+      };
+    }
+
     case 'UNPIN_QUESTION_FROM_CIRCLE': {
       const circle = state.circles.find((c) => c.id === action.circleId);
       if (!circle || circle.isOfficial || circle.creatorId !== 'me') return state;
@@ -687,6 +726,10 @@ export function useSelectors() {
   };
   const unreadNotifs = () => state.notifications.filter((n) => !n.read).length;
 
+  const isChecklistItemDone = (itemId) => state.checklistDone.includes(itemId);
+  const checklistDoneCount = () => state.checklistDone.length;
+  const isQuestionOwner = (q) => !!q && (q.authorId === 'me' || q.authorId === 'me_seed_anon');
+
   return {
     state, userById, me, isFollowing,
     hasUpvotedQuestion, hasUpvotedAnswer, hasUpvotedReply, isSaved,
@@ -697,5 +740,6 @@ export function useSelectors() {
     circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,
+    isChecklistItemDone, checklistDoneCount, isQuestionOwner,
   };
 }

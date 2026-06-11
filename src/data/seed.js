@@ -19,25 +19,25 @@ export const seedUsers = [
     id: 'u_sunita', name: 'Sunita Gurung', suburb: 'Point Cook', photo: null,
     bio: 'Registered Migration Agent (MARA 1899XXX). 8+ years helping students and skilled migrants across Victoria. Straight answers, no false hope.',
     profession: 'Migration Agent (MARA)', verified: true, verifiedCategory: 'migration',
-    contact: 'mailto:sunita@example.com', followers: 412, createdAt: ago(120 * D),
+    contact: 'mailto:sunita@example.com', followers: 412, createdAt: ago(120 * D), isFoundingMember: true,
   },
   {
     id: 'u_raj', name: 'Raj Shrestha', suburb: 'Box Hill', photo: null,
     bio: 'CPA accountant. Tax returns, ABN, super & small-business advice for the Nepali community. Tax time does not have to be scary.',
     profession: 'Accountant (CPA)', verified: true, verifiedCategory: 'tax_super',
-    contact: 'mailto:raj@example.com', followers: 287, createdAt: ago(95 * D),
+    contact: 'mailto:raj@example.com', followers: 287, createdAt: ago(95 * D), isFoundingMember: true,
   },
   {
     id: 'u_anita', name: 'Dr. Anita Thapa', suburb: 'Clayton', photo: null,
     bio: 'General Practitioner (RACGP). Bulk-billing clinic near Monash. Happy to point you toward the right care and away from Dr. Google.',
     profession: 'GP (RACGP)', verified: true, verifiedCategory: 'health',
-    contact: 'mailto:anita@example.com', followers: 521, createdAt: ago(150 * D),
+    contact: 'mailto:anita@example.com', followers: 521, createdAt: ago(150 * D), isFoundingMember: true,
   },
   {
     id: 'u_bishal', name: 'Bishal Karki', suburb: 'Tarneit', photo: null,
     bio: 'Mortgage broker. First-home buyers, temp-resident lending, refinancing. I work with 30+ lenders so you do not have to chase them.',
     profession: 'Mortgage Broker', verified: true, verifiedCategory: 'loans',
-    contact: 'mailto:bishal@example.com', followers: 198, createdAt: ago(70 * D),
+    contact: 'mailto:bishal@example.com', followers: 198, createdAt: ago(70 * D), isFoundingMember: true,
   },
   {
     id: 'u_anil', name: 'Anil Maharjan', suburb: 'Glen Waverley', photo: null,
@@ -53,8 +53,8 @@ export const seedUsers = [
   },
 
   // Community answerers (lived experience, not verified).
-  { id: 'u_bibek', name: 'Bibek K.C.', suburb: 'Tarneit', photo: null, bio: 'Been in Melbourne 11 years. Happy to share what I learned the hard way.', verified: false, followers: 64, createdAt: ago(80 * D) },
-  { id: 'u_pratima', name: 'Pratima Rai', suburb: 'Footscray', photo: null, bio: 'Nurse, mum of two, Footscray local.', verified: false, followers: 38, createdAt: ago(60 * D) },
+  { id: 'u_bibek', name: 'Bibek K.C.', suburb: 'Tarneit', photo: null, bio: 'Been in Melbourne 11 years. Happy to share what I learned the hard way.', verified: false, followers: 64, createdAt: ago(80 * D), isFoundingMember: true },
+  { id: 'u_pratima', name: 'Pratima Rai', suburb: 'Footscray', photo: null, bio: 'Nurse, mum of two, Footscray local.', verified: false, followers: 38, createdAt: ago(60 * D), isFoundingMember: true },
   { id: 'u_dipesh', name: 'Dipesh Adhikari', suburb: 'Clayton', photo: null, bio: 'Masters student at Monash. Visa nerd.', verified: false, followers: 22, createdAt: ago(40 * D) },
   { id: 'u_manish', name: 'Manish Lama', suburb: 'Sunshine', photo: null, bio: 'IT support by day, real estate hobbyist by night.', verified: false, followers: 51, createdAt: ago(70 * D) },
   { id: 'u_sabina', name: 'Sabina Tamang', suburb: 'St Albans', photo: null, bio: 'Aged-care worker. Moved here in 2019.', verified: false, followers: 29, createdAt: ago(50 * D) },
@@ -99,7 +99,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q3', authorId: 'u_pratima', anonymous: false, category: 'health',
+    id: 'q3', authorId: 'u_pratima', anonymous: false, category: 'health', resolved: true,
     title: 'Bulk-billing GP near Footscray who speaks Nepali or Hindi?',
     body: 'Looking for a bulk-billing GP around Footscray/Sunshine. Ideally someone who speaks Nepali or Hindi for my parents who are visiting on a 600 visa. Any recommendations?',
     photos: [], createdAt: ago(2 * H), upvotes: 16, views: 240,
@@ -216,7 +216,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q14', authorId: 'u_dipesh', anonymous: false, category: 'others',
+    id: 'q14', authorId: 'u_dipesh', anonymous: false, category: 'others', resolved: true,
     title: 'Converting a Nepali driver licence to a Victorian one?',
     body: 'I have a full Nepali driving licence. Can I convert it, or do I have to start from scratch with Ls and Ps in Victoria? Does an international permit help at all?',
     photos: [], createdAt: ago(2.6 * D), upvotes: 16, views: 372,
@@ -287,7 +287,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers',
+    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers', resolved: true,
     title: 'Resume tip that doubled my callbacks (and might help you)',
     body: 'Reviewing community resumes, the #1 fix: replace duty lists with outcomes. "Responsible for backend APIs" → "Built and shipped 6 REST APIs serving 40k daily users, cut latency 30%". Same job, completely different read. Share yours and I will give quick feedback.',
     photos: [], createdAt: ago(66 * MIN), upvotes: 44, views: 905,
@@ -307,6 +307,66 @@ export const seedQuestions = [
       { id: 'a35', authorId: 'u_manish', anonymous: false, body: 'Wish I had known this last year — an agent tried to charge me a flat 6 weeks. Is that allowed?', createdAt: ago(6.5 * D), upvotes: 5, replies: [
         { id: 'r12', authorId: 'u_sangita', anonymous: false, body: 'A fixed penalty like that is generally not enforceable for leases under the current rules — costs must be reasonable and itemised. Ask for the breakdown in writing and contact Consumer Affairs Victoria if they refuse.', createdAt: ago(6.4 * D), upvotes: 14 },
       ] },
+    ],
+  },
+  {
+    id: 'q_chk_tfn', authorId: 'u_dipesh', anonymous: false, category: 'tax_super', resolved: true,
+    title: 'How do I apply for a TFN as a new arrival?',
+    body: 'Landed two weeks ago on a student visa. Everyone says I need a Tax File Number before I can start my casual job. Where do I actually apply, what documents do I need, and how long does it take?',
+    photos: [], createdAt: ago(5 * D), upvotes: 24, views: 510,
+    answers: [
+      { id: 'a_chk_tfn1', authorId: 'u_raj', anonymous: false, body: 'Apply free at the ATO via myGov once you have landed and have your passport + visa details. It is usually online — you do not need to visit an office. Your employer can withhold tax at the highest rate until your TFN is active, so apply in your first week if you can.', createdAt: ago(4.9 * D), upvotes: 19, replies: [] },
+      { id: 'a_chk_tfn2', authorId: 'u_bibek', anonymous: false, body: 'Took me about 10 days to get the letter. Started the casual job anyway — they used a TFN declaration and fixed it once the number came through.', createdAt: ago(4.8 * D), upvotes: 8, replies: [] },
+    ],
+  },
+  {
+    id: 'q_chk_bank', authorId: 'u_sabina', anonymous: false, category: 'general', resolved: true,
+    title: 'Best bank account for someone who just landed?',
+    body: 'Need a everyday account with a debit card. Which banks are newcomer-friendly and do not charge monthly fees if my balance is low the first few months?',
+    photos: [], createdAt: ago(4.5 * D), upvotes: 18, views: 445,
+    answers: [
+      { id: 'a_chk_bank1', authorId: 'u_raj', anonymous: false, body: 'Most of the big four have student or basic accounts with no monthly fee if you deposit your salary each month. Bring passport, visa grant, and proof of address (even a letter from your landlord or hostel). You can often start online and finish in-branch.', createdAt: ago(4.4 * D), upvotes: 14, replies: [] },
+      { id: 'a_chk_bank2', authorId: 'u_manish', anonymous: false, body: 'Compare the international transfer fees too if you will send money home — the account fee is only half the story.', createdAt: ago(4.3 * D), upvotes: 6, replies: [] },
+    ],
+  },
+  {
+    id: 'q_chk_myki', authorId: 'u_niraj', anonymous: false, category: 'general', resolved: true,
+    title: 'Myki 101 — where to buy, how to top up, and common mistakes',
+    body: 'First week in Melbourne and already confused by Myki. Where do I get a card, do I need to register it, and what happens if I forget to tap off?',
+    photos: [], createdAt: ago(4 * D), upvotes: 21, views: 388,
+    answers: [
+      { id: 'a_chk_myki1', authorId: 'u_bibek', anonymous: false, body: 'Buy at any station machine or 7-Eleven. Register online so you can block it if lost. Always tap ON and OFF — on trains and trams. Forgetting to tap off on a train can charge you the default fare. Load money via the PTV app or at machines.', createdAt: ago(3.9 * D), upvotes: 16, replies: [] },
+      { id: 'a_chk_myki2', authorId: 'u_pratima', anonymous: false, body: 'If you are studying full-time, check whether you qualify for a concession card — saves a lot over a semester.', createdAt: ago(3.8 * D), upvotes: 9, replies: [] },
+    ],
+  },
+  {
+    id: 'q_chk_health', authorId: 'u_dipesh', anonymous: false, category: 'health', resolved: true,
+    title: 'Medicare vs OSHC — what do I actually need on a student visa?',
+    body: 'My uni enrolled me in OSHC but people keep mentioning Medicare. Am I covered for GP visits, hospital, and scripts? What is the difference and what do I show at the clinic?',
+    photos: [], createdAt: ago(3.5 * D), upvotes: 27, views: 620,
+    answers: [
+      { id: 'a_chk_h1', authorId: 'u_anita', anonymous: false, body: 'On a student visa you generally need OSHC (or equivalent) — not Medicare. OSHC covers GP, hospital and some scripts per your policy; always bring your insurer card and check if the clinic direct-bills. Medicare is for citizens and permanent residents (and some other eligible visas). Do not let OSHC lapse — it is a visa condition.', createdAt: ago(3.4 * D), upvotes: 31, replies: [] },
+      { id: 'a_chk_h2', authorId: 'u_sabina', anonymous: false, body: 'Download your insurer app and save the emergency number on day one. Makes hospital visits much less stressful.', createdAt: ago(3.3 * D), upvotes: 7, replies: [] },
+    ],
+  },
+  {
+    id: 'q_chk_rent', authorId: 'u_manish', anonymous: false, category: 'real_estate', resolved: true,
+    title: 'Rental bond and RTBA — how does it actually work?',
+    body: 'About to sign my first lease in Footscray. Agent wants four weeks bond upfront. Is that normal, where does the money go, and how do I get it back when I leave?',
+    photos: [], createdAt: ago(3.2 * D), upvotes: 22, views: 480,
+    answers: [
+      { id: 'a_chk_r1', authorId: 'u_sangita', anonymous: false, body: 'Four weeks bond is standard in Victoria. It must be lodged with the Residential Tenancies Bond Authority (RTBA) — not kept in the agent\'s pocket. You will get an RTBA receipt. At the end of the tenancy, claim it back via RTBA if you and the landlord agree; disputes go to VCAT. Never pay bond cash with no receipt.', createdAt: ago(3.1 * D), upvotes: 25, replies: [] },
+      { id: 'a_chk_r2', authorId: 'u_bibek', anonymous: false, body: 'Take date-stamped photos on move-in day. Saved me when the agent tried to claim carpet damage that was already there.', createdAt: ago(3 * D), upvotes: 11, replies: [] },
+    ],
+  },
+  {
+    id: 'q_chk_emergency', authorId: 'u_pratima', anonymous: false, category: 'general',
+    title: 'Emergency numbers every newcomer should save',
+    body: 'Compiling a list for my cousin arriving next month. Besides 000, what else should be on the lock screen — mental health, poison, embassy, anything I am missing?',
+    photos: [], createdAt: ago(2.8 * D), upvotes: 35, views: 890,
+    answers: [
+      { id: 'a_chk_e1', authorId: 'u_anita', anonymous: false, body: '000 for life-threatening emergencies (police, fire, ambulance). 13 11 14 Lifeline for crisis support. 13 11 26 Poisons Information. 1800 RESPECT for family violence. Save your embassy consulate number and your insurer\'s 24h line. Share your live location with someone you trust when travelling late.', createdAt: ago(2.7 * D), upvotes: 28, replies: [] },
+      { id: 'a_chk_e2', authorId: 'u_niraj', anonymous: false, body: 'State Emergency Service (SES) 132 500 for floods/storms. Not 000 unless someone is hurt.', createdAt: ago(2.6 * D), upvotes: 9, replies: [] },
     ],
   },
   {

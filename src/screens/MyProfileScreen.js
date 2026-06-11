@@ -10,6 +10,8 @@ import { useNavigationGuard } from '../utils/navigation';
 import ExpertPostQuota from '../components/ExpertPostQuota';
 import KarmaBadge from '../components/KarmaBadge';
 import { compactNumber } from '../utils/format';
+import FoundingMemberBadge from '../components/FoundingMemberBadge';
+import { CHECKLIST_TOTAL } from '../data/checklist';
 
 function formatJoined(ts) {
   if (!ts) return 'Recently';
@@ -18,7 +20,7 @@ function formatJoined(ts) {
 }
 
 export default function MyProfileScreen({ navigation }) {
-  const { me, state, karmaFor } = useSelectors();
+  const { me, state, karmaFor, checklistDoneCount } = useSelectors();
   const user = me();
   const { colors, shadow, spacing, font, radius } = useTheme();
   const { navigate } = useNavigationGuard(navigation);
@@ -26,7 +28,10 @@ export default function MyProfileScreen({ navigation }) {
 
   const followingCount = state.following.length;
 
+  const checklistProgress = `${checklistDoneCount()} of ${CHECKLIST_TOTAL} done`;
+
   const options = [
+    { key: 'checklist', label: 'First 30 Days checklist', sublabel: checklistProgress, icon: '🛬', onPress: () => navigate('ArrivalChecklist') },
     { key: 'posts', label: 'My Posts', icon: '📝', onPress: () => navigate('MyPosts') },
     { key: 'saved', label: 'Saved Posts', icon: '🔖', onPress: () => navigate('SavedPosts') },
   ];
@@ -56,6 +61,7 @@ export default function MyProfileScreen({ navigation }) {
           <View style={styles.nameRow}>
             <Text style={styles.name}>{user?.name || 'You'}</Text>
             {user?.verified ? <VerifiedBadge compact /> : null}
+            {user?.isFoundingMember ? <FoundingMemberBadge /> : null}
             <KarmaBadge karma={karmaFor('me')} />
           </View>
           {user?.suburb ? <Text style={styles.suburb}>📍 {user.suburb}</Text> : null}
@@ -97,7 +103,10 @@ export default function MyProfileScreen({ navigation }) {
               ]}
             >
               {opt.icon ? <Text style={styles.rowIcon}>{opt.icon}</Text> : <View style={styles.rowIconSpacer} />}
-              <Text style={[styles.rowLabel, opt.quiet && styles.rowLabelQuiet]}>{opt.label}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowLabel, opt.quiet && styles.rowLabelQuiet]}>{opt.label}</Text>
+                {opt.sublabel ? <Text style={styles.rowSublabel}>{opt.sublabel}</Text> : null}
+              </View>
               <Text style={styles.chevron}>›</Text>
             </Pressable>
           ))}
@@ -114,7 +123,7 @@ const createStyles = (colors, shadow, spacing, font, radius) => StyleSheet.creat
   gear: { fontSize: 20 },
   body: { paddingBottom: spacing.xl },
   identity: { backgroundColor: colors.surface, alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.xl, borderBottomWidth: 1, borderBottomColor: colors.border },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.md },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.md, flexWrap: 'wrap', justifyContent: 'center' },
   name: { fontSize: font.h2, fontWeight: '800', color: colors.text },
   suburb: { color: colors.textMuted, fontSize: font.small, marginTop: 4 },
   joined: { color: colors.textFaint, fontSize: font.tiny, marginTop: 4, fontWeight: '600' },
@@ -130,7 +139,8 @@ const createStyles = (colors, shadow, spacing, font, radius) => StyleSheet.creat
   rowQuiet: { paddingVertical: spacing.lg },
   rowIcon: { fontSize: 18, width: 30 },
   rowIconSpacer: { width: 0 },
-  rowLabel: { flex: 1, fontSize: font.body, color: colors.text, fontWeight: '700' },
+  rowLabel: { fontSize: font.body, color: colors.text, fontWeight: '700' },
+  rowSublabel: { fontSize: font.tiny, color: colors.primary, fontWeight: '700', marginTop: 2 },
   rowLabelQuiet: { fontSize: font.caption, fontWeight: '500', color: colors.textMuted },
   chevron: { fontSize: 22, color: colors.textFaint },
 });
