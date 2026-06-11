@@ -5,6 +5,8 @@ import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { circleAccentColor } from '../data/circles';
+import CircleIcon from '../components/CircleIcon';
+
 function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colors }) {
   const accent = circleAccentColor(circle, isDark);
   const activity = circle._activity || 0;
@@ -13,9 +15,7 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceAlt }]}
       onPress={onPress}
     >
-      <View style={[styles.iconWrap, { backgroundColor: `${accent.color}22` }]}>
-        <Text style={styles.icon}>{circle.icon}</Text>
-      </View>
+      <CircleIcon circle={circle} size="md" />
       <View style={styles.rowBody}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{circle.name}</Text>
@@ -150,8 +150,6 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   createText: { color: colors.textMuted, fontWeight: '700', fontSize: font.small },
   sectionLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8, marginLeft: spacing.lg + 4, marginTop: spacing.md, marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card },
-  iconWrap: { width: 44, height: 44, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  icon: { fontSize: 22 },
   rowBody: { flex: 1, marginLeft: spacing.md, marginRight: spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   name: { fontSize: font.body, fontWeight: '800', color: colors.text, flexShrink: 1 },

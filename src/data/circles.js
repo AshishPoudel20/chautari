@@ -1,18 +1,19 @@
 // Circles — user-created communities replacing categories as the bundling system.
 import { CATEGORIES } from './categories';
+import { contrastOnBackground } from '../utils/color';
 
-// Preset accent colors (work in light + dark; chips use onAccent for text).
+// Preset accent colors — each has a light + dark surface variant; glyph contrast is computed.
 export const CIRCLE_ACCENT_PRESETS = [
-  { id: 'crimson', color: '#B5302E', onAccent: '#FFFFFF' },
-  { id: 'saffron', color: '#C9772E', onAccent: '#1F1B19' },
-  { id: 'teal', color: '#2F6E72', onAccent: '#FFFFFF' },
-  { id: 'forest', color: '#3F7D6B', onAccent: '#FFFFFF' },
-  { id: 'ocean', color: '#3C6E8F', onAccent: '#FFFFFF' },
-  { id: 'plum', color: '#8E5A8C', onAccent: '#FFFFFF' },
-  { id: 'clay', color: '#A14A3C', onAccent: '#FFFFFF' },
-  { id: 'olive', color: '#577A3F', onAccent: '#FFFFFF' },
-  { id: 'amber', color: '#D9A218', onAccent: '#1F1B19' },
-  { id: 'slate', color: '#5C6B7A', onAccent: '#FFFFFF' },
+  { id: 'crimson', color: '#B5302E', darkColor: '#E0605D' },
+  { id: 'saffron', color: '#C9772E', darkColor: '#F0B340' },
+  { id: 'teal', color: '#2F6E72', darkColor: '#4A9EA3' },
+  { id: 'forest', color: '#3F7D6B', darkColor: '#5A9E88' },
+  { id: 'ocean', color: '#3C6E8F', darkColor: '#5A8FAF' },
+  { id: 'plum', color: '#8E5A8C', darkColor: '#B07AB0' },
+  { id: 'clay', color: '#A14A3C', darkColor: '#C86A5C' },
+  { id: 'olive', color: '#577A3F', darkColor: '#7A9E5F' },
+  { id: 'amber', color: '#D9A218', darkColor: '#F0C050' },
+  { id: 'slate', color: '#5C6B7A', darkColor: '#8A9AAA' },
 ];
 
 export const CIRCLE_ICON_PRESETS = ['🛂', '💰', '🩺', '🏠', '🏦', '💻', '🌏', '📌', '⚽', '🎓', '🍲', '🏏', '🌿', '☕', '🎉'];
@@ -130,10 +131,39 @@ export function accentById(accentId) {
 
 export function circleAccentColor(circle, isDark) {
   const base = accentById(circle?.accentId);
-  if (!isDark) return base;
-  // Slightly brighten accents on dark surfaces for contrast.
-  const brighten = { crimson: '#E85A57', saffron: '#F0B340', teal: '#4A9EA3', forest: '#5A9E88', ocean: '#5A8FAF', plum: '#B07AB0', clay: '#C86A5C', olive: '#7A9E5F', amber: '#F0C050', slate: '#8A9AAA' };
-  return { ...base, color: brighten[base.id] || base.color };
+  const color = isDark ? base.darkColor : base.color;
+  return {
+    id: base.id,
+    color,
+    onAccent: contrastOnBackground(color),
+    lightColor: base.color,
+    darkColor: base.darkColor,
+  };
+}
+
+// Icon bubble + chip label colors — always theme-resolved, never raw preset hex in UI.
+export function circleIconPresentation(circle, isDark, borderToken) {
+  const accent = circleAccentColor(circle, isDark);
+  if (isDark) {
+    return {
+      backgroundColor: accent.color,
+      borderColor: borderToken,
+      borderWidth: 1,
+      labelColor: accent.color,
+      onAccent: accent.onAccent,
+    };
+  }
+  return {
+    backgroundColor: `${accent.color}2E`,
+    borderColor: `${accent.color}55`,
+    borderWidth: 1,
+    labelColor: accent.color,
+    onAccent: accent.color,
+  };
+}
+
+export function accentSwatchPresentation(accentId, isDark, borderToken) {
+  return circleIconPresentation({ accentId }, isDark, borderToken);
 }
 
 export function slugify(name) {

@@ -7,6 +7,7 @@ import CircleChip from '../components/CircleChip';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
+import AccentSwatch from '../components/AccentSwatch';
 import {
   CIRCLE_ACCENT_PRESETS, CIRCLE_ICON_PRESETS, findSimilarCircles, isCircleNameTaken,
 } from '../data/circles';
@@ -104,10 +105,11 @@ export default function CreateCircleScreen({ navigation }) {
       <Field label="Accent color">
         <View style={styles.swatchRow}>
           {CIRCLE_ACCENT_PRESETS.map((a) => (
-            <Pressable
+            <AccentSwatch
               key={a.id}
+              accentId={a.id}
+              selected={accentId === a.id}
               onPress={() => setAccentId(a.id)}
-              style={[styles.swatch, { backgroundColor: a.color }, accentId === a.id && styles.swatchActive]}
             />
           ))}
         </View>

@@ -4,6 +4,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { circleAccentColor } from '../data/circles';
+import CircleIcon from './CircleIcon';
 
 export default function CirclesRecommendRow({ navigation, limit = 5 }) {
   const { dispatch } = useData();
@@ -28,9 +29,7 @@ export default function CirclesRecommendRow({ navigation, limit = 5 }) {
           return (
             <View key={c.id} style={styles.card}>
               <Pressable onPress={() => navigate('CircleDetail', { circleId: c.id })}>
-                <View style={[styles.iconWrap, { backgroundColor: `${accent.color}22` }]}>
-                  <Text style={styles.icon}>{c.icon}</Text>
-                </View>
+                <CircleIcon circle={c} size="sm" style={styles.iconWrap} />
                 <Text style={styles.name} numberOfLines={2}>{c.name}</Text>
                 <Text style={styles.members}>{c.memberCount} members</Text>
                 <Text style={styles.desc} numberOfLines={2}>{c.description}</Text>
@@ -77,8 +76,7 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
     padding: spacing.sm,
     ...shadow.card,
   },
-  iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  icon: { fontSize: 18 },
+  iconWrap: { marginBottom: 6 },
   name: { fontWeight: '800', fontSize: font.small, color: colors.text, lineHeight: 18 },
   members: { fontSize: font.tiny, color: colors.textMuted, fontWeight: '600', marginTop: 2 },
   desc: { fontSize: font.tiny, color: colors.textSecondary, lineHeight: 16, marginTop: 4, minHeight: 32 },

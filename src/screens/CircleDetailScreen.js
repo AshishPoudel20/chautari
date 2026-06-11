@@ -1,19 +1,15 @@
-import React, { useCallback, useLayoutEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, StatusBar } from 'react-native';
+import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import {
+  View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  Extrapolation,
-  interpolate,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QuestionCard from '../components/QuestionCard';
 import PinnedQuestionCard from '../components/PinnedQuestionCard';
 import CircleAboutSection from '../components/CircleAboutSection';
 import ExpertsHereRow from '../components/ExpertsHereRow';
 import MotifOverlay from '../components/MotifOverlay';
+import CircleIcon from '../components/CircleIcon';
 import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
@@ -32,13 +28,17 @@ const LIST_PERF = {
   removeClippedSubviews: true,
 };
 
+function clampInterp(scrollY, inputRange, outputRange) {
+  return scrollY.interpolate({ inputRange, outputRange, extrapolate: 'clamp' });
+}
+
 export default function CircleDetailScreen({ navigation, route }) {
   const circleId = route.params?.circleId;
   const { dispatch } = useData();
   const {
     circleById, isJoinedCircle, questionsInCircle, pinnedQuestionInCircle,
-    expertsInCircle, isCircleCreator, hasUpvotedQuestion, joinedCirclesList,
-    userById, answerCount, expertAnswerOn, firstAnswerLatency,
+    expertsInCircle, isCircleCreator, joinedCirclesList,
+    userById, answerCount, expertAnswerOn,
   } = useSelectors();
   const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
@@ -55,10 +55,33 @@ export default function CircleDetailScreen({ navigation, route }) {
   const accent = circle ? circleAccentColor(circle, isDark) : null;
   const banner = circle ? circleBannerGradient(circle, isDark) : null;
 
-  const scrollY = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (e) => { scrollY.value = e.contentOffset.y; },
-  });
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const onScroll = useMemo(
+    () => Animated.event(
+      [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+      { useNativeDriver: false },
+    ),
+    [scrollY],
+  );
+
+  const bannerStyle = useMemo(() => ({
+    height: clampInterp(scrollY, [0, COLLAPSE_RANGE], [BANNER_EXPANDED, 72]),
+    opacity: clampInterp(scrollY, [0, COLLAPSE_RANGE * 0.85], [1, 0.92]),
+  }), [scrollY]);
+
+  const expandedContentStyle = useMemo(() => ({
+    opacity: clampInterp(scrollY, [0, COLLAPSE_RANGE * 0.55], [1, 0]),
+    transform: [{
+      translateY: clampInterp(scrollY, [0, COLLAPSE_RANGE], [0, -12]),
+    }],
+  }), [scrollY]);
+
+  const compactBarStyle = useMemo(() => ({
+    opacity: clampInterp(scrollY, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [0, 1]),
+    transform: [{
+      translateY: clampInterp(scrollY, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [-6, 0]),
+    }],
+  }), [scrollY]);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -94,25 +117,6 @@ export default function CircleDetailScreen({ navigation, route }) {
     [navigate],
   );
 
-  const bannerStyle = useAnimatedStyle(() => ({
-    height: interpolate(scrollY.value, [0, COLLAPSE_RANGE], [BANNER_EXPANDED, 72], Extrapolation.CLAMP),
-    opacity: interpolate(scrollY.value, [0, COLLAPSE_RANGE * 0.85], [1, 0.92], Extrapolation.CLAMP),
-  }));
-
-  const expandedContentStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, COLLAPSE_RANGE * 0.55], [1, 0], Extrapolation.CLAMP),
-    transform: [{
-      translateY: interpolate(scrollY.value, [0, COLLAPSE_RANGE], [0, -12], Extrapolation.CLAMP),
-    }],
-  }));
-
-  const compactBarStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [0, 1], Extrapolation.CLAMP),
-    transform: [{
-      translateY: interpolate(scrollY.value, [COLLAPSE_RANGE * 0.45, COLLAPSE_RANGE], [-6, 0], Extrapolation.CLAMP),
-    }],
-  }));
-
   const renderItem = useCallback(({ item, index }) => {
     const ei = expertAnswerOn(item);
     return (
@@ -123,15 +127,12 @@ export default function CircleDetailScreen({ navigation, route }) {
           circle={circle}
           answerCount={answerCount(item)}
           expert={ei?.expert || null}
-          firstAnswerMs={firstAnswerLatency(item)}
           onPress={() => openQuestion(item.id)}
           onCirclePress={() => {}}
-          onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
-          upvoteActive={hasUpvotedQuestion(item.id)}
         />
       </FadeRise>
     );
-  }, [userById, circle, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, dispatch, hasUpvotedQuestion]);
+  }, [userById, circle, answerCount, expertAnswerOn, openQuestion]);
 
   const listHeader = useMemo(() => (
     <View>
@@ -143,7 +144,7 @@ export default function CircleDetailScreen({ navigation, route }) {
         />
         <MotifOverlay color={accent?.onAccent || '#fff'} opacity={banner?.motifOpacity || 0.1} />
         <Animated.View style={[styles.bannerInner, expandedContentStyle]}>
-          <Text style={[styles.bannerIcon, { color: accent?.onAccent }]}>{circle?.icon}</Text>
+          <CircleIcon circle={circle} size="lg" />
           <View style={styles.bannerTextCol}>
             <View style={styles.titleRow}>
               <Text style={[styles.bannerTitle, { color: accent?.onAccent }]} numberOfLines={2}>{circle?.name}</Text>
@@ -179,15 +180,12 @@ export default function CircleDetailScreen({ navigation, route }) {
           circle={circle}
           answerCount={answerCount(pinned)}
           expert={expertAnswerOn(pinned)?.expert || null}
-          firstAnswerMs={firstAnswerLatency(pinned)}
           onPress={() => openQuestion(pinned.id)}
           onCirclePress={() => {}}
-          onUpvoteToggle={(id) => dispatch({ type: 'TOGGLE_UPVOTE_QUESTION', questionId: id })}
-          upvoteActive={hasUpvotedQuestion(pinned.id)}
         />
       ) : null}
     </View>
-  ), [styles, bannerStyle, banner, colors, accent, circle, expandedContentStyle, joined, toggleJoin, creator, goToProfile, experts, pinned, userById, answerCount, expertAnswerOn, firstAnswerLatency, openQuestion, dispatch, hasUpvotedQuestion]);
+  ), [styles, bannerStyle, banner, colors, accent, circle, expandedContentStyle, joined, toggleJoin, creator, goToProfile, experts, pinned, userById, answerCount, expertAnswerOn, openQuestion]);
 
   if (!circle) {
     return (
@@ -204,7 +202,7 @@ export default function CircleDetailScreen({ navigation, route }) {
       <Animated.View style={[styles.compactBar, compactBarStyle, { paddingTop: insets.top }]}>
         <View style={styles.compactInner}>
           <View style={styles.compactTitleWrap}>
-            <Text style={styles.compactIcon}>{circle.icon}</Text>
+            <CircleIcon circle={circle} size="chip" />
             <Text style={styles.compactTitle} numberOfLines={1}>{circle.name}</Text>
           </View>
           <Pressable onPress={toggleJoin} style={[styles.compactJoin, joined && styles.compactJoinOn]}>
@@ -242,7 +240,7 @@ export default function CircleDetailScreen({ navigation, route }) {
         )}
         contentContainerStyle={{ paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
+        onScroll={onScroll}
         scrollEventThrottle={16}
         {...LIST_PERF}
       />
@@ -304,7 +302,6 @@ const createStyles = (colors, spacing, font, radius, shadow, insets) => StyleShe
     paddingLeft: spacing.lg + 44,
   },
   compactTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: spacing.sm },
-  compactIcon: { fontSize: 18 },
   compactTitle: { fontSize: font.body, fontWeight: '800', color: colors.text, flexShrink: 1 },
   compactJoin: {
     paddingHorizontal: 12,
@@ -326,7 +323,6 @@ const createStyles = (colors, spacing, font, radius, shadow, insets) => StyleShe
     paddingTop: insets.top + 52,
     gap: spacing.md,
   },
-  bannerIcon: { fontSize: 40 },
   bannerTextCol: { flex: 1 },
   titleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   bannerTitle: { fontSize: font.h2, fontWeight: '800', flexShrink: 1 },
