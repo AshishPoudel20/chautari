@@ -26,12 +26,7 @@ function QuestionCard({
           <Text style={styles.metaTime}>{timeAgo(question.createdAt)}</Text>
         </View>
 
-        <View style={styles.titleRow}>
-          {question.resolved ? (
-            <Text style={styles.resolvedMark}>✓</Text>
-          ) : null}
-          <Text style={styles.title} numberOfLines={2}>{question.title}</Text>
-        </View>
+        <Text style={styles.title} numberOfLines={2}>{question.title}</Text>
 
         <Text style={styles.body} numberOfLines={1}>{question.body}</Text>
 
@@ -74,9 +69,13 @@ const createStyles = (colors, shadow, spacing, radius, font) => StyleSheet.creat
   metaDot: { color: colors.textFaint, fontSize: font.tiny },
   metaTime: { color: colors.textMuted, fontSize: font.tiny, fontWeight: '600' },
 
-  titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: spacing.sm },
-  resolvedMark: { color: colors.success, fontSize: font.body, fontWeight: '900', marginTop: 2 },
-  title: { flex: 1, fontSize: font.subtitle, fontWeight: '800', color: colors.text, lineHeight: 23 },
+  title: {
+    fontSize: font.subtitle,
+    fontWeight: '800',
+    color: colors.text,
+    lineHeight: 23,
+    marginTop: spacing.sm,
+  },
 
   body: {
     fontSize: font.caption,

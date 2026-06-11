@@ -6,7 +6,6 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import UpvoteButton from '../components/UpvoteButton';
 import CircleChip from '../components/CircleChip';
 import KarmaBadge from '../components/KarmaBadge';
-import ResolvedChip from '../components/ResolvedChip';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
@@ -80,25 +79,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
     options.push({ text: 'Cancel', style: 'cancel' });
     Alert.alert(isMine ? 'Your question' : 'Question options', null, options);
   }, [question, isMine, dispatch, questionId, navigation, showToast, navigate, circleById, isCircleCreator]);
-
-  const toggleResolved = useCallback(() => {
-    if (!question || !isQuestionOwner(question) || question.answers.length === 0) return;
-    if (question.resolved) {
-      Alert.alert('Mark as unresolved?', 'This thread will no longer show as resolved.', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Unresolve',
-          onPress: () => {
-            dispatch({ type: 'TOGGLE_QUESTION_RESOLVED', questionId });
-            showToast('Marked as unresolved', { tone: 'default' });
-          },
-        },
-      ]);
-    } else {
-      dispatch({ type: 'TOGGLE_QUESTION_RESOLVED', questionId });
-      showToast('Marked as resolved', { tone: 'success' });
-    }
-  }, [question, dispatch, questionId, showToast, isQuestionOwner]);
 
   const toggleSave = useCallback(() => {
     const wasSaved = isSaved(questionId);
@@ -275,11 +255,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
               onPress={() => navigate('CircleDetail', { circleId: circle.id })}
             />
           ) : null}
-          {question.resolved ? (
-            <View style={styles.resolvedRow}>
-              <ResolvedChip />
-            </View>
-          ) : null}
           <Text style={styles.qTitle}>{question.title}</Text>
 
           <Pressable style={styles.authorRow} onPress={() => goToProfile(question.authorId, question.anonymous)}>
@@ -314,13 +289,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
             <Text style={styles.viewCount}>👁 {compactNumber(question.views)} views</Text>
           </View>
 
-          {isMine && totalAnswers > 0 ? (
-            <Pressable onPress={toggleResolved} style={styles.resolveBtn}>
-              <Text style={styles.resolveText}>
-                {question.resolved ? 'Mark as unresolved' : 'Did you get what you needed? Mark as resolved'}
-              </Text>
-            </Pressable>
-          ) : null}
         </View>
 
         {/* Answers header + community sort */}
@@ -372,7 +340,6 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   },
   expertPostBannerText: { color: colors.secondaryDark, fontWeight: '800', fontSize: font.tiny, letterSpacing: 0.5 },
   expertPostBannerSub: { color: colors.secondaryDark, fontSize: font.tiny, fontWeight: '600', marginTop: 2, opacity: 0.9 },
-  resolvedRow: { alignSelf: 'flex-start', marginTop: spacing.sm },
   qTitle: { fontSize: font.title, fontWeight: '800', color: colors.text, marginTop: spacing.sm, marginBottom: spacing.md, lineHeight: 28 },
   authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -385,17 +352,6 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   photoTile: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
   qActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.lg },
   viewCount: { color: colors.textMuted, fontSize: font.caption, fontWeight: '600' },
-  resolveBtn: {
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.successTint,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.success,
-  },
-  resolveText: { color: colors.success, fontSize: font.caption, fontWeight: '800', textAlign: 'center' },
-
   answersHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   answersTitle: { fontSize: font.subtitle, fontWeight: '800', color: colors.text },
   sortToggle: { flexDirection: 'row', backgroundColor: colors.bgSunken, borderRadius: radius.pill, padding: 3 },

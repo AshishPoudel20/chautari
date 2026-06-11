@@ -99,7 +99,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q3', authorId: 'u_pratima', anonymous: false, category: 'health', resolved: true,
+    id: 'q3', authorId: 'u_pratima', anonymous: false, category: 'health',
     title: 'Bulk-billing GP near Footscray who speaks Nepali or Hindi?',
     body: 'Looking for a bulk-billing GP around Footscray/Sunshine. Ideally someone who speaks Nepali or Hindi for my parents who are visiting on a 600 visa. Any recommendations?',
     photos: [], createdAt: ago(2 * H), upvotes: 16, views: 240,
@@ -216,7 +216,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q14', authorId: 'u_dipesh', anonymous: false, category: 'others', resolved: true,
+    id: 'q14', authorId: 'u_dipesh', anonymous: false, category: 'others',
     title: 'Converting a Nepali driver licence to a Victorian one?',
     body: 'I have a full Nepali driving licence. Can I convert it, or do I have to start from scratch with Ls and Ps in Victoria? Does an international permit help at all?',
     photos: [], createdAt: ago(2.6 * D), upvotes: 16, views: 372,
@@ -287,7 +287,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers', resolved: true,
+    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers',
     title: 'Resume tip that doubled my callbacks (and might help you)',
     body: 'Reviewing community resumes, the #1 fix: replace duty lists with outcomes. "Responsible for backend APIs" → "Built and shipped 6 REST APIs serving 40k daily users, cut latency 30%". Same job, completely different read. Share yours and I will give quick feedback.',
     photos: [], createdAt: ago(66 * MIN), upvotes: 44, views: 905,
@@ -310,7 +310,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q_chk_tfn', authorId: 'u_dipesh', anonymous: false, category: 'tax_super', resolved: true,
+    id: 'q_chk_tfn', authorId: 'u_dipesh', anonymous: false, category: 'tax_super',
     title: 'How do I apply for a TFN as a new arrival?',
     body: 'Landed two weeks ago on a student visa. Everyone says I need a Tax File Number before I can start my casual job. Where do I actually apply, what documents do I need, and how long does it take?',
     photos: [], createdAt: ago(5 * D), upvotes: 24, views: 510,
@@ -320,7 +320,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q_chk_bank', authorId: 'u_sabina', anonymous: false, category: 'general', resolved: true,
+    id: 'q_chk_bank', authorId: 'u_sabina', anonymous: false, category: 'general',
     title: 'Best bank account for someone who just landed?',
     body: 'Need a everyday account with a debit card. Which banks are newcomer-friendly and do not charge monthly fees if my balance is low the first few months?',
     photos: [], createdAt: ago(4.5 * D), upvotes: 18, views: 445,
@@ -330,7 +330,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q_chk_myki', authorId: 'u_niraj', anonymous: false, category: 'general', resolved: true,
+    id: 'q_chk_myki', authorId: 'u_niraj', anonymous: false, category: 'general',
     title: 'Myki 101 — where to buy, how to top up, and common mistakes',
     body: 'First week in Melbourne and already confused by Myki. Where do I get a card, do I need to register it, and what happens if I forget to tap off?',
     photos: [], createdAt: ago(4 * D), upvotes: 21, views: 388,
@@ -340,7 +340,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q_chk_health', authorId: 'u_dipesh', anonymous: false, category: 'health', resolved: true,
+    id: 'q_chk_health', authorId: 'u_dipesh', anonymous: false, category: 'health',
     title: 'Medicare vs OSHC — what do I actually need on a student visa?',
     body: 'My uni enrolled me in OSHC but people keep mentioning Medicare. Am I covered for GP visits, hospital, and scripts? What is the difference and what do I show at the clinic?',
     photos: [], createdAt: ago(3.5 * D), upvotes: 27, views: 620,
@@ -350,7 +350,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q_chk_rent', authorId: 'u_manish', anonymous: false, category: 'real_estate', resolved: true,
+    id: 'q_chk_rent', authorId: 'u_manish', anonymous: false, category: 'real_estate',
     title: 'Rental bond and RTBA — how does it actually work?',
     body: 'About to sign my first lease in Footscray. Agent wants four weeks bond upfront. Is that normal, where does the money go, and how do I get it back when I leave?',
     photos: [], createdAt: ago(3.2 * D), upvotes: 22, views: 480,
