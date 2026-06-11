@@ -9,6 +9,7 @@ import {
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
+import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 
 export const EXPERT_DAILY_POST_LIMIT = 2;
 
@@ -35,7 +36,6 @@ function mergeQuestions(persisted = []) {
       ...existing,
       createdAt: normalized.createdAt,
       circleId: normalized.circleId,
-      resolved: existing.resolved ?? normalized.resolved ?? false,
     } : normalized);
   }
   return sortQuestions([...byId.values()]);
@@ -103,6 +103,8 @@ function buildInitialState() {
     digestMode: 'daily', // 'daily' | 'weekly' | 'off'
     checklistDone: [],
     checklistCardDismissed: false,
+    newcomer: false,
+    newcomerSince: null,
   };
 }
 
@@ -131,6 +133,8 @@ function reducer(state, action) {
         digestMode: p.digestMode || 'daily',
         checklistDone: p.checklistDone || [],
         checklistCardDismissed: !!p.checklistCardDismissed,
+        newcomer: p.newcomer ?? (p.currentUserId === 'me'),
+        newcomerSince: p.newcomerSince ?? (p.currentUserId === 'me' ? Date.now() : null),
       };
     }
     case 'BOOTED':
@@ -159,6 +163,8 @@ function reducer(state, action) {
         circles: state.circles.map((c) =>
           c.id === 'c_fhb' ? { ...c, creatorId: 'me' } : c
         ),
+        newcomer: !!action.newcomer,
+        newcomerSince: action.newcomer ? Date.now() : null,
       };
     }
 
@@ -490,19 +496,6 @@ function reducer(state, action) {
     case 'DISMISS_CHECKLIST_CARD':
       return { ...state, checklistCardDismissed: true };
 
-    case 'TOGGLE_QUESTION_RESOLVED': {
-      const q = state.questions.find((x) => x.id === action.questionId);
-      if (!q) return state;
-      const isOwner = q.authorId === 'me' || q.authorId === 'me_seed_anon';
-      if (!isOwner) return state;
-      return {
-        ...state,
-        questions: state.questions.map((x) =>
-          x.id === action.questionId ? { ...x, resolved: !x.resolved } : x
-        ),
-      };
-    }
-
     case 'UNPIN_QUESTION_FROM_CIRCLE': {
       const circle = state.circles.find((c) => c.id === action.circleId);
       if (!circle || circle.isOfficial || circle.creatorId !== 'me') return state;
@@ -723,6 +716,11 @@ export function useSelectors() {
   const checklistDoneCount = () => state.checklistDone.length;
   const isQuestionOwner = (q) => !!q && (q.authorId === 'me' || q.authorId === 'me_seed_anon');
 
+  const isNewcomerActive = () =>
+    !!state.newcomer
+    && !!state.newcomerSince
+    && Date.now() - state.newcomerSince < NEWCOMER_WINDOW_MS;
+
   return {
     state, userById, me, isFollowing,
     hasUpvotedQuestion, hasUpvotedAnswer, hasUpvotedReply, isSaved,
@@ -733,6 +731,6 @@ export function useSelectors() {
     circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,
-    isChecklistItemDone, checklistDoneCount, isQuestionOwner,
+    isChecklistItemDone, checklistDoneCount, isQuestionOwner, isNewcomerActive,
   };
 }

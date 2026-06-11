@@ -20,7 +20,7 @@ export default function HomeScreen({ navigation }) {
   const {
     userById, me, forYouFeed, followingFeed,
     newTodayCount, suggestedExperts, canExpertPostToday,
-    expertPostsToday, expertDailyPostLimit, checklistDoneCount, state,
+    expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, state,
   } = useSelectors();
   const { dispatch } = useData();
   const { online } = useNetwork();
@@ -67,7 +67,7 @@ export default function HomeScreen({ navigation }) {
     }, 650);
   }, []);
 
-  const showChecklistCard = tab === 'foryou' && !state.checklistCardDismissed;
+  const showChecklistCard = tab === 'foryou' && isNewcomerActive() && !state.checklistCardDismissed;
 
   const header = (
     <View style={styles.headerBlock}>

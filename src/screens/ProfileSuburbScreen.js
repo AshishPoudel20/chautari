@@ -1,5 +1,5 @@
-import React, { useMemo,  useState  } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Alert, Switch } from 'react-native';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
@@ -11,22 +11,21 @@ import { useTheme } from '../theme/ThemeContext';
 // Profile setup step 2 — suburb + photo, both optional and skippable.
 // This is the final onboarding step, so we create the account here.
 export default function ProfileSuburbScreen({ navigation, route }) {
-  const { colors, spacing, font } = useTheme();
-  const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
+  const { colors, spacing, font, radius } = useTheme();
+  const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
   const { dispatch } = useData();
   const name = route.params?.name || 'You';
   const [suburb, setSuburb] = useState(null);
   const [photo, setPhoto] = useState(null);
+  const [newcomer, setNewcomer] = useState(false);
 
   const finish = () => {
-    dispatch({ type: 'SIGN_UP', name });
+    dispatch({ type: 'SIGN_UP', name, newcomer });
     if (suburb || photo) dispatch({ type: 'UPDATE_PROFILE', patch: { suburb, photo } });
-    // Navigator now swaps to the signed-in stack automatically.
   };
 
   const mockPhoto = () => {
-    // Image picking is mocked in the prototype (no expo-image-picker wired up).
     Alert.alert('Photo upload (mocked)', 'In this prototype, photo upload is simulated. Your letter avatar will be used.', [
       { text: 'OK' },
     ]);
@@ -37,6 +36,18 @@ export default function ProfileSuburbScreen({ navigation, route }) {
       contentStyle={styles.body}
       footer={(
         <View style={styles.footer}>
+          <View style={styles.newcomerRow}>
+            <View style={styles.newcomerCopy}>
+              <Text style={styles.newcomerLabel}>I'm new to Australia</Text>
+              <Text style={styles.newcomerHint}>Select to unlock features made for newcomers.</Text>
+            </View>
+            <Switch
+              value={newcomer}
+              onValueChange={setNewcomer}
+              trackColor={{ true: colors.primary, false: colors.borderStrong }}
+              thumbColor={colors.onPrimary}
+            />
+          </View>
           <Button title="Finish" onPress={finish} />
           <Button title="Skip for now" variant="ghost" onPress={finish} style={{ marginTop: 4 }} />
         </View>
@@ -62,7 +73,7 @@ export default function ProfileSuburbScreen({ navigation, route }) {
   );
 }
 
-const createStyles = (colors, spacing, font) => StyleSheet.create({
+const createStyles = (colors, spacing, font, radius) => StyleSheet.create({
   body: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg, paddingBottom: spacing.xl },
   title: { fontSize: font.h1, fontWeight: '800', color: colors.text, marginBottom: spacing.sm },
   sub: { fontSize: font.body, color: colors.textMuted, marginBottom: spacing.xl },
@@ -72,4 +83,20 @@ const createStyles = (colors, spacing, font) => StyleSheet.create({
   label: { fontSize: font.small, fontWeight: '700', color: colors.text, marginBottom: spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.md },
+  newcomerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.bgSunken,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  newcomerCopy: { flex: 1 },
+  newcomerLabel: { fontSize: font.caption, fontWeight: '800', color: colors.text },
+  newcomerHint: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
 });

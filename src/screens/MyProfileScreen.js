@@ -20,7 +20,7 @@ function formatJoined(ts) {
 }
 
 export default function MyProfileScreen({ navigation }) {
-  const { me, state, karmaFor, checklistDoneCount } = useSelectors();
+  const { me, state, karmaFor, checklistDoneCount, isNewcomerActive } = useSelectors();
   const user = me();
   const { colors, shadow, spacing, font, radius } = useTheme();
   const { navigate } = useNavigationGuard(navigation);
@@ -31,7 +31,13 @@ export default function MyProfileScreen({ navigation }) {
   const checklistProgress = `${checklistDoneCount()} of ${CHECKLIST_TOTAL} done`;
 
   const options = [
-    { key: 'checklist', label: 'First 30 Days checklist', sublabel: checklistProgress, icon: '🛬', onPress: () => navigate('ArrivalChecklist') },
+    ...(isNewcomerActive() ? [{
+      key: 'checklist',
+      label: 'First 30 Days checklist',
+      sublabel: checklistProgress,
+      icon: '🛬',
+      onPress: () => navigate('ArrivalChecklist'),
+    }] : []),
     { key: 'posts', label: 'My Posts', icon: '📝', onPress: () => navigate('MyPosts') },
     { key: 'saved', label: 'Saved Posts', icon: '🔖', onPress: () => navigate('SavedPosts') },
   ];

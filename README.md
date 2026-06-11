@@ -22,10 +22,13 @@ The app launches to an animated splash, then the welcome/onboarding flow. State 
 - `npx expo export --platform ios` bundles the full module graph with **no errors** (1039 modules).
 - `npx expo start` boots Metro and serves on `:8081`.
 
-### Pass 5 — Arrival checklist, founding badge, mark resolved
-- **First 30 Days checklist** — 10 newcomer tasks (TFN, bank, SIM, Myki, health cover, GP, renting, licence, job hunt, emergency numbers). Featured card on For You (dismissible, persists in AsyncStorage) + permanent row on My Profile with progress. Each item deep-links to a seeded community thread; back returns to the checklist. Completion triggers a saffron celebration moment.
+### Pass 7 — Circle dark-mode accents, newcomer gate
+- **Circle colors (dark mode)** — accents are palette keys resolved through one theme-aware map (`light` / `dark` hex per key + contrast clamp on dark surfaces). All icon, chip, banner, swatch, and recommendation surfaces use `resolveCircleAccent`. Root cause of near-black circles: dark variants were derived too dim from light hex and some surfaces applied low-opacity light fills on dark backgrounds.
+- **Newcomer checklist gate** — onboarding toggle “I'm new to Australia” stores `newcomer` + timestamp. First-30-Days checklist (For You card, My Profile row, screen) shows only when newcomer is active and within `NEWCOMER_WINDOW_DAYS` (60). Demo user hydrates with newcomer on. Dismiss on the feed card still applies.
+
+### Pass 5 — Arrival checklist, founding badge
+- **First 30 Days checklist** — 10 newcomer tasks (TFN, bank, SIM, Myki, health cover, GP, renting, licence, job hunt, emergency numbers). Featured card on For You (dismissible, persists in AsyncStorage) + row on My Profile with progress when newcomer gate is active. Each item deep-links to a seeded community thread; back returns to the checklist. Completion triggers a saffron celebration moment.
 - **Founding Member badge** — mock flag for the first 1,000 users (`isFoundingMember`). Current user + ~half of seed users. Quiet saffron chip on **profiles only** (after Verified badge); tap opens info sheet. Never shown on feed cards or answers.
-- **Mark resolved** — question-level only (not best-answer). Asker sees control once ≥1 answer exists; ✓ Resolved chip on detail + all feed/search cards. Toggle to un-resolve with confirm. No karma changes; threads stay visible and answerable. Seed marks 8 threads resolved (most checklist-linked).
 
 **Checklist → thread mapping:** TFN `q_chk_tfn` · Bank `q_chk_bank` · SIM `q17` · Myki `q_chk_myki` · Health cover `q_chk_health` · GP `q3` · Renting `q_chk_rent` · Licence `q14` · Job hunt `q21` · Emergency `q_chk_emergency`
 
