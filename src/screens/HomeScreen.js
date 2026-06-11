@@ -7,7 +7,7 @@ import ChecklistFeedCard from '../components/ChecklistFeedCard';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import FollowButton from '../components/FollowButton';
-import { EmptyState } from '../components/ui';
+import { EmptyState, CountBadge } from '../components/ui';
 import { PulseDot } from '../components/Motion';
 import { QuestionCardSkeleton } from '../components/Skeleton';
 import { useData, useSelectors } from '../data/store';
@@ -20,7 +20,7 @@ export default function HomeScreen({ navigation }) {
   const {
     userById, me, forYouFeed, followingFeed,
     newTodayCount, suggestedExperts, canExpertPostToday,
-    expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, state,
+    expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, unreadNotifs, state,
   } = useSelectors();
   const { dispatch } = useData();
   const { online } = useNetwork();
@@ -68,6 +68,7 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const showChecklistCard = tab === 'foryou' && isNewcomerActive() && !state.checklistCardDismissed;
+  const unread = unreadNotifs();
 
   const header = (
     <View style={styles.headerBlock}>
@@ -111,11 +112,16 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.brandDot} />
         </View>
         <View style={styles.topActions}>
-          <Pressable onPress={() => navigate('Circles')} hitSlop={10} style={styles.topBtn}>
-            <Text style={styles.topIcon}>◎</Text>
-          </Pressable>
           <Pressable onPress={() => navigate('Search', { reset: true })} hitSlop={10} style={styles.topBtn}>
             <Text style={styles.topIcon}>🔍</Text>
+          </Pressable>
+          <Pressable onPress={() => navigate('Notifications')} hitSlop={10} style={styles.topBtn}>
+            <Text style={styles.topIcon}>🔔</Text>
+            {unread > 0 ? (
+              <View style={styles.bellBadge}>
+                <CountBadge count={unread} />
+              </View>
+            ) : null}
           </Pressable>
         </View>
       </View>
@@ -224,6 +230,7 @@ const createStyles = (colors, shadow, spacing, font, radius) => StyleSheet.creat
   topActions: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
   topBtn: { width: 38, height: 38, borderRadius: radius.pill, backgroundColor: colors.bgSunken, alignItems: 'center', justifyContent: 'center' },
   topIcon: { fontSize: 18 },
+  bellBadge: { position: 'absolute', right: 2, top: 2 },
 
   offlineBanner: { backgroundColor: colors.offlineBanner, paddingVertical: 8, paddingHorizontal: spacing.lg },
   offlineText: { color: colors.onDark, fontSize: font.tiny, fontWeight: '700', textAlign: 'center' },
