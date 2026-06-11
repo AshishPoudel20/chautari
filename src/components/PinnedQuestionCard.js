@@ -2,14 +2,14 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import QuestionCard from './QuestionCard';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor } from '../data/circles';
+import { resolveCircleAccent } from '../data/circles';
 
 export default function PinnedQuestionCard({
   question, author, circle, answerCount, expert,
   onPress, onCirclePress,
 }) {
   const { colors, spacing, font, radius, isDark } = useTheme();
-  const accent = circle ? circleAccentColor(circle, isDark) : null;
+  const accent = circle ? resolveCircleAccent(circle.accentId, isDark, colors.surface) : null;
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, accent), [colors, spacing, font, radius, accent]);
 
   return (

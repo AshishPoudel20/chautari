@@ -15,7 +15,7 @@ import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor, circleBannerGradient } from '../data/circles';
+import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
 
 const BANNER_EXPANDED = 196;
 const COLLAPSE_RANGE = 130;
@@ -52,8 +52,8 @@ export default function CircleDetailScreen({ navigation, route }) {
   const experts = expertsInCircle(circleId);
   const creator = circle?.creatorId ? userById(circle.creatorId) : null;
   const showCreatorTools = isCircleCreator(circleId);
-  const accent = circle ? circleAccentColor(circle, isDark) : null;
-  const banner = circle ? circleBannerGradient(circle, isDark) : null;
+  const accent = circle ? resolveCircleAccent(circle.accentId, isDark, colors.surface) : null;
+  const banner = circle ? circleBannerGradient(circle, isDark, colors) : null;
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const onScroll = useMemo(
@@ -142,7 +142,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           locations={banner?.locations}
           style={StyleSheet.absoluteFill}
         />
-        <MotifOverlay color={accent?.onAccent || '#fff'} opacity={banner?.motifOpacity || 0.1} />
+        <MotifOverlay color={banner?.onAccent || accent?.onAccent || '#fff'} opacity={banner?.motifOpacity || 0.1} />
         <Animated.View style={[styles.bannerInner, expandedContentStyle]}>
           <CircleIcon circle={circle} size="lg" />
           <View style={styles.bannerTextCol}>

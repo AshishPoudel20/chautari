@@ -1,20 +1,24 @@
 // Circles — user-created communities replacing categories as the bundling system.
 import { CATEGORIES } from './categories';
-import { contrastOnBackground } from '../utils/color';
+import {
+  clampForDarkSurface, contrastOnBackground, withAlpha,
+} from '../utils/color';
 
-// Preset accent colors — each has a light + dark surface variant; glyph contrast is computed.
-export const CIRCLE_ACCENT_PRESETS = [
-  { id: 'crimson', color: '#B5302E', darkColor: '#E0605D' },
-  { id: 'saffron', color: '#C9772E', darkColor: '#F0B340' },
-  { id: 'teal', color: '#2F6E72', darkColor: '#4A9EA3' },
-  { id: 'forest', color: '#3F7D6B', darkColor: '#5A9E88' },
-  { id: 'ocean', color: '#3C6E8F', darkColor: '#5A8FAF' },
-  { id: 'plum', color: '#8E5A8C', darkColor: '#B07AB0' },
-  { id: 'clay', color: '#A14A3C', darkColor: '#C86A5C' },
-  { id: 'olive', color: '#577A3F', darkColor: '#7A9E5F' },
-  { id: 'amber', color: '#D9A218', darkColor: '#F0C050' },
-  { id: 'slate', color: '#5C6B7A', darkColor: '#8A9AAA' },
-];
+// Single source of truth: palette KEY -> { light, dark }. Circles store accentId only.
+export const CIRCLE_ACCENT_PALETTE = {
+  crimson: { light: '#B5302E', dark: '#F2A8A6' },
+  saffron: { light: '#C9772E', dark: '#F5D48A' },
+  teal: { light: '#2F6E72', dark: '#8FD9DD' },
+  forest: { light: '#3F7D6B', dark: '#9AD8C4' },
+  ocean: { light: '#3C6E8F', dark: '#9FCEEE' },
+  plum: { light: '#8E5A8C', dark: '#E0B0DE' },
+  clay: { light: '#A14A3C', dark: '#F0B0A4' },
+  olive: { light: '#577A3F', dark: '#BEE0A4' },
+  amber: { light: '#D9A218', dark: '#F5DE8A' },
+  slate: { light: '#5C6B7A', dark: '#B8CAD8' },
+};
+
+export const CIRCLE_ACCENT_PRESETS = Object.keys(CIRCLE_ACCENT_PALETTE).map((id) => ({ id }));
 
 export const CIRCLE_ICON_PRESETS = ['🛂', '💰', '🩺', '🏠', '🏦', '💻', '🌏', '📌', '⚽', '🎓', '🍲', '🏏', '🌿', '☕', '🎉'];
 
@@ -125,25 +129,48 @@ export const seedJoinedCircles = [
   'c_fhb',
 ];
 
-export function accentById(accentId) {
-  return CIRCLE_ACCENT_PRESETS.find((a) => a.id === accentId) || CIRCLE_ACCENT_PRESETS[0];
+function paletteEntry(accentId) {
+  return CIRCLE_ACCENT_PALETTE[accentId] || CIRCLE_ACCENT_PALETTE.crimson;
 }
 
-export function circleAccentColor(circle, isDark) {
-  const base = accentById(circle?.accentId);
-  const color = isDark ? base.darkColor : base.color;
+function accentKeyFromCircle(circle) {
+  return circle?.accentId || 'crimson';
+}
+
+/**
+ * Resolve accent for render — THE only path for circle colors in UI.
+ * @param {string} accentId palette key
+ * @param {boolean} isDark active theme
+ * @param {string} surfaceHex colors.surface for contrast clamp in dark mode
+ */
+export function resolveCircleAccent(accentId, isDark, surfaceHex = '#141110') {
+  const entry = paletteEntry(accentId);
+  const color = isDark
+    ? clampForDarkSurface(entry.dark, surfaceHex)
+    : entry.light;
   return {
-    id: base.id,
+    id: accentId in CIRCLE_ACCENT_PALETTE ? accentId : 'crimson',
     color,
     onAccent: contrastOnBackground(color),
-    lightColor: base.color,
-    darkColor: base.darkColor,
+    light: entry.light,
+    dark: entry.dark,
   };
 }
 
-// Icon bubble + chip label colors — always theme-resolved, never raw preset hex in UI.
-export function circleIconPresentation(circle, isDark, borderToken) {
-  const accent = circleAccentColor(circle, isDark);
+/** @deprecated use resolveCircleAccent — kept for call-site ergonomics */
+export function circleAccentColor(circle, isDark, surfaceHex) {
+  return resolveCircleAccent(accentKeyFromCircle(circle), isDark, surfaceHex);
+}
+
+export function accentById(accentId) {
+  const entry = paletteEntry(accentId);
+  return { id: accentId, color: entry.light, darkColor: entry.dark };
+}
+
+export function circleIconPresentation(circle, isDark, themeColors) {
+  const surface = themeColors?.surface || '#141110';
+  const borderToken = themeColors?.borderStrong || '#3A3530';
+  const accent = resolveCircleAccent(accentKeyFromCircle(circle), isDark, surface);
   if (isDark) {
     return {
       backgroundColor: accent.color,
@@ -154,23 +181,55 @@ export function circleIconPresentation(circle, isDark, borderToken) {
     };
   }
   return {
-    backgroundColor: `${accent.color}2E`,
-    borderColor: `${accent.color}55`,
+    backgroundColor: withAlpha(accent.color, '38'),
+    borderColor: withAlpha(accent.color, '66'),
     borderWidth: 1,
     labelColor: accent.color,
     onAccent: accent.color,
   };
 }
 
-export function accentSwatchPresentation(accentId, isDark, borderToken) {
-  return circleIconPresentation({ accentId }, isDark, borderToken);
+export function accentSwatchPresentation(accentId, isDark, themeColors) {
+  return circleIconPresentation({ accentId }, isDark, themeColors);
+}
+
+export function circleChipPresentation(circle, isDark, themeColors) {
+  const surface = themeColors?.surface || '#141110';
+  const accent = resolveCircleAccent(accentKeyFromCircle(circle), isDark, surface);
+  const icon = circleIconPresentation(circle, isDark, themeColors);
+  return {
+    ...icon,
+    labelColor: accent.color,
+    chipBackground: isDark ? withAlpha(accent.color, '22') : withAlpha(accent.color, '14'),
+    chipBorder: isDark ? themeColors?.borderStrong : withAlpha(accent.color, '55'),
+  };
+}
+
+export function circleBannerGradient(circle, isDark, themeColors) {
+  const surface = themeColors?.surface || (isDark ? '#141110' : '#FAF6F0');
+  const bg = themeColors?.bg || surface;
+  const accent = resolveCircleAccent(accentKeyFromCircle(circle), isDark, surface);
+  const rich = circle?.isOfficial ? 1 : 0;
+  if (isDark) {
+    return {
+      colors: [accent.color, withAlpha(accent.color, 'BB'), bg],
+      locations: rich ? [0, 0.5, 1] : [0, 0.55, 1],
+      motifOpacity: rich ? 0.14 : 0.1,
+      onAccent: accent.onAccent,
+    };
+  }
+  return {
+    colors: [accent.color, withAlpha(accent.color, 'DD'), rich ? '#FAF6F0' : '#F2ECE3'],
+    locations: rich ? [0, 0.4, 1] : [0, 0.5, 1],
+    motifOpacity: rich ? 0.12 : 0.08,
+    onAccent: accent.onAccent,
+  };
 }
 
 export function slugify(name) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 }
 
-// Simple similarity for create-circle suggestions.
 function levenshtein(a, b) {
   const m = a.length;
   const n = b.length;
@@ -209,30 +268,4 @@ export function findSimilarCircles(name, circles, limit = 3) {
 export function isCircleNameTaken(name, circles, exceptId = null) {
   const n = name.trim().toLowerCase();
   return circles.some((c) => c.id !== exceptId && c.name.trim().toLowerCase() === n);
-}
-
-// Banner gradient stops tuned per theme (accent-derived, no hardcoded UI outside tokens).
-export function circleBannerGradient(circle, isDark) {
-  const accent = circleAccentColor(circle, isDark);
-  const rich = circle?.isOfficial ? 1 : 0;
-  if (isDark) {
-    return {
-      colors: [
-        accent.color,
-        `${accent.color}cc`,
-        rich ? '#1a1412' : '#141110',
-      ],
-      locations: rich ? [0, 0.45, 1] : [0, 0.55, 1],
-      motifOpacity: rich ? 0.14 : 0.1,
-    };
-  }
-  return {
-    colors: [
-      accent.color,
-      `${accent.color}dd`,
-      rich ? '#FAF6F0' : '#F2ECE3',
-    ],
-    locations: rich ? [0, 0.4, 1] : [0, 0.5, 1],
-    motifOpacity: rich ? 0.12 : 0.08,
-  };
 }

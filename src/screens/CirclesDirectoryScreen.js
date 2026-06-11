@@ -4,11 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor } from '../data/circles';
+import { resolveCircleAccent } from '../data/circles';
 import CircleIcon from '../components/CircleIcon';
 
 function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colors }) {
-  const accent = circleAccentColor(circle, isDark);
+  const accent = resolveCircleAccent(circle.accentId, isDark, colors.surface);
   const activity = circle._activity || 0;
   return (
     <Pressable

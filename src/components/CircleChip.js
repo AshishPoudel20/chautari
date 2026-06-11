@@ -1,19 +1,23 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, StyleSheet, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor, circleIconPresentation } from '../data/circles';
+import { circleChipPresentation, resolveCircleAccent } from '../data/circles';
 import CircleIcon from './CircleIcon';
 
 export default function CircleChip({ circle, onPress, compact, showOfficial }) {
   const { isDark, radius, font, colors } = useTheme();
-  const accent = circle ? circleAccentColor(circle, isDark) : null;
-  const pres = circle ? circleIconPresentation(circle, isDark, colors.borderStrong) : null;
+  const pres = circle ? circleChipPresentation(circle, isDark, colors) : null;
+  const accent = circle ? resolveCircleAccent(circle.accentId, isDark, colors.surface) : null;
   const styles = useMemo(() => createStyles(radius, font), [radius, font]);
 
-  if (!circle) return null;
+  if (!circle || !pres) return null;
 
   const inner = (
-    <View style={[styles.wrap, compact && styles.wrapCompact, { borderColor: pres.labelColor + (isDark ? '66' : '44') }]}>
+    <View style={[
+      styles.wrap,
+      compact && styles.wrapCompact,
+      { backgroundColor: pres.chipBackground, borderColor: pres.chipBorder },
+    ]}>
       <CircleIcon circle={circle} size="chip" />
       <Text style={[styles.label, compact && styles.labelCompact, { color: pres.labelColor }]} numberOfLines={1}>
         {circle.name}

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
-import { circleAccentColor } from '../data/circles';
+import { resolveCircleAccent } from '../data/circles';
 import CircleIcon from './CircleIcon';
 
 export default function CirclesRecommendRow({ navigation, limit = 5 }) {
@@ -25,7 +25,7 @@ export default function CirclesRecommendRow({ navigation, limit = 5 }) {
       <Text style={styles.heading}>Circles you might like</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {circles.map((c) => {
-          const accent = circleAccentColor(c, isDark);
+          const accent = resolveCircleAccent(c.accentId, isDark, colors.surface);
           return (
             <View key={c.id} style={styles.card}>
               <Pressable onPress={() => navigate('CircleDetail', { circleId: c.id })}>

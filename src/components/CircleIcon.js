@@ -13,8 +13,8 @@ const SIZES = {
 export default function CircleIcon({ circle, size = 'md', style }) {
   const { isDark, colors, radius } = useTheme();
   const pres = useMemo(
-    () => circleIconPresentation(circle, isDark, colors.borderStrong),
-    [circle, isDark, colors.borderStrong],
+    () => circleIconPresentation(circle, isDark, colors),
+    [circle, isDark, colors],
   );
   const dim = SIZES[size] || SIZES.md;
   const styles = useMemo(

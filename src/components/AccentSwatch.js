@@ -6,8 +6,8 @@ import { accentSwatchPresentation } from '../data/circles';
 export default function AccentSwatch({ accentId, selected, onPress }) {
   const { isDark, colors } = useTheme();
   const pres = useMemo(
-    () => accentSwatchPresentation(accentId, isDark, colors.borderStrong),
-    [accentId, isDark, colors.borderStrong],
+    () => accentSwatchPresentation(accentId, isDark, colors),
+    [accentId, isDark, colors],
   );
 
   return (
