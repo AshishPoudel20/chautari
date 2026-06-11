@@ -134,7 +134,7 @@ export const seedQuestions = [
   },
   {
     id: 'q6', authorId: 'u_sabina', anonymous: false, category: 'it_careers',
-    title: 'How do I get my first IT job with no “local experience”?',
+    title: 'How do I get my first IT job with no experience?',
     body: 'I have 4 years of software experience from Nepal but every job here wants Australian experience. I have applied to 80+ roles, barely any callbacks. What actually works — internships, certifications, networking? Feeling stuck.',
     photos: [], createdAt: ago(11 * H), upvotes: 49, views: 1042,
     answers: [

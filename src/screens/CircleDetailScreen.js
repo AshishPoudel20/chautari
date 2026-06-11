@@ -129,6 +129,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={ei?.expert || null}
           onPress={() => openQuestion(item.id)}
           onCirclePress={() => {}}
+          hideCircleChip
         />
       </FadeRise>
     );
@@ -182,6 +183,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={expertAnswerOn(pinned)?.expert || null}
           onPress={() => openQuestion(pinned.id)}
           onCirclePress={() => {}}
+          hideCircleChip
         />
       ) : null}
     </View>

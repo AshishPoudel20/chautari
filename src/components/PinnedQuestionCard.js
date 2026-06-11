@@ -6,7 +6,7 @@ import { resolveCircleAccent } from '../data/circles';
 
 export default function PinnedQuestionCard({
   question, author, circle, answerCount, expert,
-  onPress, onCirclePress,
+  onPress, onCirclePress, hideCircleChip = false,
 }) {
   const { colors, spacing, font, radius, isDark } = useTheme();
   const accent = circle ? resolveCircleAccent(circle.accentId, isDark, colors.surface) : null;
@@ -27,6 +27,7 @@ export default function PinnedQuestionCard({
           expert={expert}
           onPress={onPress}
           onCirclePress={onCirclePress}
+          hideCircleChip={hideCircleChip}
         />
       </View>
     </View>

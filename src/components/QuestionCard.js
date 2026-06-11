@@ -8,6 +8,8 @@ import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
 function QuestionCard({
   question, author, circle, expert,
   onPress, onCirclePress,
+  hideCircleChip = false,
+  circleChipVariant = 'muted',
 }) {
   const { colors, shadow, spacing, radius, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font), [colors, shadow, spacing, radius, font]);
@@ -30,9 +32,9 @@ function QuestionCard({
 
         <Text style={styles.body} numberOfLines={1}>{question.body}</Text>
 
-        {circle ? (
+        {circle && !hideCircleChip ? (
           <View style={styles.chipRow}>
-            <CircleChip circle={circle} compact onPress={onCirclePress} />
+            <CircleChip circle={circle} compact variant={circleChipVariant} onPress={onCirclePress} />
           </View>
         ) : null}
 
