@@ -2,34 +2,46 @@ import React, { useMemo } from 'react';
 import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../theme/ThemeContext';
-import { useSelectors } from '../data/store';
-import { CountBadge } from '../components/ui';
 
 import HomeScreen from '../screens/HomeScreen';
 import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
-import NotificationsScreen from '../screens/NotificationsScreen';
 import MyProfileScreen from '../screens/MyProfileScreen';
+import ExpertsStack from './ExpertsStack';
 
 const Tab = createBottomTabNavigator();
 
-// Emoji "icons" keep the prototype dependency-free (no icon font setup needed).
-function TabIcon({ emoji, focused, badge }) {
+function TabIcon({ emoji, focused, color }) {
   return (
     <View style={{ width: 44, alignItems: 'center' }}>
-      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{emoji}</Text>
-      {badge ? (
-        <View style={{ position: 'absolute', right: 2, top: -4 }}>
-          <CountBadge count={badge} />
-        </View>
-      ) : null}
+      <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5, color }}>{emoji}</Text>
+    </View>
+  );
+}
+
+function TabExpertIcon({ focused, color }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ width: 44, alignItems: 'center' }}>
+      <View style={{
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: focused ? colors.verifiedTint : 'transparent',
+        borderWidth: 1.5,
+        borderColor: color,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: focused ? 1 : 0.65,
+      }}
+      >
+        <Text style={{ color, fontSize: 13, fontWeight: '900', lineHeight: 15 }}>✓</Text>
+      </View>
     </View>
   );
 }
 
 export default function MainTabs() {
   const { colors } = useTheme();
-  const { unreadNotifs } = useSelectors();
-  const unread = unreadNotifs();
 
   const screenOptions = useMemo(() => ({
     headerShown: false,
@@ -42,10 +54,10 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} /> }} />
-      <Tab.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles', tabBarIcon: ({ focused }) => <TabIcon emoji="◎" focused={focused} /> }} />
-      <Tab.Screen name="Alerts" component={NotificationsScreen} options={{ title: 'Alerts', tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} badge={unread} /> }} />
-      <Tab.Screen name="Profile" component={MyProfileScreen} options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} /> }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ focused, color }) => <TabIcon emoji="🏠" focused={focused} color={color} /> }} />
+      <Tab.Screen name="Circles" component={CirclesDirectoryScreen} options={{ title: 'Circles', tabBarIcon: ({ focused, color }) => <TabIcon emoji="◎" focused={focused} color={color} /> }} />
+      <Tab.Screen name="Experts" component={ExpertsStack} options={{ title: 'Experts', tabBarIcon: ({ focused, color }) => <TabExpertIcon focused={focused} color={color} /> }} />
+      <Tab.Screen name="Profile" component={MyProfileScreen} options={{ tabBarIcon: ({ focused, color }) => <TabIcon emoji="👤" focused={focused} color={color} /> }} />
     </Tab.Navigator>
   );
 }
