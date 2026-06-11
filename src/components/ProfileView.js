@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, Linking } from 'react-nati
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import KarmaBadge from './KarmaBadge';
+import FoundingMemberBadge from './FoundingMemberBadge';
 import Button from './Button';
 import QuestionCard from './QuestionCard';
 import { EmptyState } from './ui';
@@ -33,6 +34,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
         <View style={styles.nameRow}>
           <Text style={styles.name}>{user.name}</Text>
           {user.verified ? <VerifiedBadge /> : null}
+          {user.isFoundingMember ? <FoundingMemberBadge /> : null}
           <KarmaBadge karma={karmaFor(userId)} />
         </View>
         {user.profession ? <Text style={styles.profession}>{user.profession}{user.verifiedCategory ? ` · ${categoryName(user.verifiedCategory)}` : ''}</Text> : null}
@@ -108,7 +110,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
 
 const createStyles = (colors, spacing, font) => StyleSheet.create({
   top: { backgroundColor: colors.surface, alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.md },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.md, flexWrap: 'wrap', justifyContent: 'center' },
   name: { fontSize: font.h2, fontWeight: '800', color: colors.text },
   profession: { color: colors.primary, fontWeight: '700', fontSize: font.small, marginTop: 4 },
   suburb: { color: colors.textMuted, fontSize: font.small, marginTop: 4 },
