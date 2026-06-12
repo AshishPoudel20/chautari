@@ -58,7 +58,7 @@ export const seedUsers = [
   { id: 'u_dipesh', name: 'Dipesh Adhikari', suburb: 'Clayton', photo: null, bio: 'Masters student at Monash. Visa nerd.', verified: false, followers: 22, createdAt: ago(40 * D) },
   { id: 'u_manish', name: 'Manish Lama', suburb: 'Sunshine', photo: null, bio: 'IT support by day, real estate hobbyist by night.', verified: false, followers: 51, createdAt: ago(70 * D) },
   { id: 'u_sabina', name: 'Sabina Tamang', suburb: 'St Albans', photo: null, bio: 'Aged-care worker. Moved here in 2019.', verified: false, followers: 29, createdAt: ago(50 * D) },
-  { id: 'u_niraj', name: 'Niraj Poudel', suburb: 'Craigieburn', photo: null, bio: 'Civil engineer, weekend futsal organiser.', verified: false, followers: 33, createdAt: ago(45 * D) },
+  { id: 'u_niraj', name: 'Niraj Karki', suburb: 'Craigieburn', photo: null, bio: 'Civil engineer, weekend futsal organiser.', verified: false, followers: 33, createdAt: ago(45 * D) },
 ];
 
 export const seedCircles = [...buildOfficialCircles(), ...seedUserCircles];

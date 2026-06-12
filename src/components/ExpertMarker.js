@@ -5,15 +5,17 @@ import { useTheme } from '../theme/ThemeContext';
 // The "an expert is here" alive marker for feed cards. Saffron-accented and
 // weighted so it reads as "you'll get a credible answer here" at a glance.
 // This is the one place saffron earns its keep on the card.
-export default function ExpertMarker({ name, compact }) {
+export default function ExpertMarker({ name, compact, mode = 'answered' }) {
   const { colors, radius, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, radius, font), [colors, radius, font]);
+  const label = mode === 'posted'
+    ? (name ? `${name} · expert post` : 'Verified expert post')
+    : (name ? `${name} answered` : 'Expert answered');
+
   return (
     <View style={[styles.wrap, compact && styles.compact]}>
       <View style={styles.dot} />
-      <Text style={styles.text} numberOfLines={1}>
-        {name ? `${name} answered` : 'Expert answered'}
-      </Text>
+      <Text style={styles.text} numberOfLines={1}>{label}</Text>
     </View>
   );
 }
