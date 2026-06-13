@@ -76,10 +76,17 @@ export function Field({ label, hint, error, children }) {
   );
 }
 
-export function Input(props) {
+export function Input({ style, multiline, ...props }) {
   const { colors } = useTheme();
   const styles = useUIStyles();
-  return <TextInput placeholderTextColor={colors.textFaint} style={[styles.input, props.multiline && styles.inputMultiline, props.style]} {...props} />;
+  return (
+    <TextInput
+      placeholderTextColor={colors.textFaint}
+      multiline={multiline}
+      style={[styles.input, multiline && styles.inputMultiline, style]}
+      {...props}
+    />
+  );
 }
 
 // Live character counter that turns warm-green when the value is valid, muted

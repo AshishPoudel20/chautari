@@ -8,7 +8,7 @@ import CircleChip from '../components/CircleChip';
 import KarmaBadge from '../components/KarmaBadge';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
 import { professionLabel } from '../data/categories';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
@@ -30,7 +30,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const { dispatch } = useData();
   const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state } = useSelectors();
   const showToast = useToast();
-  const { navigate } = useNavigationGuard(navigation);
+  const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, line, shadow), [colors, spacing, font, radius, line, shadow]);
   const question = questionById(questionId);
@@ -68,9 +68,15 @@ export default function QuestionDetailScreen({ navigation, route }) {
         text: 'Delete question',
         style: 'destructive',
         onPress: () => {
-          dispatch({ type: 'DELETE_QUESTION', questionId });
-          navigation.goBack();
-          showToast('Question deleted', { tone: 'success' });
+          runAfterAlert(async () => {
+            goBack();
+            try {
+              await dispatch({ type: 'DELETE_QUESTION', questionId });
+              showToast('Question deleted', { tone: 'success' });
+            } catch (e) {
+              Alert.alert('Could not delete', e?.message || 'Try again.');
+            }
+          });
         },
       });
     } else {
@@ -78,7 +84,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     options.push({ text: 'Cancel', style: 'cancel' });
     Alert.alert(isMine ? 'Your question' : 'Question options', null, options);
-  }, [question, isMine, dispatch, questionId, navigation, showToast, navigate, circleById, isCircleCreator]);
+  }, [question, isMine, dispatch, questionId, showToast, navigate, goBack, circleById, isCircleCreator]);
 
   const toggleSave = useCallback(() => {
     const wasSaved = isSaved(questionId);

@@ -7,8 +7,11 @@ import { useTheme } from '../theme/ThemeContext';
 const ToastContext = createContext(() => {});
 
 function ToastView({ toast, anim }) {
-  const { colors, spacing, radius, font, shadow } = useTheme();
-  const styles = useMemo(() => createStyles(colors, spacing, radius, font, shadow), [colors, spacing, radius, font, shadow]);
+  const { colors, spacing, radius, font, shadow, isDark } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, spacing, radius, font, shadow, isDark),
+    [colors, spacing, radius, font, shadow, isDark],
+  );
 
   return (
     <Animated.View
@@ -22,9 +25,11 @@ function ToastView({ toast, anim }) {
       ]}
     >
       <View style={[styles.toast, toast.tone === 'danger' && styles.danger, toast.tone === 'success' && styles.success]}>
-        {toast.tone === 'success' && <Text style={styles.icon}>✓</Text>}
-        {toast.tone === 'danger' && <Text style={styles.icon}>⚠</Text>}
-        <Text style={styles.text}>{toast.message}</Text>
+        {toast.tone === 'success' && <Text style={[styles.icon, styles.iconOnTint]}>✓</Text>}
+        {toast.tone === 'danger' && <Text style={[styles.icon, styles.iconOnTint]}>⚠</Text>}
+        <Text style={[styles.text, (toast.tone === 'success' || toast.tone === 'danger') && styles.textOnTint]}>
+          {toast.message}
+        </Text>
       </View>
     </Animated.View>
   );
@@ -60,11 +65,25 @@ export function useToast() {
   return useContext(ToastContext);
 }
 
-const createStyles = (colors, spacing, radius, font, shadow) => StyleSheet.create({
+const createStyles = (colors, spacing, radius, font, shadow, isDark) => StyleSheet.create({
   wrap: { position: 'absolute', left: 0, right: 0, bottom: 96, alignItems: 'center', paddingHorizontal: spacing.xl, zIndex: 999 },
-  toast: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.text, paddingHorizontal: spacing.lg, paddingVertical: 13, borderRadius: radius.pill, maxWidth: '100%', ...shadow.raised },
-  success: { backgroundColor: colors.toastSuccess },
-  danger: { backgroundColor: colors.danger },
-  icon: { color: colors.onDark, fontWeight: '900', fontSize: font.body },
-  text: { color: colors.onDark, fontWeight: '700', fontSize: font.caption, flexShrink: 1 },
+  toast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: isDark ? colors.surfaceElevated : colors.offlineBanner,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: colors.borderStrong,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 13,
+    borderRadius: radius.pill,
+    maxWidth: '100%',
+    ...shadow.raised,
+  },
+  success: { backgroundColor: colors.toastSuccess, borderWidth: 0 },
+  danger: { backgroundColor: colors.danger, borderWidth: 0 },
+  icon: { color: isDark ? colors.text : colors.onDark, fontWeight: '900', fontSize: font.body },
+  iconOnTint: { color: colors.onDark },
+  text: { color: isDark ? colors.text : colors.onDark, fontWeight: '700', fontSize: font.caption, flexShrink: 1 },
+  textOnTint: { color: colors.onDark },
 });

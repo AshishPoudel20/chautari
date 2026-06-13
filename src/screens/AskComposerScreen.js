@@ -54,7 +54,7 @@ export default function AskComposerScreen({ navigation, route }) {
     setPhotos((p) => [...p, { id: `ph_${Date.now()}` }]); // mocked local thumbnail
   };
 
-  const submit = () => {
+  const submit = async () => {
     setTouched(true);
     if (atDailyLimit) {
       Alert.alert(
@@ -69,12 +69,15 @@ export default function AskComposerScreen({ navigation, route }) {
       return;
     }
     const id = `q_${Date.now().toString(36)}`;
-    // Optimistic: write to the store immediately, then play a brief confirmation
-    // and drop the asker straight into the live thread.
-    dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos });
     setPosting(true);
-    Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-    setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
+    try {
+      await dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos });
+      Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
+    } catch (e) {
+      setPosting(false);
+      Alert.alert('Could not post', e?.message || 'Check your connection and try again.');
+    }
   };
 
   const previewName = anonymous ? 'Anonymous' : user?.name || 'You';

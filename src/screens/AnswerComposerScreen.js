@@ -1,7 +1,10 @@
-import React, { useMemo,  useState, useRef  } from 'react';
-import { View, Text, StyleSheet, Switch, Pressable, Alert } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import {
+  View, Text, StyleSheet, Switch, Pressable, Alert,
+  KeyboardAvoidingView, Platform, ScrollView,
+} from 'react-native';
+import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
-import KeyboardScreen from '../components/KeyboardScreen';
 import Button from '../components/Button';
 import { Field, Input, CharCount } from '../components/ui';
 import { useData, useSelectors } from '../data/store';
@@ -11,10 +14,10 @@ import { useTheme } from '../theme/ThemeContext';
 
 const BODY_MIN = 20, BODY_MAX = 4000;
 
-// Answer composer modal: body, link insert, safe anonymous toggle. No photos (per brief).
 export default function AnswerComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
+  const headerHeight = useHeaderHeight();
 
   const { questionId } = route.params;
   const { dispatch } = useData();
@@ -36,27 +39,34 @@ export default function AnswerComposerScreen({ navigation, route }) {
     setBody((b) => b.slice(0, pos) + url + b.slice(pos));
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!valid) return;
     if (!online) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your answer — your draft stays here.');
       return;
     }
-    dispatch({ type: 'ADD_ANSWER', questionId, body, anonymous });
-    navigation.goBack();
-    showToast('Answer posted', { tone: 'success' });
+    try {
+      await dispatch({ type: 'ADD_ANSWER', questionId, body, anonymous });
+      navigation.goBack();
+      showToast('Answer posted', { tone: 'success' });
+    } catch (e) {
+      Alert.alert('Could not post answer', e?.message || 'Try again.');
+    }
   };
 
   return (
-    <KeyboardScreen
-      safe={false}
-      contentStyle={styles.body}
-      footer={(
-        <View style={styles.footer}>
-          <Button title="Post answer" icon="✍️" onPress={submit} disabled={!valid} />
-        </View>
-      )}
+    <KeyboardAvoidingView
+      style={styles.fill}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
     >
+      <ScrollView
+        style={styles.fill}
+        contentContainerStyle={styles.body}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        showsVerticalScrollIndicator={false}
+      >
         {question && (
           <View style={styles.qContext}>
             <Text style={styles.qContextLabel}>ANSWERING</Text>
@@ -80,7 +90,7 @@ export default function AnswerComposerScreen({ navigation, route }) {
             multiline
             autoFocus
             maxLength={BODY_MAX + 50}
-            style={{ minHeight: 200 }}
+            style={{ minHeight: 160 }}
           />
         </Field>
 
@@ -90,7 +100,12 @@ export default function AnswerComposerScreen({ navigation, route }) {
               <Text style={styles.anonTitle}>Answer anonymously</Text>
               <Text style={styles.anonSub}>Your name, photo and suburb stay hidden on this answer.</Text>
             </View>
-            <Switch value={anonymous} onValueChange={setAnonymous} trackColor={{ true: colors.primary, false: colors.borderStrong }} thumbColor={colors.onPrimary} />
+            <Switch
+              value={anonymous}
+              onValueChange={setAnonymous}
+              trackColor={{ true: colors.primary, false: colors.borderStrong }}
+              thumbColor={colors.onPrimary}
+            />
           </View>
           <View style={styles.previewRow}>
             <Avatar name={anonymous ? 'Anonymous' : user?.name || 'You'} anon={anonymous} size={28} />
@@ -98,12 +113,18 @@ export default function AnswerComposerScreen({ navigation, route }) {
             <Text style={styles.previewMeta}>· just now</Text>
           </View>
         </View>
-    </KeyboardScreen>
+
+        <View style={styles.footer}>
+          <Button title="Post answer" icon="✍️" onPress={submit} disabled={!valid} />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
-  body: { padding: spacing.lg, paddingBottom: spacing.xl },
+  fill: { flex: 1, backgroundColor: colors.bg },
+  body: { padding: spacing.lg, paddingBottom: spacing.xxl },
   qContext: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
   qContextLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textFaint, letterSpacing: 0.8, marginBottom: 4 },
   qContextTitle: { fontSize: font.body, fontWeight: '700', color: colors.text, lineHeight: 21 },
@@ -117,5 +138,5 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.lg, backgroundColor: colors.bgSunken, borderRadius: radius.md, padding: spacing.md },
   previewName: { fontWeight: '800', color: colors.text, fontSize: font.caption },
   previewMeta: { color: colors.textMuted, fontSize: font.tiny },
-  footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
+  footer: { marginTop: spacing.lg, paddingTop: spacing.md },
 });

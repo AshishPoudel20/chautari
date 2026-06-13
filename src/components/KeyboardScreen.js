@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useTheme } from '../theme/ThemeContext';
 
-// Keeps footer actions (submit buttons) above the keyboard on iOS/Android.
+// Keeps footer actions above the keyboard. Footer sits below a flex ScrollView;
+// KeyboardAvoidingView shrinks the layout so the footer stays tappable.
 export default function KeyboardScreen({
   children,
   footer = null,
@@ -22,6 +23,7 @@ export default function KeyboardScreen({
 
   const body = scroll ? (
     <ScrollView
+      style={footer ? styles.scroll : undefined}
       contentContainerStyle={[styles.content, contentStyle]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
@@ -35,7 +37,7 @@ export default function KeyboardScreen({
 
   const inner = (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.fill}
       keyboardVerticalOffset={offset}
     >
@@ -58,5 +60,6 @@ export default function KeyboardScreen({
 const createStyles = (colors) => StyleSheet.create({
   fill: { flex: 1 },
   bg: { backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   content: { flexGrow: 1 },
 });
