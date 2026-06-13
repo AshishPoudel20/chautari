@@ -35,7 +35,7 @@ The prototype deliberately has **no network calls, API keys, or third-party auth
 ## Key features (built in this prototype)
 
 - **Onboarding** — phone OTP flow (mocked), profile setup, newcomer opt-in for arrival checklist
-- **Feeds** — For You with **Hot** (decayed engagement score) and **New** (recency) toggle; Following tab; live activity signals. See [FEED_RANKING.md](./FEED_RANKING.md).
+- **Feeds** — For You with **Hot/New** toggle, **80/20 joined/discovery** composition ([FEED_COMPOSITION.md](./FEED_COMPOSITION.md)), and permanent membership in the 8 official circles; Following tab; live activity signals. Ranking: [FEED_RANKING.md](./FEED_RANKING.md).
 - **Circles** — official topic communities + user-created circles; join/leave, create, edit, pin
 - **Q&A** — ask/answer/reply, anonymous posting, photo placeholders, bookmarks, upvotes with karma
 - **Verified experts** — directory with filters, expert profiles, pinned expert answers, daily post cap
@@ -65,7 +65,9 @@ App.js
 
 **Circles accent system:** palette keys resolve to theme-aware light/dark hex values with contrast clamping (`src/data/circles.js`, `src/utils/color.js`).
 
-**For You ranking:** constants in `src/feed/rankingConfig.js`; snapshot-per-session Hot sort in `src/feed/feedRanking.js` + `src/hooks/useForYouFeed.js`. Full spec: [FEED_RANKING.md](./FEED_RANKING.md).
+**For You ranking:** constants in `src/feed/rankingConfig.js` (`DISCOVERY_RATIO`, `DISCOVERY_MIN_SCORE`, Hot score weights); snapshot-per-session Hot sort in `src/feed/feedRanking.js`; 80/20 composition in `src/feed/feedComposition.js` + `src/hooks/useForYouFeed.js`. Specs: [FEED_RANKING.md](./FEED_RANKING.md), [FEED_COMPOSITION.md](./FEED_COMPOSITION.md).
+
+**Official circles:** all 8 topic circles are permanent membership (every user is always joined; no leave control).
 
 ---
 
@@ -117,6 +119,7 @@ npx expo export --platform ios
 
 ## Repository notes
 
+- `FEED_COMPOSITION.md` — For You 80/20 joined/discovery blend (quality gate, official permanent membership)
 - `FEED_RANKING.md` — For You Hot/New ranking spec (constants, snapshot approach)
 - `PRD.md` and `BUILD_BRIEF.md` — original product and design briefs used during prototype development
 - `BUGS.md` — navigation audit log from polish passes

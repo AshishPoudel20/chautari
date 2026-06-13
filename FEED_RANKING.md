@@ -1,6 +1,6 @@
 # For You feed ranking
 
-How the **For You** tab orders posts. **Following** and circle feeds are unchanged (reverse-chronological).
+How the **For You** tab orders posts after [source composition](./FEED_COMPOSITION.md) (80% joined / 20% discovery). **Following** and circle feeds are unchanged (reverse-chronological).
 
 ## Modes
 

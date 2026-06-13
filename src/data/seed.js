@@ -431,6 +431,34 @@ export const seedQuestions = [
     answers: [],
   },
   {
+    id: 'q_disc_cricket_1', authorId: 'u_niraj', anonymous: false, circleId: 'c_cricket',
+    title: 'Looking for a casual cricket side in the north-west',
+    body: 'Moved to Craigieburn and miss weekend games. Any social sides that welcome newcomers who are rusty but keen?',
+    photos: [], createdAt: ago(40 * MIN), upvotes: 31, views: 410,
+    answers: [
+      { id: 'a_disc_c1', authorId: 'u_manish', anonymous: false, body: 'Our Footscray group sometimes needs an extra for Sunday friendlies — DM me and I will add you to the group chat.', createdAt: ago(25 * MIN), upvotes: 12, replies: [] },
+    ],
+  },
+  {
+    id: 'q_disc_cricket_2', authorId: 'u_manish', anonymous: false, circleId: 'c_cricket',
+    title: 'Best shops for affordable cricket gear in Melbourne?',
+    body: 'Need pads and gloves without paying pro-shop prices. Where does everyone buy gear?',
+    photos: [], createdAt: ago(5 * H), upvotes: 22, views: 290,
+    answers: [
+      { id: 'a_disc_c2', authorId: 'u_bibek', anonymous: false, body: 'Sports Traders and the big-box stores run end-of-season sales. Second-hand from Facebook marketplace is fine for casual grade.', createdAt: ago(4 * H), upvotes: 9, replies: [] },
+    ],
+  },
+  {
+    id: 'q_disc_cricket_3', authorId: 'u_niraj', anonymous: false, circleId: 'c_cricket',
+    title: 'Indoor nets in winter — groups taking newcomers?',
+    body: 'Want to keep batting through winter. Any indoor centres or groups around the north that let casuals book a net spot?',
+    photos: [], createdAt: ago(2.5 * D), upvotes: 38, views: 520,
+    answers: [
+      { id: 'a_disc_c3', authorId: 'u_niraj', anonymous: false, body: 'Updating: found a Sunday slot at a Craigieburn indoor centre — happy to share if others want in.', createdAt: ago(2.3 * D), upvotes: 14, replies: [] },
+      { id: 'a_disc_c4', authorId: 'u_manish', anonymous: false, body: 'Several clubs hire indoor lanes by the hour in the off-season — call ahead, some have beginner-friendly blocks.', createdAt: ago(2.2 * D), upvotes: 8, replies: [] },
+    ],
+  },
+  {
     id: 'q23', authorId: 'u_bibek', anonymous: false, category: 'general',
     title: 'Best value grocery runs for Nepali staples in the west?',
     body: 'Where is everyone buying rice, lentils, spices and the occasional gundruk without paying tourist prices? Western suburbs preferred but happy to drive for a good shop.',
