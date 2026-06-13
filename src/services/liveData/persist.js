@@ -73,6 +73,7 @@ export async function persistAction(action, state, userId) {
         author_id: userId,
         anonymous: !!action.anonymous,
         body: action.body.trim(),
+        photo_url: action.photoUrl || null,
       });
       if (error) throw error;
       return { ...action, id };
@@ -87,6 +88,7 @@ export async function persistAction(action, state, userId) {
         author_id: userId,
         anonymous: !!action.anonymous,
         body: action.body.trim(),
+        photo_url: action.photoUrl || null,
       });
       if (error) throw error;
       return { ...action, id };
@@ -192,6 +194,7 @@ export async function persistAction(action, state, userId) {
         description: action.description.trim(),
         icon: action.icon,
         accent_id: action.accentId,
+        image_url: action.imageUrl || null,
         creator_id: userId,
         is_official: false,
         member_count: 1,
@@ -207,12 +210,15 @@ export async function persistAction(action, state, userId) {
 
     case 'UPDATE_CIRCLE': {
       const name = action.name?.trim();
-      const { error } = await supabase.from('circles').update({
+      const updates = {
         name,
         handle: slugify(name),
         description: action.description.trim(),
         accent_id: action.accentId,
-      }).eq('id', action.circleId).eq('creator_id', userId);
+      };
+      if (action.imageUrl !== undefined) updates.image_url = action.imageUrl;
+      const { error } = await supabase.from('circles').update(updates)
+        .eq('id', action.circleId).eq('creator_id', userId);
       if (error) throw error;
       return action;
     }

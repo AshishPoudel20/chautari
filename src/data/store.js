@@ -290,6 +290,7 @@ function reducer(state, action) {
         authorId: 'me',
         anonymous: action.anonymous,
         body: action.body.trim(),
+        photo: action.photoUrl || null,
         createdAt: Date.now(),
         upvotes: 0,
         replies: [],
@@ -308,6 +309,7 @@ function reducer(state, action) {
         authorId: 'me',
         anonymous: action.anonymous,
         body: action.body.trim(),
+        photo: action.photoUrl || null,
         createdAt: Date.now(),
         upvotes: 0,
       };
@@ -494,6 +496,7 @@ function reducer(state, action) {
         description: action.description.trim(),
         icon: action.icon,
         accentId: action.accentId,
+        imageUrl: action.imageUrl || null,
         creatorId: 'me',
         memberCount: 1,
         createdAt: Date.now(),
@@ -542,6 +545,7 @@ function reducer(state, action) {
                 handle: slugify(name),
                 description: action.description.trim(),
                 accentId: action.accentId,
+                ...(action.imageUrl !== undefined ? { imageUrl: action.imageUrl } : {}),
               }
             : c
         ),

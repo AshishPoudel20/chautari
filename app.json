@@ -12,10 +12,18 @@
       "backgroundColor": "#0B7A6B"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Chautari needs photo library access so you can attach images to posts, answers, and your profile.",
+        "NSCameraUsageDescription": "Chautari needs camera access so you can take photos for posts and your profile."
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#0B7A6B",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -32,6 +40,13 @@
         {
           "icon": "./assets/icon.png",
           "color": "#B5302E"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chautari needs photo library access so you can attach images to posts, answers, and your profile.",
+          "cameraPermission": "Chautari needs camera access so you can take photos for posts and your profile."
         }
       ]
     ]

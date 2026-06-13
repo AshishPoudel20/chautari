@@ -14,6 +14,7 @@ export function mapReply(row, currentUserId) {
     authorId: authorToApp(row.author_id, currentUserId),
     anonymous: row.anonymous,
     body: row.body,
+    photo: row.photo_url || null,
     createdAt: new Date(row.created_at).getTime(),
     upvotes: row.upvotes ?? 0,
   };
@@ -28,6 +29,7 @@ export function mapAnswer(row, currentUserId) {
     authorId: authorToApp(row.author_id, currentUserId),
     anonymous: row.anonymous,
     body: row.body,
+    photo: row.photo_url || null,
     createdAt: new Date(row.created_at).getTime(),
     upvotes: row.upvotes ?? 0,
     replies,
