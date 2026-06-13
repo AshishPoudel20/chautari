@@ -6,12 +6,21 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import UpvoteButton from '../components/UpvoteButton';
 import CircleChip from '../components/CircleChip';
 import KarmaBadge from '../components/KarmaBadge';
+import ContentPhoto from '../components/ContentPhoto';
+import PhotoStrip from '../components/PhotoStrip';
+import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
+import { useNetwork } from '../data/network';
 import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
 import { professionLabel } from '../data/categories';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
+import { useImagePicker } from '../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { uploadReplyPhoto } from '../services/mediaStorage';
+import { normalizePhotoUrls } from '../utils/photos';
+import { ENABLE_REPLY_PHOTOS } from '../constants/media';
 
 // Renders text with visually distinct links (links allowed in answers/replies).
 function BodyText({ children, style, linkStyle }) {
@@ -30,6 +39,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const { dispatch } = useData();
   const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state } = useSelectors();
   const showToast = useToast();
+  const { online } = useNetwork();
+  const { pickFromLibrary, takePhoto } = useImagePicker();
   const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, line, shadow), [colors, spacing, font, radius, line, shadow]);
@@ -39,6 +50,9 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const qUpvoted = hasUpvotedQuestion(questionId);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [replyPhoto, setReplyPhoto] = useState(null);
+  const [replyPickerOpen, setReplyPickerOpen] = useState(false);
+  const [replySubmitting, setReplySubmitting] = useState(false);
   const [sort, setSort] = useState('top'); // 'top' | 'new' — for community answers
   const scrollRef = useRef(null);
   const headerHeight = useHeaderHeight();
@@ -135,12 +149,48 @@ export default function QuestionDetailScreen({ navigation, route }) {
     navigate(screen, { userId: authorId, title: u?.name });
   };
 
-  const submitReply = (answerId) => {
+  const submitReply = async (answerId) => {
     const len = replyText.trim().length;
-    if (len < 5 || len > 1000) return;
-    dispatch({ type: 'ADD_REPLY', questionId, answerId, body: replyText, anonymous: false });
-    setReplyText('');
-    setReplyingTo(null);
+    if (len < 5 || len > 1000 || replySubmitting) return;
+    if (replyPhoto?.uri && !online) {
+      Alert.alert('No connection', 'Reconnect to upload your reply photo.');
+      return;
+    }
+
+    const replyId = `r_${Date.now().toString(36)}`;
+    setReplySubmitting(true);
+    try {
+      let photoUrlValue = null;
+      if (ENABLE_REPLY_PHOTOS && replyPhoto?.uri) {
+        if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
+        photoUrlValue = await uploadReplyPhoto(replyId, { uri: replyPhoto.uri });
+      }
+      await dispatch({
+        type: 'ADD_REPLY',
+        questionId,
+        answerId,
+        id: replyId,
+        body: replyText,
+        anonymous: false,
+        photoUrl: photoUrlValue,
+      });
+      setReplyText('');
+      setReplyPhoto(null);
+      setReplyingTo(null);
+    } catch (e) {
+      Alert.alert('Could not post reply', e?.message || 'Try again.');
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
+
+  const pickReplyPhoto = async (pickerFn) => {
+    const picked = await pickerFn();
+    if (picked) setReplyPhoto({ uri: picked.uri });
+  };
+
+  const openPhotoViewer = (photos, index = 0) => {
+    navigate('ImageViewer', { photos: normalizePhotoUrls(photos), index });
   };
 
   const renderAnswer = (ans, isPinned) => {
@@ -166,6 +216,15 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
         <BodyText style={styles.answerBody} linkStyle={styles.link}>{ans.body}</BodyText>
 
+        {ans.photo ? (
+          <View style={styles.photoRow}>
+            <ContentPhoto
+              photo={ans.photo}
+              onPress={() => openPhotoViewer([ans.photo], 0)}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.answerActions}>
           <UpvoteButton
             count={ans.upvotes}
@@ -176,6 +235,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
             const opening = replyingTo !== ans.id;
             setReplyingTo(opening ? ans.id : null);
             setReplyText('');
+            setReplyPhoto(null);
             if (opening) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
           }} hitSlop={6}>
             <Text style={styles.replyBtn}>↩ Reply</Text>
@@ -196,6 +256,15 @@ export default function QuestionDetailScreen({ navigation, route }) {
                 <Text style={styles.metaTiny}>· {timeAgo(r.createdAt)}</Text>
               </Pressable>
               <BodyText style={styles.replyBody} linkStyle={styles.link}>{r.body}</BodyText>
+              {r.photo ? (
+                <View style={styles.photoRow}>
+                  <ContentPhoto
+                    photo={r.photo}
+                    size={64}
+                    onPress={() => openPhotoViewer([r.photo], 0)}
+                  />
+                </View>
+              ) : null}
               <View style={{ alignSelf: 'flex-start', marginTop: 6 }}>
                 <UpvoteButton size="sm" count={r.upvotes} active={hasUpvotedReply(r.id)} onToggle={() => dispatch({ type: 'TOGGLE_UPVOTE_REPLY', replyId: r.id })} />
               </View>
@@ -205,22 +274,33 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
         {replyingTo === ans.id && (
           <View style={styles.replyComposer}>
-            <TextInput
-              style={styles.replyInput}
-              placeholder="Write a reply…"
-              placeholderTextColor={colors.textFaint}
-              value={replyText}
-              onChangeText={setReplyText}
-              multiline
-              autoFocus
-              maxLength={1000}
-            />
+            <View style={{ flex: 1 }}>
+              <TextInput
+                style={styles.replyInput}
+                placeholder="Write a reply…"
+                placeholderTextColor={colors.textFaint}
+                value={replyText}
+                onChangeText={setReplyText}
+                multiline
+                autoFocus
+                maxLength={1000}
+              />
+              {ENABLE_REPLY_PHOTOS ? (
+                <PhotoStrip
+                  photos={replyPhoto ? [replyPhoto] : []}
+                  maxCount={1}
+                  onAdd={() => setReplyPickerOpen(true)}
+                  onRemove={() => setReplyPhoto(null)}
+                  tileSize={56}
+                />
+              ) : null}
+            </View>
             <Pressable
               onPress={() => submitReply(ans.id)}
-              disabled={replyText.trim().length < 5}
-              style={[styles.replySend, replyText.trim().length < 5 && { opacity: 0.4 }]}
+              disabled={replyText.trim().length < 5 || replySubmitting}
+              style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && { opacity: 0.4 }]}
             >
-              <Text style={styles.replySendText}>Send</Text>
+              <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>
             </Pressable>
           </View>
         )}
@@ -229,6 +309,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   };
 
   return (
+    <>
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -278,10 +359,12 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
           {question.photos?.length > 0 && (
             <View style={styles.photoRow}>
-              {question.photos.map((p, i) => (
-                <Pressable key={i} style={styles.photoTile} onPress={() => navigate('ImageViewer', { photos: question.photos, index: i })}>
-                  <Text style={{ fontSize: 24 }}>🖼</Text>
-                </Pressable>
+              {normalizePhotoUrls(question.photos).map((uri, i) => (
+                <ContentPhoto
+                  key={`${uri}-${i}`}
+                  photo={uri}
+                  onPress={() => openPhotoViewer(question.photos, i)}
+                />
               ))}
             </View>
           )}
@@ -327,6 +410,19 @@ export default function QuestionDetailScreen({ navigation, route }) {
         </Pressable>
       </View>
     </KeyboardAvoidingView>
+
+      {ENABLE_REPLY_PHOTOS ? (
+        <PhotoSourceSheet
+          visible={replyPickerOpen}
+          onClose={() => setReplyPickerOpen(false)}
+          title="Add reply photo"
+          showRemove={!!replyPhoto}
+          onCamera={() => pickReplyPhoto(takePhoto)}
+          onLibrary={() => pickReplyPhoto(pickFromLibrary)}
+          onRemove={() => setReplyPhoto(null)}
+        />
+      ) : null}
+    </>
   );
 }
 

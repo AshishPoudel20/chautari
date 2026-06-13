@@ -1,8 +1,10 @@
-import React, { useMemo,  useState, useRef  } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, Animated, Easing, Alert } from 'react-native';
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
 import Button from '../components/Button';
+import PhotoStrip from '../components/PhotoStrip';
+import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Field, Input, CharCount } from '../components/ui';
 import ExpertPostQuota from '../components/ExpertPostQuota';
 import { useData, useSelectors } from '../data/store';
@@ -10,8 +12,13 @@ import { useNetwork } from '../data/network';
 import { useNavigationGuard } from '../utils/navigation';
 import CircleChip from '../components/CircleChip';
 import { useTheme } from '../theme/ThemeContext';
+import { useImagePicker } from '../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { uploadQuestionPhotos } from '../services/mediaStorage';
+import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import { MAX_QUESTION_PHOTOS } from '../constants/media';
 
-const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000, MAX_PHOTOS = 5;
+const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000;
 
 export default function AskComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
@@ -21,16 +28,16 @@ export default function AskComposerScreen({ navigation, route }) {
   const { me, canExpertPostToday, joinedCirclesList, state, circleById, isJoinedCircle } = useSelectors();
   const { online } = useNetwork();
   const { replace } = useNavigationGuard(navigation);
+  const { pickFromLibrary, takePhoto } = useImagePicker();
   const user = me();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [circleId, setCircleId] = useState(route.params?.circleId || null);
   const [circleQuery, setCircleQuery] = useState('');
   const [photos, setPhotos] = useState([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
   const [touched, setTouched] = useState(false);
-
-  // success overlay
   const [posting, setPosting] = useState(false);
   const success = useRef(new Animated.Value(0)).current;
 
@@ -49,9 +56,46 @@ export default function AskComposerScreen({ navigation, route }) {
     return [...filter(joined), ...filter(rest)];
   }, [joinedCirclesList, state.circles, circleQuery]);
 
-  const addPhoto = () => {
-    if (photos.length >= MAX_PHOTOS) return;
-    setPhotos((p) => [...p, { id: `ph_${Date.now()}` }]); // mocked local thumbnail
+  const addPickedPhoto = async (picked) => {
+    if (!picked) return;
+    if (photos.length >= MAX_QUESTION_PHOTOS) return;
+    setPhotos((p) => [...p, { id: `ph_${Date.now()}`, uri: picked.uri }]);
+  };
+
+  const removePhoto = (id) => setPhotos((arr) => arr.filter((x) => x.id !== id));
+
+  const uploadAllPhotos = async (questionId) => {
+    const pending = photos.filter((p) => isLocalPhotoUri(p.uri) && !photoUrl(p));
+    if (!pending.length) return photos.map(photoUrl).filter(Boolean);
+
+    if (!isSupabaseConfigured()) {
+      throw new Error('Photo upload requires Supabase — add your project keys to .env.');
+    }
+
+    setPhotos((arr) => arr.map((p) => (
+      pending.some((x) => x.id === p.id) ? { ...p, uploading: true, error: null } : p
+    )));
+
+    try {
+      const assets = pending.map((p) => ({ uri: p.uri }));
+      const urls = await uploadQuestionPhotos(questionId, assets);
+      let urlIdx = 0;
+      const merged = photos.map((p) => {
+        if (pending.some((x) => x.id === p.id)) {
+          const url = urls[urlIdx];
+          urlIdx += 1;
+          return { ...p, url, uploading: false, error: null };
+        }
+        return photoUrl(p) ? p : p;
+      });
+      setPhotos(merged);
+      return merged.map(photoUrl).filter(Boolean);
+    } catch (e) {
+      setPhotos((arr) => arr.map((p) => (
+        pending.some((x) => x.id === p.id) ? { ...p, uploading: false, error: e?.message || 'Upload failed' } : p
+      )));
+      throw e;
+    }
   };
 
   const submit = async () => {
@@ -68,10 +112,16 @@ export default function AskComposerScreen({ navigation, route }) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your question — your draft stays here.');
       return;
     }
+    if (photos.some((p) => p.uploading)) return;
+
     const id = `q_${Date.now().toString(36)}`;
     setPosting(true);
     try {
-      await dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos });
+      let photoUrls = photos.map(photoUrl).filter(Boolean);
+      if (photos.some((p) => isLocalPhotoUri(p.uri) && !photoUrl(p))) {
+        photoUrls = await uploadAllPhotos(id);
+      }
+      await dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos: photoUrls });
       Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
     } catch (e) {
@@ -85,20 +135,20 @@ export default function AskComposerScreen({ navigation, route }) {
 
   return (
     <View style={styles.wrap}>
-    <KeyboardScreen
-      safe={false}
-      contentStyle={styles.body}
-      footer={(
-        <View style={styles.footer}>
-          <Button
-            title={atDailyLimit ? 'Daily limit reached' : 'Post question'}
-            icon="✍️"
-            onPress={submit}
-            disabled={atDailyLimit || (touched && !valid)}
-          />
-        </View>
-      )}
-    >
+      <KeyboardScreen
+        safe={false}
+        contentStyle={styles.body}
+        footer={(
+          <View style={styles.footer}>
+            <Button
+              title={atDailyLimit ? 'Daily limit reached' : posting ? 'Posting…' : 'Post question'}
+              icon="✍️"
+              onPress={submit}
+              disabled={atDailyLimit || posting || (touched && !valid)}
+            />
+          </View>
+        )}
+      >
         <ExpertPostQuota variant="banner" />
 
         <Field
@@ -142,23 +192,16 @@ export default function AskComposerScreen({ navigation, route }) {
           </View>
         </Field>
 
-        <Field label={`Photos · optional · up to ${MAX_PHOTOS}`}>
-          <View style={styles.photoRow}>
-            {photos.map((p) => (
-              <Pressable key={p.id} style={styles.photoTile} onPress={() => setPhotos((arr) => arr.filter((x) => x.id !== p.id))}>
-                <Text style={styles.photoEmoji}>🖼</Text>
-                <View style={styles.photoRemove}><Text style={styles.photoRemoveText}>✕</Text></View>
-              </Pressable>
-            ))}
-            {photos.length < MAX_PHOTOS && (
-              <Pressable style={[styles.photoTile, styles.photoAdd]} onPress={addPhoto}>
-                <Text style={styles.photoAddText}>＋</Text>
-              </Pressable>
-            )}
-          </View>
+        <Field label={`Photos · optional · up to ${MAX_QUESTION_PHOTOS}`}>
+          <PhotoStrip
+            photos={photos}
+            maxCount={MAX_QUESTION_PHOTOS}
+            onAdd={() => setPickerOpen(true)}
+            onRemove={removePhoto}
+            onRetry={() => submit()}
+          />
         </Field>
 
-        {/* Safe, reassuring anonymous toggle with a live preview */}
         <View style={styles.anonCard}>
           <View style={styles.anonHeader}>
             <View style={{ flex: 1 }}>
@@ -186,7 +229,15 @@ export default function AskComposerScreen({ navigation, route }) {
             </View>
           </View>
         </View>
-    </KeyboardScreen>
+      </KeyboardScreen>
+
+      <PhotoSourceSheet
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        title="Add question photo"
+        onCamera={async () => { addPickedPhoto(await takePhoto()); }}
+        onLibrary={async () => { addPickedPhoto(await pickFromLibrary()); }}
+      />
 
       {posting && (
         <View style={styles.overlay} pointerEvents="none">
@@ -207,14 +258,6 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   chips: { gap: spacing.xs },
   selectedMark: { fontSize: font.tiny, color: colors.primary, fontWeight: '800', marginTop: 4, marginLeft: 4 },
   joinHint: { fontSize: font.tiny, color: colors.textFaint, marginTop: 2, marginLeft: 4 },
-  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  photoTile: { width: 68, height: 68, borderRadius: radius.md, backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
-  photoEmoji: { fontSize: 26 },
-  photoRemove: { position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
-  photoRemoveText: { color: colors.onPrimary, fontWeight: '900', fontSize: 11 },
-  photoAdd: { borderWidth: 1.5, borderColor: colors.primary, borderStyle: 'dashed', backgroundColor: 'transparent' },
-  photoAddText: { fontSize: 28, color: colors.primary },
-
   anonCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card },
   anonHeader: { flexDirection: 'row', alignItems: 'center' },
   anonTitle: { fontWeight: '800', color: colors.text, fontSize: font.bodyLg },
@@ -224,9 +267,7 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   previewRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSunken, borderRadius: radius.md, padding: spacing.md },
   previewName: { fontWeight: '800', color: colors.text, fontSize: font.caption },
   previewMeta: { color: colors.textMuted, fontSize: font.tiny, marginTop: 2 },
-
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
-
   overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.overlay },
   successCard: { backgroundColor: colors.surface, borderRadius: radius.xl, paddingVertical: spacing.xl, paddingHorizontal: 40, alignItems: 'center', ...shadow.raised },
   successCheck: { fontSize: 44, color: colors.success, fontWeight: '900', marginBottom: spacing.sm },
