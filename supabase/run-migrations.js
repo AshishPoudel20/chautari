@@ -1,0 +1,61 @@
+/**
+ * One-off: run SQL migration files against remote Supabase (uses SUPABASE_DB_URL from .env).
+ * Usage: node supabase/run-migrations.js [000|001|002|003|all]
+ */
+const fs = require('fs');
+const path = require('path');
+const { Client } = require('pg');
+
+function loadEnv() {
+  const envPath = path.join(__dirname, '..', '.env');
+  if (!fs.existsSync(envPath)) throw new Error('Missing .env with SUPABASE_DB_URL');
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m) process.env[m[1].trim()] = m[2].trim();
+  }
+}
+
+const FILES = {
+  '000': '000_reset_public_schema.sql',
+  '001': '001_chautari_schema.sql',
+  '002': '002_seed_reference_data.sql',
+  '003': '003_clear_auth_users.sql',
+  '004': '004_rls_content_updates.sql',
+  '005': '005_flexible_social_refs.sql',
+};
+
+async function runFile(client, name) {
+  const file = path.join(__dirname, 'migrations', name);
+  const sql = fs.readFileSync(file, 'utf8');
+  console.log(`\n→ ${name}`);
+  await client.query(sql);
+  console.log(`  ✓ done`);
+}
+
+async function main() {
+  loadEnv();
+  const url = process.env.SUPABASE_DB_URL;
+  if (!url) throw new Error('SUPABASE_DB_URL not set in .env');
+
+  const arg = process.argv[2] || 'all';
+  const order = ['000', '003', '001', '002'];
+  const keys = arg === 'all' ? order : [arg];
+
+  const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  await client.connect();
+  try {
+    for (const key of keys) {
+      const file = FILES[key];
+      if (!file) throw new Error(`Unknown step: ${key}`);
+      await runFile(client, file);
+    }
+    console.log('\nAll requested migrations completed.');
+  } finally {
+    await client.end();
+  }
+}
+
+main().catch((err) => {
+  console.error('\nMigration failed:', err.message);
+  process.exit(1);
+});
