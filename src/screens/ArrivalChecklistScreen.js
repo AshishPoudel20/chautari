@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing } from 'react-native';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { CHECKLIST_ITEMS, CHECKLIST_TOTAL } from '../data/checklist';
 
 export default function ArrivalChecklistScreen({ navigation }) {
   const { dispatch } = useData();
   const { checklistDoneCount, isChecklistItemDone, isNewcomerActive } = useSelectors();
-  const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
@@ -44,11 +42,15 @@ export default function ArrivalChecklistScreen({ navigation }) {
   };
 
   const openThread = (questionId) => {
-    navigate('QuestionDetail', { questionId, fromChecklist: true });
+    navigation.navigate('QuestionDetail', { questionId, fromChecklist: true });
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.body}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.body}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.intro}>
         Ten practical steps for your first month — tick them off as you go, and tap through to real community answers.
       </Text>
@@ -65,6 +67,7 @@ export default function ArrivalChecklistScreen({ navigation }) {
 
       {allDone ? (
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.celebrate,
             {
@@ -91,21 +94,33 @@ export default function ArrivalChecklistScreen({ navigation }) {
         const checked = isChecklistItemDone(item.id);
         return (
           <View key={item.id} style={styles.item}>
-            <Pressable
-              onPress={() => toggle(item.id)}
-              style={styles.checkRow}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked }}
-            >
-              <View style={[styles.checkbox, checked && styles.checkboxOn]}>
-                {checked ? <Text style={styles.checkMark}>✓</Text> : null}
-              </View>
-              <View style={styles.itemText}>
+            <View style={styles.checkRow}>
+              <Pressable
+                onPress={() => toggle(item.id)}
+                style={styles.checkboxHit}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked }}
+              >
+                <View style={[styles.checkbox, checked && styles.checkboxOn]}>
+                  {checked ? <Text style={styles.checkMark}>✓</Text> : null}
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => toggle(item.id)}
+                style={styles.itemText}
+                accessibilityRole="button"
+                accessibilityLabel={`${checked ? 'Uncheck' : 'Check'} ${item.title}`}
+              >
                 <Text style={[styles.itemTitle, checked && styles.itemTitleDone]}>{item.title}</Text>
                 <Text style={styles.itemExplainer}>{item.explainer}</Text>
-              </View>
-            </Pressable>
-            <Pressable onPress={() => openThread(item.questionId)} style={styles.linkRow}>
+              </Pressable>
+            </View>
+            <Pressable
+              onPress={() => openThread(item.questionId)}
+              style={styles.linkRow}
+              hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+            >
               <Text style={styles.linkText}>See answers from the community →</Text>
             </Pressable>
           </View>
@@ -154,7 +169,13 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
     overflow: 'hidden',
     ...shadow.card,
   },
-  checkRow: { flexDirection: 'row', padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md },
+  checkRow: { flexDirection: 'row', padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm },
+  checkboxHit: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   checkbox: {
     width: 26,
     height: 26,
@@ -163,14 +184,19 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
     borderColor: colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
   },
   checkboxOn: { backgroundColor: colors.primary, borderColor: colors.primary },
   checkMark: { color: colors.onPrimary, fontSize: 14, fontWeight: '900' },
-  itemText: { flex: 1 },
+  itemText: { flex: 1, paddingVertical: 2 },
   itemTitle: { fontSize: font.body, fontWeight: '800', color: colors.text, marginBottom: 4 },
   itemTitleDone: { color: colors.textMuted, textDecorationLine: 'line-through' },
   itemExplainer: { fontSize: font.caption, color: colors.textSecondary, lineHeight: 20 },
-  linkRow: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.xs },
+  linkRow: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
   linkText: { color: colors.primary, fontWeight: '800', fontSize: font.caption },
 });
