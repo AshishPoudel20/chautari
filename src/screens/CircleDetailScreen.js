@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated,
+  View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated, Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, runAfterAlert } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
+import { photoUrl } from '../utils/photos';
 
 const BANNER_EXPANDED = 196;
 const COLLAPSE_RANGE = 130;
@@ -143,9 +144,14 @@ export default function CircleDetailScreen({ navigation, route }) {
     );
   }, [userById, circle, answerCount, expertAnswerOn, openQuestion, navigate]);
 
-  const listHeader = useMemo(() => (
+  const listHeader = useMemo(() => {
+    const bannerImage = photoUrl(circle?.imageUrl);
+    return (
     <View>
       <Animated.View style={[styles.bannerShell, bannerStyle]}>
+        {bannerImage ? (
+          <Image source={{ uri: bannerImage }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ) : null}
         <LinearGradient
           colors={banner?.colors || [colors.bg, colors.bg]}
           locations={banner?.locations}
@@ -202,7 +208,8 @@ export default function CircleDetailScreen({ navigation, route }) {
         />
       ) : null}
     </View>
-  ), [styles, bannerStyle, banner, colors, accent, circle, expandedContentStyle, joined, toggleJoin, creator, goToProfile, experts, pinned, userById, answerCount, expertAnswerOn, openQuestion]);
+  );
+  }, [styles, bannerStyle, banner, colors, accent, circle, expandedContentStyle, joined, toggleJoin, creator, goToProfile, experts, pinned, userById, answerCount, expertAnswerOn, openQuestion]);
 
   if (!circle) {
     return (
