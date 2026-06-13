@@ -55,7 +55,8 @@ function AppNavigator() {
     return () => clearTimeout(t);
   }, []);
 
-  const ready = state.booted && minTimePassed;
+  const ready = state.booted && state.authReady && minTimePassed;
+  const needsProfile = !!state.authUserId && !state.currentUserId;
 
   const navTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -93,13 +94,20 @@ function AppNavigator() {
         {!ready ? (
           <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false, animation: 'fade' }} />
         ) : !state.currentUserId ? (
-          <Stack.Group screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="PhoneEntry" component={PhoneEntryScreen} options={{ headerShown: true, title: '', headerBackTitle: 'Back' }} />
-            <Stack.Screen name="Otp" component={OtpScreen} options={{ headerShown: true, title: '', headerBackTitle: 'Back' }} />
-            <Stack.Screen name="ProfileName" component={ProfileNameScreen} options={{ headerShown: true, title: 'Your profile', headerBackTitle: 'Back' }} />
-            <Stack.Screen name="ProfileSuburb" component={ProfileSuburbScreen} options={{ headerShown: true, title: 'Almost there', headerBackTitle: 'Back' }} />
-          </Stack.Group>
+          needsProfile ? (
+            <Stack.Group screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+              <Stack.Screen name="ProfileName" component={ProfileNameScreen} options={{ headerShown: true, title: 'Your profile', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="ProfileSuburb" component={ProfileSuburbScreen} options={{ headerShown: true, title: 'Almost there', headerBackTitle: 'Back' }} />
+            </Stack.Group>
+          ) : (
+            <Stack.Group screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="PhoneEntry" component={PhoneEntryScreen} options={{ headerShown: true, title: '', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="Otp" component={OtpScreen} options={{ headerShown: true, title: '', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="ProfileName" component={ProfileNameScreen} options={{ headerShown: true, title: 'Your profile', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="ProfileSuburb" component={ProfileSuburbScreen} options={{ headerShown: true, title: 'Almost there', headerBackTitle: 'Back' }} />
+            </Stack.Group>
+          )
         ) : (
           <Stack.Group>
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false, animation: 'fade' }} />

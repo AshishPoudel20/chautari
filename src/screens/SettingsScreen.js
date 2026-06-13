@@ -4,6 +4,8 @@ import { useData, useSelectors } from '../data/store';
 import { composeDigestSummary, scheduleDigest, ensureNotificationPermissions } from '../services/digest';
 import { useNetwork } from '../data/network';
 import { useTheme } from '../theme/ThemeContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { signOut } from '../services/auth';
 
 // Settings: support links (real screens), account actions, and a demo offline toggle.
 export default function SettingsScreen({ navigation }) {
@@ -16,7 +18,16 @@ export default function SettingsScreen({ navigation }) {
   const logout = () => {
     Alert.alert('Log out?', 'You can sign back in anytime with your phone number.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: () => dispatch({ type: 'LOGOUT' }) },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          if (isSupabaseConfigured()) {
+            try { await signOut(); } catch (e) { /* session listener clears state */ }
+          }
+          dispatch({ type: 'LOGOUT' });
+        },
+      },
     ]);
   };
 

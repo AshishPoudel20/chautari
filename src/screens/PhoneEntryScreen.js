@@ -1,9 +1,10 @@
-import React, { useMemo,  useState  } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Button from '../components/Button';
 import KeyboardScreen from '../components/KeyboardScreen';
 import { Input } from '../components/ui';
 import { useTheme } from '../theme/ThemeContext';
+import { sendPhoneOtp, toE164Au, usesMockOtp } from '../services/auth';
 
 // AU mobile entry. +61 is fixed; user types the 9-digit mobile (starts with 4).
 export default function PhoneEntryScreen({ navigation }) {
@@ -11,14 +12,33 @@ export default function PhoneEntryScreen({ navigation }) {
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
   const [digits, setDigits] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const cleaned = digits.replace(/\D/g, '');
 
   // AU mobile: 9 digits beginning with 4 (e.g. 412 345 678).
   const valid = /^4\d{8}$/.test(cleaned);
 
-  const onSend = () => {
-    if (!valid) return;
-    navigation.navigate('Otp', { phone: `+61 ${cleaned}` });
+  const onSend = async () => {
+    if (!valid || sending) return;
+    setError('');
+    const phoneE164 = toE164Au(cleaned);
+    const phoneDisplay = `+61 ${cleaned}`;
+
+    if (usesMockOtp()) {
+      navigation.navigate('Otp', { phone: phoneDisplay, phoneE164 });
+      return;
+    }
+
+    setSending(true);
+    try {
+      await sendPhoneOtp(phoneE164);
+      navigation.navigate('Otp', { phone: phoneDisplay, phoneE164 });
+    } catch (e) {
+      setError(e?.message || 'Could not send code. Check Phone auth is enabled in Supabase.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -26,7 +46,8 @@ export default function PhoneEntryScreen({ navigation }) {
       contentStyle={styles.body}
       footer={(
         <View style={styles.footer}>
-          <Button title="Send code" onPress={onSend} disabled={!valid} />
+          <Button title={sending ? 'Sending…' : 'Send code'} onPress={onSend} disabled={!valid || sending} />
+          {sending ? <ActivityIndicator style={{ marginTop: spacing.md }} color={colors.primary} /> : null}
         </View>
       )}
     >
@@ -45,7 +66,8 @@ export default function PhoneEntryScreen({ navigation }) {
           autoFocus
         />
       </View>
-      {cleaned.length > 0 && !valid ? (
+      {error ? <Text style={styles.err}>{error}</Text> : null}
+      {cleaned.length > 0 && !valid && !error ? (
         <Text style={styles.err}>Enter a valid Australian mobile (9 digits starting with 4).</Text>
       ) : (
         <Text style={styles.hint}>Australian mobile numbers only for v1 (Greater Melbourne).</Text>

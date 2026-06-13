@@ -7,6 +7,8 @@ import { Chip } from '../components/ui';
 import { useData } from '../data/store';
 import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { completeOnboarding } from '../services/profile';
 
 // Profile setup step 2 — suburb + photo, both optional and skippable.
 // This is the final onboarding step, so we create the account here.
@@ -14,15 +16,36 @@ export default function ProfileSuburbScreen({ navigation, route }) {
   const { colors, spacing, font, radius } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
-  const { dispatch } = useData();
+  const { dispatch, state } = useData();
   const name = route.params?.name || 'You';
   const [suburb, setSuburb] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [newcomer, setNewcomer] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const finish = () => {
-    dispatch({ type: 'SIGN_UP', name, newcomer });
-    if (suburb || photo) dispatch({ type: 'UPDATE_PROFILE', patch: { suburb, photo } });
+  const finish = async () => {
+    if (saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      let authUserId = state.authUserId;
+      if (isSupabaseConfigured()) {
+        authUserId = await completeOnboarding({
+          name,
+          suburb,
+          photo,
+          newcomer,
+          phone: route.params?.phoneE164 || route.params?.phone,
+        });
+        if (authUserId) dispatch({ type: 'SET_AUTH', userId: authUserId });
+      }
+      dispatch({ type: 'SIGN_UP', name, newcomer, authUserId });
+      if (suburb || photo) dispatch({ type: 'UPDATE_PROFILE', patch: { suburb, photo } });
+    } catch (e) {
+      setError(e?.message || 'Could not save profile. Try again.');
+      setSaving(false);
+    }
   };
 
   const mockPhoto = () => {
@@ -48,8 +71,9 @@ export default function ProfileSuburbScreen({ navigation, route }) {
               thumbColor={colors.onPrimary}
             />
           </View>
-          <Button title="Finish" onPress={finish} />
-          <Button title="Skip for now" variant="ghost" onPress={finish} style={{ marginTop: 4 }} />
+          {error ? <Text style={styles.err}>{error}</Text> : null}
+          <Button title={saving ? 'Saving…' : 'Finish'} onPress={finish} disabled={saving} />
+          <Button title="Skip for now" variant="ghost" onPress={finish} disabled={saving} style={{ marginTop: 4 }} />
         </View>
       )}
     >
@@ -99,4 +123,5 @@ const createStyles = (colors, spacing, font, radius) => StyleSheet.create({
   newcomerCopy: { flex: 1 },
   newcomerLabel: { fontSize: font.caption, fontWeight: '800', color: colors.text },
   newcomerHint: { fontSize: font.tiny, color: colors.textMuted, marginTop: 2, lineHeight: 16 },
+  err: { color: colors.danger, fontSize: font.small, fontWeight: '600', marginBottom: spacing.sm, textAlign: 'center' },
 });

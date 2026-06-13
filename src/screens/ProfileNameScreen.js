@@ -18,7 +18,11 @@ export default function ProfileNameScreen({ navigation, route }) {
 
   const next = () => {
     if (!valid) return;
-    navigation.navigate('ProfileSuburb', { name: trimmed, phone: route.params?.phone });
+    navigation.navigate('ProfileSuburb', {
+      name: trimmed,
+      phone: route.params?.phone,
+      phoneE164: route.params?.phoneE164,
+    });
   };
 
   return (

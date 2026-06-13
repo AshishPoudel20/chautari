@@ -4,6 +4,8 @@ import Button from '../components/Button';
 import KeyboardScreen from '../components/KeyboardScreen';
 import { useData, useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { signOut } from '../services/auth';
 
 const LENGTH = 6;
 
@@ -31,8 +33,11 @@ export default function DeleteAccountScreen({ navigation }) {
     setStage('confirm'); // mock backend accepts any code
   };
 
-  const reallyDelete = () => {
-    dispatch({ type: 'DELETE_ACCOUNT' }); // navigator swaps to auth automatically
+  const reallyDelete = async () => {
+    if (isSupabaseConfigured()) {
+      try { await signOut(); } catch (e) { /* local wipe still runs */ }
+    }
+    dispatch({ type: 'DELETE_ACCOUNT' });
   };
 
   return (

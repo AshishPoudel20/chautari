@@ -8,6 +8,8 @@ import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
 import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { updateProfile } from '../services/profile';
 
 // Edit Profile: name, photo (mock source picker), suburb, bio — all against mock
 // data, reflected immediately on save.
@@ -27,11 +29,17 @@ export default function EditProfileScreen({ navigation }) {
 
   const valid = name.trim().length >= 2;
 
-  const save = () => {
+  const save = async () => {
     if (!valid) return;
-    dispatch({ type: 'UPDATE_PROFILE', patch: { name: name.trim(), suburb, bio: bio.trim(), photo } });
-    showToast('Profile updated', { tone: 'success' });
-    navigation.goBack();
+    const patch = { name: name.trim(), suburb, bio: bio.trim(), photo };
+    try {
+      if (isSupabaseConfigured()) await updateProfile(patch);
+      dispatch({ type: 'UPDATE_PROFILE', patch });
+      showToast('Profile updated', { tone: 'success' });
+      navigation.goBack();
+    } catch (e) {
+      showToast(e?.message || 'Could not save profile', { tone: 'error' });
+    }
   };
 
   const mockedSource = (label) => {
