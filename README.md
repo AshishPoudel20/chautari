@@ -35,7 +35,7 @@ The prototype deliberately has **no network calls, API keys, or third-party auth
 ## Key features (built in this prototype)
 
 - **Onboarding** — phone OTP flow (mocked), profile setup, newcomer opt-in for arrival checklist
-- **Feeds** — For You (smart mix across circles) and Following; live activity signals
+- **Feeds** — For You with **Hot** (decayed engagement score) and **New** (recency) toggle; Following tab; live activity signals. See [FEED_RANKING.md](./FEED_RANKING.md).
 - **Circles** — official topic communities + user-created circles; join/leave, create, edit, pin
 - **Q&A** — ask/answer/reply, anonymous posting, photo placeholders, bookmarks, upvotes with karma
 - **Verified experts** — directory with filters, expert profiles, pinned expert answers, daily post cap
@@ -64,6 +64,8 @@ App.js
 **Theming:** `src/theme/palettes.js` defines semantic colour tokens consumed via `useTheme()` — no hardcoded colours in screens.
 
 **Circles accent system:** palette keys resolve to theme-aware light/dark hex values with contrast clamping (`src/data/circles.js`, `src/utils/color.js`).
+
+**For You ranking:** constants in `src/feed/rankingConfig.js`; snapshot-per-session Hot sort in `src/feed/feedRanking.js` + `src/hooks/useForYouFeed.js`. Full spec: [FEED_RANKING.md](./FEED_RANKING.md).
 
 ---
 
@@ -115,6 +117,7 @@ npx expo export --platform ios
 
 ## Repository notes
 
+- `FEED_RANKING.md` — For You Hot/New ranking spec (constants, snapshot approach)
 - `PRD.md` and `BUILD_BRIEF.md` — original product and design briefs used during prototype development
 - `BUGS.md` — navigation audit log from polish passes
 - No `.env` or secrets required to run this prototype

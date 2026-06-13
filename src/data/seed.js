@@ -69,6 +69,32 @@ export { seedJoinedCircles };
 // circleId maps to official circle ids or user-created circle ids.
 export const seedQuestions = [
   {
+    id: 'q_new_arrival',
+    authorId: 'u_sabina',
+    anonymous: false,
+    category: 'others',
+    title: 'Just landed — where do I pick up a Myki at Tullamarine?',
+    body: 'Landing tonight. Is there a Myki machine airside or do I need to find one in the city? First time in Melbourne.',
+    photos: [], createdAt: ago(3 * MIN), upvotes: 0, views: 4,
+    answers: [],
+  },
+  {
+    id: 'q_hot_evergreen',
+    authorId: 'u_bibek',
+    anonymous: false,
+    category: 'migration',
+    title: '485 vs 189 — the thread I wish existed when I started',
+    body: 'Saving this here for newcomers: the most common pathways people compare after study. Always map the visa to your long-term plan before you lodge anything.',
+    photos: [], createdAt: ago(8 * D), upvotes: 94, views: 2280,
+    answers: [
+      {
+        id: 'a_hot_e1', authorId: 'u_sunita', anonymous: false,
+        body: '485 is your graduate work-rights bridge; 189 is points-tested PR — different goals, different clocks. Get advice before you commit to either path.',
+        createdAt: ago(7.9 * D), upvotes: 52, replies: [],
+      },
+    ],
+  },
+  {
     id: 'q1b', authorId: 'u_raj', anonymous: false, category: 'tax_super',
     title: 'Tax time PSA: lodge even if you earned under the threshold',
     body: 'Every June I see the same confusion. If your employer withheld tax (check the PAYG line on your payslip), you almost certainly want to lodge a return to get it back — even below $18,200. Non-lodgement advice is only when no tax was withheld. Happy to clarify in the comments.',

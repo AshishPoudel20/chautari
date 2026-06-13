@@ -1,5 +1,4 @@
-// Global app state for Chautari. In-memory React state mirrored to AsyncStorage.
-// This is the single mock "backend" — no network anywhere.
+// Global app state for Chautari. Mock seed data + Supabase sync for live user actions.
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -10,6 +9,12 @@ import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { getSession, onAuthStateChange } from '../services/auth';
+import { fetchProfile, profileMetaFromRow, profileRowToUser } from '../services/profile';
+import { fetchLiveBundle, persistAction, shouldSyncAction } from '../services/liveData';
+
+const SEED_QUESTION_IDS = new Set(seedQuestions.map((q) => q.id));
 
 export const EXPERT_DAILY_POST_LIMIT = 2;
 
@@ -88,6 +93,8 @@ function mergeUsers(persisted = []) {
 function buildInitialState() {
   return {
     booted: false,
+    authReady: !isSupabaseConfigured(),
+    authUserId: null,
     currentUserId: null, // null = signed out
     users: seedUsers,
     circles: seedCircles,
@@ -140,6 +147,36 @@ function reducer(state, action) {
     case 'BOOTED':
       return { ...state, booted: true };
 
+    case 'AUTH_READY':
+      return { ...state, authReady: true };
+
+    case 'SET_AUTH':
+      return { ...state, authUserId: action.userId };
+
+    case 'CLEAR_AUTH':
+      return { ...state, authUserId: null };
+
+    case 'CLEAR_LOCAL_SESSION':
+      return { ...state, currentUserId: null };
+
+    case 'RESTORE_SESSION': {
+      const me = { ...profileRowToUser(action.profile), id: 'me' };
+      const meta = profileMetaFromRow(action.profile);
+      return {
+        ...state,
+        authUserId: action.userId,
+        currentUserId: 'me',
+        users: [me, ...state.users.filter((u) => u.id !== 'me' && u.id !== action.userId)],
+        following: state.following?.length ? state.following : seedFollowing,
+        notifications: state.notifications?.length ? state.notifications : seedNotifications,
+        joinedCircles: state.joinedCircles?.length ? state.joinedCircles : defaultJoinedCircles(),
+        newcomer: meta.newcomer ?? false,
+        newcomerSince: meta.newcomerSince ?? null,
+        digestMode: meta.digestMode || state.digestMode,
+        checklistCardDismissed: meta.checklistCardDismissed ?? state.checklistCardDismissed,
+      };
+    }
+
     case 'SIGN_UP': {
       // Create the 'me' user with a name; following/notifications seeded now.
       const me = {
@@ -155,10 +192,11 @@ function reducer(state, action) {
       };
       return {
         ...state,
+        authUserId: action.authUserId ?? state.authUserId,
         currentUserId: 'me',
-        users: [me, ...state.users.filter((u) => u.id !== 'me')],
-        following: seedFollowing,
-        notifications: seedNotifications,
+        users: [me, ...state.users.filter((u) => u.id !== 'me' && u.id !== action.authUserId)],
+        following: state.following?.length ? state.following : seedFollowing,
+        notifications: state.notifications?.length ? state.notifications : seedNotifications,
         joinedCircles: defaultJoinedCircles(),
         circles: state.circles.map((c) =>
           c.id === 'c_fhb' ? { ...c, creatorId: 'me' } : c
@@ -175,7 +213,7 @@ function reducer(state, action) {
       };
 
     case 'LOGOUT':
-      return { ...state, currentUserId: null };
+      return { ...state, currentUserId: null, authUserId: null };
 
     case 'DELETE_ACCOUNT': {
       // Hard delete: wipe everything and return to a clean seeded, signed-out state.
@@ -207,9 +245,39 @@ function reducer(state, action) {
       return { ...state, questions: [q, ...state.questions] };
     }
 
+    case 'MERGE_LIVE_DATA': {
+      const p = action.payload;
+      const liveById = new Map((p.questions || []).map((q) => [q.id, q]));
+      const mergedQuestions = sortQuestions([
+        ...state.questions.filter((q) => SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id)),
+        ...(p.questions || []),
+      ]);
+      const usersById = new Map(state.users.map((u) => [u.id, u]));
+      for (const u of p.users || []) {
+        if (u.id !== 'me' && !usersById.has(u.id)) usersById.set(u.id, u);
+      }
+      const uniq = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+      return {
+        ...state,
+        questions: mergedQuestions,
+        users: [...usersById.values()],
+        myUpvotes: {
+          questions: uniq(state.myUpvotes.questions, p.myUpvotes?.questions),
+          answers: uniq(state.myUpvotes.answers, p.myUpvotes?.answers),
+          replies: uniq(state.myUpvotes.replies, p.myUpvotes?.replies),
+        },
+        savedQuestions: uniq(state.savedQuestions, p.savedQuestions),
+        following: uniq(state.following, p.following),
+        joinedCircles: p.joinedCircles?.length
+          ? uniq(state.joinedCircles, p.joinedCircles)
+          : state.joinedCircles,
+        checklistDone: uniq(state.checklistDone, p.checklistDone),
+      };
+    }
+
     case 'ADD_ANSWER': {
       const answer = {
-        id: uid('a'),
+        id: action.id || uid('a'),
         authorId: 'me',
         anonymous: action.anonymous,
         body: action.body.trim(),
@@ -227,7 +295,7 @@ function reducer(state, action) {
 
     case 'ADD_REPLY': {
       const reply = {
-        id: uid('r'),
+        id: action.id || uid('r'),
         authorId: 'me',
         anonymous: action.anonymous,
         body: action.body.trim(),
@@ -409,7 +477,7 @@ function reducer(state, action) {
     case 'CREATE_CIRCLE': {
       const name = action.name.trim();
       if (!name || isCircleNameTaken(name, state.circles)) return state;
-      const id = action.id || uid('c');
+      const id = action.id || action.circleId || uid('c');
       const circle = {
         id,
         name,
@@ -516,9 +584,13 @@ function reducer(state, action) {
 export function DataProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, buildInitialState);
   const hydrated = useRef(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  // Load persisted state once.
+  // Load persisted mock state, then reconcile Supabase auth session.
   useEffect(() => {
+    let authSub;
+    let mounted = true;
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -529,17 +601,80 @@ export function DataProvider({ children }) {
       } finally {
         hydrated.current = true;
       }
+
+      if (!isSupabaseConfigured()) {
+        dispatch({ type: 'AUTH_READY' });
+        return;
+      }
+
+      try {
+        const session = await getSession();
+        if (session?.user) {
+          dispatch({ type: 'SET_AUTH', userId: session.user.id });
+          const row = await fetchProfile(session.user.id);
+          if (row?.name?.trim()) {
+            dispatch({ type: 'RESTORE_SESSION', userId: session.user.id, profile: row });
+          } else {
+            dispatch({ type: 'CLEAR_LOCAL_SESSION' });
+          }
+        } else {
+          dispatch({ type: 'CLEAR_LOCAL_SESSION' });
+        }
+      } catch (e) {
+        console.warn('Supabase auth restore failed:', e?.message || e);
+        dispatch({ type: 'CLEAR_LOCAL_SESSION' });
+      } finally {
+        dispatch({ type: 'AUTH_READY' });
+      }
+
+      if (mounted) {
+        authSub = onAuthStateChange((event) => {
+          if (event === 'SIGNED_OUT') {
+            dispatch({ type: 'CLEAR_LOCAL_SESSION' });
+            dispatch({ type: 'CLEAR_AUTH' });
+          }
+        });
+      }
     })();
+    return () => {
+      mounted = false;
+      authSub?.data?.subscription?.unsubscribe();
+    };
   }, []);
+
+  // Load Supabase Q&A + social state for signed-in user (merged with mock seed).
+  useEffect(() => {
+    if (!state.authUserId || !state.currentUserId || !state.authReady) return;
+    if (!isSupabaseConfigured()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const bundle = await fetchLiveBundle(state.authUserId);
+        if (!cancelled) dispatch({ type: 'MERGE_LIVE_DATA', payload: bundle });
+      } catch (e) {
+        console.warn('Failed to load Supabase data:', e?.message || e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [state.authUserId, state.currentUserId, state.authReady]);
 
   // Persist on change (after first hydration).
   useEffect(() => {
     if (!hydrated.current || !state.booted) return;
-    const { booted, ...toSave } = state;
+    const { booted, authReady, authUserId, ...toSave } = state;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave)).catch(() => {});
   }, [state]);
 
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const syncDispatch = React.useCallback(async (action) => {
+    const snap = stateRef.current;
+    let next = action;
+    if (isSupabaseConfigured() && snap.authUserId && shouldSyncAction(action)) {
+      next = await persistAction(action, snap, snap.authUserId);
+    }
+    dispatch(next);
+  }, []);
+
+  const value = useMemo(() => ({ state, dispatch: syncDispatch }), [state, syncDispatch]);
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
@@ -665,7 +800,7 @@ export function useSelectors() {
 
   const feedQuestions = () => sortQuestions(state.questions);
 
-  // For You: joined circles boosted, but ALL circles eligible (liquidity protection).
+  // For You: legacy selector — Home uses src/hooks/useForYouFeed.js + src/feed/* instead.
   const forYouFeed = () => {
     const joined = new Set(state.joinedCircles);
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
