@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { InteractionManager } from 'react-native';
+import { InteractionManager, Platform } from 'react-native';
 
 const GUARD_MS = 400;
 
@@ -23,10 +23,8 @@ export function useNavigationGuard(navigation) {
     [navigation, guard],
   );
 
-  const goBack = useCallback(
-    () => guard(() => navigation.goBack()),
-    [navigation, guard],
-  );
+  // Back is never guarded — the 400ms lock after navigate made custom back buttons feel dead.
+  const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
   const replace = useCallback(
     (...args) => guard(() => navigation.replace(...args)),
@@ -39,7 +37,13 @@ export function useNavigationGuard(navigation) {
 /** Defer until Alert / action sheet has fully dismissed — prevents ghost overlays blocking taps. */
 export function runAfterAlert(action) {
   InteractionManager.runAfterInteractions(() => {
-    requestAnimationFrame(action);
+    const run = () => action();
+    if (Platform.OS === 'ios') {
+      // iOS keeps a transparent modal layer briefly after Alert dismiss.
+      requestAnimationFrame(() => setTimeout(run, 350));
+    } else {
+      requestAnimationFrame(run);
+    }
   });
 }
 

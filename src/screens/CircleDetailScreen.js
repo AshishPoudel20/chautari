@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated,
 } from 'react-native';
@@ -13,7 +13,7 @@ import CircleIcon from '../components/CircleIcon';
 import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile, runAfterAlert } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
 
@@ -56,6 +56,16 @@ export default function CircleDetailScreen({ navigation, route }) {
   const banner = circle ? circleBannerGradient(circle, isDark, colors) : null;
 
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [compactInteractive, setCompactInteractive] = useState(false);
+
+  useEffect(() => {
+    const threshold = COLLAPSE_RANGE * 0.45;
+    const id = scrollY.addListener(({ value }) => {
+      setCompactInteractive(value > threshold);
+    });
+    return () => scrollY.removeListener(id);
+  }, [scrollY]);
+
   const onScroll = useMemo(
     () => Animated.event(
       [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -94,7 +104,7 @@ export default function CircleDetailScreen({ navigation, route }) {
 
   const openCreatorMenu = useCallback(() => {
     Alert.alert('Circle settings', null, [
-      { text: 'Edit circle', onPress: () => navigate('EditCircle', { circleId }) },
+      { text: 'Edit circle', onPress: () => runAfterAlert(() => navigate('EditCircle', { circleId })) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   }, [navigate, circleId]);
@@ -206,7 +216,10 @@ export default function CircleDetailScreen({ navigation, route }) {
     <View style={styles.container}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-      <Animated.View style={[styles.compactBar, compactBarStyle, { paddingTop: insets.top }]}>
+      <Animated.View
+        pointerEvents={compactInteractive ? 'box-none' : 'none'}
+        style={[styles.compactBar, compactBarStyle, { paddingTop: insets.top }]}
+      >
         <View style={styles.compactInner}>
           <View style={styles.compactTitleWrap}>
             <CircleIcon circle={circle} size="chip" />
@@ -224,8 +237,8 @@ export default function CircleDetailScreen({ navigation, route }) {
         </View>
       </Animated.View>
 
-      <View style={[styles.navRow, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={goBack} style={styles.backBtn} hitSlop={8}>
+      <View pointerEvents="box-none" style={[styles.navRow, { paddingTop: insets.top + 6 }]}>
+        <Pressable onPress={goBack} style={styles.backBtn} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
           <Text style={styles.backIcon}>←</Text>
         </Pressable>
         {showCreatorTools ? (
@@ -278,15 +291,16 @@ const createStyles = (colors, spacing, font, radius, shadow, insets) => StyleShe
     left: 0,
     right: 0,
     zIndex: 20,
+    elevation: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
