@@ -25,10 +25,29 @@ Run each file **in order**, one at a time. Check the result panel shows success 
 | 2 | `migrations/003_clear_auth_users.sql` | **Optional** — delete all login users |
 | 3 | `migrations/001_chautari_schema.sql` | Create new tables + RLS |
 | 4 | `migrations/002_seed_reference_data.sql` | Official circles + checklist catalog |
+| 5 | `migrations/004_rls_content_updates.sql` | Content RLS updates |
+| 6 | `migrations/005_flexible_social_refs.sql` | Flexible social refs |
+| 7 | `migrations/006_storage_media.sql` | **Photo storage** — `media` bucket + policies + `image_url` / `photo_url` columns |
 
-### Storage (if you used buckets before)
+### Storage — `media` bucket (migration 006)
 
-Dashboard → **Storage** → delete old buckets/files manually, then create new ones when you add photo upload (e.g. `avatars`, `question-photos`, `credentials`).
+Run `006_storage_media.sql` after the schema migrations. It creates a **public** bucket named `media` (5 MB limit, JPEG/PNG/WebP) with path prefixes:
+
+| Prefix | Example path | Use |
+|--------|----------------|-----|
+| `avatars/{userId}/…` | `avatars/uuid/profile/avatar-123.jpg` | Profile photo |
+| `questions/{userId}/{questionId}/…` | `questions/uuid/q_abc/0.jpg` | Question photos (up to 5) |
+| `circles/{userId}/{circleId}/…` | `circles/uuid/c_xyz/banner.jpg` | Circle banner |
+| `answers/{userId}/{answerId}/…` | `answers/uuid/a_123/photo.jpg` | Answer photo (prototype flag) |
+| `replies/{userId}/{replyId}/…` | `replies/uuid/r_456/photo.jpg` | Reply photo (prototype flag) |
+
+**Policies (on `storage.objects`):**
+
+- **SELECT** — public read on all `media` objects (cross-account viewing).
+- **INSERT / UPDATE** — authenticated users only; path segment `[2]` must equal `auth.uid()` (users upload into their own folder).
+- **DELETE** — authenticated users only; same ownership rule.
+
+Client uses the **anon key** only. Never ship `service_role` in the app.
 
 ### Edge Functions / webhooks
 
