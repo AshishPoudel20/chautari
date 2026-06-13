@@ -8,7 +8,7 @@ import Button from './Button';
 import QuestionCard from './QuestionCard';
 import { EmptyState } from './ui';
 import { useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { categoryName } from '../data/categories';
 import { compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
@@ -81,11 +81,12 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
         circle={circleById(item.circleId)}
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
+        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
         expert={expertAnswerOn(item)?.expert || null}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
       />
     ),
-    [user, circleById, answerCount, expertAnswerOn, navigate],
+    [user, userById, circleById, answerCount, expertAnswerOn, navigate],
   );
 
   return (

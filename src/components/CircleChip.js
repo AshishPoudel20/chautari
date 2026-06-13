@@ -46,7 +46,11 @@ export default function CircleChip({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} hitSlop={6} style={({ pressed }) => pressed && { opacity: 0.85 }}>
+      <Pressable
+        onPress={onPress}
+        hitSlop={4}
+        style={({ pressed }) => [styles.pressable, pressed && { opacity: 0.85 }]}
+      >
         {inner}
       </Pressable>
     );
@@ -55,6 +59,7 @@ export default function CircleChip({
 }
 
 const createStyles = (radius, font) => StyleSheet.create({
+  pressable: { alignSelf: 'flex-start' },
   wrap: {
     flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1, maxWidth: 200,

@@ -5,7 +5,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import QuestionCard from '../components/QuestionCard';
 import { Input, Chip, EmptyState } from '../components/ui';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { SUBURBS } from '../data/categories';
 import CircleChip from '../components/CircleChip';
 import { useTheme } from '../theme/ThemeContext';
@@ -77,6 +77,7 @@ export default function SearchScreen({ navigation, route }) {
         circle={circleById(item.circleId)}
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
+        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
         expert={expertAnswerOn(item)?.expert || null}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
       />

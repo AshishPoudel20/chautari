@@ -35,3 +35,22 @@ export function useNavigationGuard(navigation) {
 
   return { navigate, goBack, replace, guard };
 }
+
+/** Defer until Alert / action sheet has fully dismissed — prevents ghost overlays blocking taps. */
+export function runAfterAlert(action) {
+  InteractionManager.runAfterInteractions(() => {
+    requestAnimationFrame(action);
+  });
+}
+
+export function openAuthorProfile(navigate, userById, authorId, { anonymous = false } = {}) {
+  if (anonymous || !authorId) return;
+  if (authorId === 'me') {
+    navigate('Main', { screen: 'Profile' });
+    return;
+  }
+  const u = userById(authorId);
+  if (!u) return;
+  const screen = u.verified ? 'ExpertProfile' : 'UserProfile';
+  navigate(screen, { userId: authorId, title: u.name });
+}
