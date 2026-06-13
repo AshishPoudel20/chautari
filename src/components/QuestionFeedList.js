@@ -4,7 +4,7 @@ import QuestionCard from './QuestionCard';
 import { FadeRise } from './Motion';
 import { EmptyState } from './ui';
 import { useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 
 const LIST_PERF = {
@@ -25,6 +25,8 @@ export default function QuestionFeedList({
   renderCardFooter,
   insertAfterIndex = null,
   InsertComponent = null,
+  onEndReached,
+  hasMore = false,
 }) {
   const { userById, circleById, answerCount, expertAnswerOn } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
@@ -48,6 +50,7 @@ export default function QuestionFeedList({
             expert={ei?.expert || null}
             onPress={() => openQuestion(item.id)}
             onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
+            onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
           />
           {renderCardFooter ? renderCardFooter(item.id) : null}
         </FadeRise>
@@ -72,8 +75,13 @@ export default function QuestionFeedList({
     [ListEmptyComponent],
   );
 
+  const handleEndReached = useCallback(() => {
+    if (hasMore && onEndReached) onEndReached();
+  }, [hasMore, onEndReached]);
+
   return (
     <FlatList
+      style={styles.list}
       data={data}
       keyExtractor={(q) => q.id}
       renderItem={renderItem}
@@ -83,7 +91,13 @@ export default function QuestionFeedList({
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
       refreshControl={refreshControl}
+      onEndReached={onEndReached ? handleEndReached : undefined}
+      onEndReachedThreshold={0.35}
       {...LIST_PERF}
     />
   );
 }
+
+const styles = StyleSheet.create({
+  list: { flex: 1 },
+});

@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionFeedList from '../components/QuestionFeedList';
 import CirclesRecommendRow from '../components/CirclesRecommendRow';
 import ChecklistFeedCard from '../components/ChecklistFeedCard';
+import FeedSortToggle from '../components/FeedSortToggle';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import FollowButton from '../components/FollowButton';
@@ -13,12 +14,17 @@ import { QuestionCardSkeleton } from '../components/Skeleton';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useNavigationGuard } from '../utils/navigation';
+import { useForYouFeed } from '../hooks/useForYouFeed';
 import { useTheme } from '../theme/ThemeContext';
 import { professionLabel } from '../data/categories';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 export default function HomeScreen({ navigation }) {
   const {
-    userById, me, forYouFeed, followingFeed,
+    userById, me, followingFeed, hasExpertAnswer,
     newTodayCount, suggestedExperts, canExpertPostToday,
     expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, unreadNotifs, state,
   } = useSelectors();
@@ -32,6 +38,8 @@ export default function HomeScreen({ navigation }) {
   const [replayKey, setReplayKey] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  const forYou = useForYouFeed(state.questions, hasExpertAnswer);
+
   useEffect(() => {
     let timeout;
     const task = InteractionManager.runAfterInteractions(() => {
@@ -44,9 +52,15 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const user = me();
-  const data = tab === 'foryou' ? forYouFeed() : followingFeed();
+  const data = tab === 'foryou' ? forYou.data : followingFeed();
   const newToday = newTodayCount();
   const expertAtLimit = user?.verified && !canExpertPostToday();
+
+  const onSortChange = useCallback((mode) => {
+    LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
+    forYou.setSortMode(mode);
+    setReplayKey((k) => k + 1);
+  }, [forYou]);
 
   const openAsk = () => {
     if (expertAtLimit) {
@@ -61,11 +75,16 @@ export default function HomeScreen({ navigation }) {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    if (tab === 'foryou') forYou.refresh();
     setTimeout(() => {
       setRefreshing(false);
       setReplayKey((k) => k + 1);
     }, 650);
-  }, []);
+  }, [tab, forYou]);
+
+  const onLoadMore = useCallback(() => {
+    if (tab === 'foryou' && forYou.hasMore) forYou.loadMore();
+  }, [tab, forYou]);
 
   const showChecklistCard = tab === 'foryou' && isNewcomerActive() && !state.checklistCardDismissed;
   const unread = unreadNotifs();
@@ -94,6 +113,9 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.liveText}>{newToday} new {newToday === 1 ? 'question' : 'questions'} today</Text>
         </View>
       )}
+      {tab === 'foryou' ? (
+        <FeedSortToggle mode={forYou.sortMode} onChange={onSortChange} />
+      ) : null}
       {showChecklistCard ? (
         <ChecklistFeedCard
           doneCount={checklistDoneCount()}
@@ -145,6 +167,8 @@ export default function HomeScreen({ navigation }) {
           ListHeaderComponent={header}
           insertAfterIndex={tab === 'foryou' && data.length > 5 ? 4 : null}
           InsertComponent={tab === 'foryou' ? () => <CirclesRecommendRow navigation={navigation} /> : null}
+          onEndReached={tab === 'foryou' ? onLoadMore : undefined}
+          hasMore={tab === 'foryou' ? forYou.hasMore : false}
           ListEmptyComponent={
             tab === 'following' ? (
               <FollowingEmpty experts={suggestedExperts(3)} navigate={navigate} userById={userById} />
