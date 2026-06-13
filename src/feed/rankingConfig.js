@@ -12,6 +12,18 @@ export const WEIGHTS = {
 
 export const PAGE_SIZE = 10;
 
+/** Target share of discovery posts in For You (4:1 merge ≈ 20%). See FEED_COMPOSITION.md */
+export const DISCOVERY_RATIO = 0.20;
+
+/**
+ * Minimum Hot score for a non-joined post to enter discovery.
+ * Tuned on seed: excludes Gundruk Recipe Club low-engagement (~1.4); includes Cricket Melbourne threads (~8+).
+ */
+export const DISCOVERY_MIN_SCORE = 2.0;
+
+/** Joined slots per discovery slot in the merge pattern (4:1 ≈ DISCOVERY_RATIO). */
+export const JOINED_SLOTS_PER_DISCOVERY = Math.round((1 - DISCOVERY_RATIO) / DISCOVERY_RATIO);
+
 const MS_PER_HOUR = 60 * 60 * 1000;
 
 export function hoursBetween(referenceTime, createdAt) {

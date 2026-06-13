@@ -1,26 +1,41 @@
 import { useCallback, useMemo, useState } from 'react';
 import { PAGE_SIZE } from '../feed/rankingConfig';
-import {
-  buildHotSnapshot,
-  buildNewSnapshot,
-  hasMoreInSnapshot,
-  sliceSnapshot,
-} from '../feed/feedRanking';
+import { composeForYouFeed } from '../feed/feedComposition';
+import { hasMoreInSnapshot, sliceSnapshot } from '../feed/feedRanking';
 
 /**
- * For You feed: Hot (snapshotted decay score) or New (recency).
+ * For You feed: 80/20 joined/discovery composition, then Hot or New ordering.
  * Hot referenceTime is captured once per snapshot; refresh or switching to Hot starts a new snapshot.
  */
-export function useForYouFeed(questions, hasExpertAnswer) {
+export function useForYouFeed({
+  questions,
+  hasExpertAnswer,
+  joinedCircleIds,
+  circleById,
+  currentUserId = 'me',
+}) {
   const [sortMode, setSortMode] = useState('hot');
   const [referenceTime, setReferenceTime] = useState(() => Date.now());
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [snapshotGen, setSnapshotGen] = useState(0);
 
-  const snapshot = useMemo(() => {
-    if (sortMode === 'new') return buildNewSnapshot(questions);
-    return buildHotSnapshot(questions, referenceTime, hasExpertAnswer);
-  }, [questions, sortMode, referenceTime, hasExpertAnswer, snapshotGen]);
+  const snapshot = useMemo(() => composeForYouFeed(questions, {
+    joinedCircleIds,
+    circleById,
+    currentUserId,
+    referenceTime,
+    hasExpertAnswer,
+    sortMode,
+  }), [
+    questions,
+    joinedCircleIds,
+    circleById,
+    currentUserId,
+    referenceTime,
+    hasExpertAnswer,
+    sortMode,
+    snapshotGen,
+  ]);
 
   const data = useMemo(
     () => sliceSnapshot(snapshot, visibleCount),
@@ -48,9 +63,10 @@ export function useForYouFeed(questions, hasExpertAnswer) {
   }, []);
 
   const refresh = useCallback(() => {
-    if (sortMode === 'hot') bumpHotSnapshot();
-    else setVisibleCount(PAGE_SIZE);
-  }, [sortMode, bumpHotSnapshot]);
+    setReferenceTime(Date.now());
+    setSnapshotGen((g) => g + 1);
+    setVisibleCount(PAGE_SIZE);
+  }, []);
 
   const loadMore = useCallback(() => {
     setVisibleCount((n) => Math.min(n + PAGE_SIZE, snapshot.length));

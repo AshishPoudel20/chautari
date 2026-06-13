@@ -24,7 +24,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function HomeScreen({ navigation }) {
   const {
-    userById, me, followingFeed, hasExpertAnswer,
+    userById, me, followingFeed, hasExpertAnswer, circleById, effectiveJoinedCircleIds,
     newTodayCount, suggestedExperts, canExpertPostToday,
     expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, unreadNotifs, state,
   } = useSelectors();
@@ -38,7 +38,13 @@ export default function HomeScreen({ navigation }) {
   const [replayKey, setReplayKey] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const forYou = useForYouFeed(state.questions, hasExpertAnswer);
+  const forYou = useForYouFeed({
+    questions: state.questions,
+    hasExpertAnswer,
+    joinedCircleIds: effectiveJoinedCircleIds(),
+    circleById,
+    currentUserId: 'me',
+  });
 
   useEffect(() => {
     let timeout;
