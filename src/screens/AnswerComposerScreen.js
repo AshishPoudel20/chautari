@@ -6,11 +6,17 @@ import {
 import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
+import SinglePhotoPicker from '../components/SinglePhotoPicker';
+import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Field, Input, CharCount } from '../components/ui';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useToast } from '../components/Toast';
 import { useTheme } from '../theme/ThemeContext';
+import { useImagePicker } from '../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { uploadAnswerPhoto } from '../services/mediaStorage';
+import { ENABLE_REPLY_PHOTOS } from '../constants/media';
 
 const BODY_MIN = 20, BODY_MAX = 4000;
 
@@ -23,11 +29,15 @@ export default function AnswerComposerScreen({ navigation, route }) {
   const { dispatch } = useData();
   const { online } = useNetwork();
   const showToast = useToast();
+  const { pickFromLibrary, takePhoto } = useImagePicker();
   const { questionById, me } = useSelectors();
   const question = questionById(questionId);
   const user = me();
   const [body, setBody] = useState('');
   const [anonymous, setAnonymous] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const selection = useRef({ start: 0, end: 0 });
 
   const len = body.trim().length;
@@ -39,86 +49,139 @@ export default function AnswerComposerScreen({ navigation, route }) {
     setBody((b) => b.slice(0, pos) + url + b.slice(pos));
   };
 
+  const pickPhoto = async (pickerFn) => {
+    const picked = await pickerFn();
+    if (picked) setPhoto({ uri: picked.uri });
+  };
+
   const submit = async () => {
-    if (!valid) return;
+    if (!valid || submitting) return;
     if (!online) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your answer — your draft stays here.');
       return;
     }
+    if (photo?.uri && !online) {
+      Alert.alert('No connection', 'Reconnect to upload your photo.');
+      return;
+    }
+
+    const answerId = `a_${Date.now().toString(36)}`;
+    setSubmitting(true);
     try {
-      await dispatch({ type: 'ADD_ANSWER', questionId, body, anonymous });
+      let photoUrlValue = null;
+      if (ENABLE_REPLY_PHOTOS && photo?.uri) {
+        if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
+        photoUrlValue = await uploadAnswerPhoto(answerId, { uri: photo.uri });
+      }
+      await dispatch({
+        type: 'ADD_ANSWER',
+        questionId,
+        id: answerId,
+        body,
+        anonymous,
+        photoUrl: photoUrlValue,
+      });
       navigation.goBack();
       showToast('Answer posted', { tone: 'success' });
     } catch (e) {
       Alert.alert('Could not post answer', e?.message || 'Try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.fill}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={headerHeight}
-    >
-      <ScrollView
+    <>
+      <KeyboardAvoidingView
         style={styles.fill}
-        contentContainerStyle={styles.body}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={headerHeight}
       >
-        {question && (
-          <View style={styles.qContext}>
-            <Text style={styles.qContextLabel}>ANSWERING</Text>
-            <Text style={styles.qContextTitle} numberOfLines={2}>{question.title}</Text>
-          </View>
-        )}
-
-        <View style={styles.toolbar}>
-          <Pressable style={styles.toolBtn} onPress={insertLink}>
-            <Text style={styles.toolBtnText}>🔗 Insert link</Text>
-          </Pressable>
-          <CharCount value={body} min={BODY_MIN} max={BODY_MAX} />
-        </View>
-
-        <Field error={len > 0 && !valid ? `Answers are ${BODY_MIN}–${BODY_MAX} characters.` : null}>
-          <Input
-            placeholder="Share what you know from experience. Be kind and specific — links are welcome."
-            value={body}
-            onChangeText={setBody}
-            onSelectionChange={(e) => { selection.current = e.nativeEvent.selection; }}
-            multiline
-            autoFocus
-            maxLength={BODY_MAX + 50}
-            style={{ minHeight: 160 }}
-          />
-        </Field>
-
-        <View style={styles.anonCard}>
-          <View style={styles.anonHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.anonTitle}>Answer anonymously</Text>
-              <Text style={styles.anonSub}>Your name, photo and suburb stay hidden on this answer.</Text>
+        <ScrollView
+          style={styles.fill}
+          contentContainerStyle={styles.body}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+        >
+          {question && (
+            <View style={styles.qContext}>
+              <Text style={styles.qContextLabel}>ANSWERING</Text>
+              <Text style={styles.qContextTitle} numberOfLines={2}>{question.title}</Text>
             </View>
-            <Switch
-              value={anonymous}
-              onValueChange={setAnonymous}
-              trackColor={{ true: colors.primary, false: colors.borderStrong }}
-              thumbColor={colors.onPrimary}
-            />
-          </View>
-          <View style={styles.previewRow}>
-            <Avatar name={anonymous ? 'Anonymous' : user?.name || 'You'} anon={anonymous} size={28} />
-            <Text style={styles.previewName}>{anonymous ? 'Anonymous' : user?.name || 'You'}</Text>
-            <Text style={styles.previewMeta}>· just now</Text>
-          </View>
-        </View>
+          )}
 
-        <View style={styles.footer}>
-          <Button title="Post answer" icon="✍️" onPress={submit} disabled={!valid} />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={styles.toolbar}>
+            <Pressable style={styles.toolBtn} onPress={insertLink}>
+              <Text style={styles.toolBtnText}>🔗 Insert link</Text>
+            </Pressable>
+            <CharCount value={body} min={BODY_MIN} max={BODY_MAX} />
+          </View>
+
+          <Field error={len > 0 && !valid ? `Answers are ${BODY_MIN}–${BODY_MAX} characters.` : null}>
+            <Input
+              placeholder="Share what you know from experience. Be kind and specific — links are welcome."
+              value={body}
+              onChangeText={setBody}
+              onSelectionChange={(e) => { selection.current = e.nativeEvent.selection; }}
+              multiline
+              autoFocus
+              maxLength={BODY_MAX + 50}
+              style={{ minHeight: 160 }}
+            />
+          </Field>
+
+          {ENABLE_REPLY_PHOTOS ? (
+            <Field label="Photo · optional">
+              <SinglePhotoPicker
+                photo={photo}
+                onPick={() => setPickerOpen(true)}
+                onRemove={() => setPhoto(null)}
+                label="Add a photo"
+                aspectRatio={4 / 3}
+                uploading={submitting && !!photo?.uri}
+              />
+            </Field>
+          ) : null}
+
+          <View style={styles.anonCard}>
+            <View style={styles.anonHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.anonTitle}>Answer anonymously</Text>
+                <Text style={styles.anonSub}>Your name, photo and suburb stay hidden on this answer.</Text>
+              </View>
+              <Switch
+                value={anonymous}
+                onValueChange={setAnonymous}
+                trackColor={{ true: colors.primary, false: colors.borderStrong }}
+                thumbColor={colors.onPrimary}
+              />
+            </View>
+            <View style={styles.previewRow}>
+              <Avatar name={anonymous ? 'Anonymous' : user?.name || 'You'} anon={anonymous} size={28} />
+              <Text style={styles.previewName}>{anonymous ? 'Anonymous' : user?.name || 'You'}</Text>
+              <Text style={styles.previewMeta}>· just now</Text>
+            </View>
+          </View>
+
+          <View style={styles.footer}>
+            <Button title={submitting ? 'Posting…' : 'Post answer'} icon="✍️" onPress={submit} disabled={!valid || submitting} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {ENABLE_REPLY_PHOTOS ? (
+        <PhotoSourceSheet
+          visible={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          title="Add answer photo"
+          showRemove={!!photo}
+          onCamera={() => pickPhoto(takePhoto)}
+          onLibrary={() => pickPhoto(pickFromLibrary)}
+          onRemove={() => setPhoto(null)}
+        />
+      ) : null}
+    </>
   );
 }
 

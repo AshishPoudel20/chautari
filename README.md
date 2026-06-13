@@ -14,7 +14,24 @@ Settling in Australia involves hundreds of small, high-stakes decisions spread a
 
 **Target launch:** 2027 (Greater Melbourne first, Australia-wide later)
 
-**Current status:** In active development. This repository contains a **high-fidelity interactive prototype** with fully mocked data and auth — suitable for UX validation, architecture exploration, and portfolio demonstration. Production backend integration is planned but not yet wired in this branch.
+**Current status:** In active development. Hybrid model: mock seed feed + **Supabase** for auth, profiles, user-generated Q&A sync, and **photo storage** when `.env` is configured.
+
+---
+
+## Photo upload (Supabase Storage)
+
+Real image pick → compress (HEIC→JPEG) → upload → public URL → render everywhere.
+
+| Target | Limit | Config |
+|--------|-------|--------|
+| Question photos | Up to 5, ~5 MB each, JPEG/PNG/HEIC | Always on |
+| Profile avatar | Single image | Always on |
+| Circle banner | Single image (create/edit) | Always on; accent fallback when none |
+| Answer / reply photos | Single each | `ENABLE_REPLY_PHOTOS` in `src/constants/media.js` (PRD excludes these; prototype flag) |
+
+**Bucket:** public `media` — see [`supabase/migrations/006_storage_media.sql`](supabase/migrations/006_storage_media.sql) and [`supabase/README.md`](supabase/README.md).
+
+**Client:** `expo-image-picker` + `expo-image-manipulator`; uploads via `fetch(uri).arrayBuffer()` in `src/services/mediaStorage.js` (React Native–safe). Requires signed-in Supabase user.
 
 ---
 
@@ -26,9 +43,9 @@ Settling in Australia involves hundreds of small, high-stakes decisions spread a
 | Navigation | React Navigation (native stack + bottom tabs) |
 | State (prototype) | React Context + reducer, persisted via AsyncStorage |
 | Theming | Semantic design tokens, light + dark mode |
-| Planned production | Supabase (PostgreSQL, Auth, Row Level Security, Realtime) |
+| Planned production | Supabase (PostgreSQL, Auth, Row Level Security, Realtime, Storage) |
 
-The prototype deliberately has **no network calls, API keys, or third-party auth** — everything runs locally so the app can be cloned and run without credentials.
+The prototype runs **offline-capable mock feed** from `seed.js` while **auth, profiles, user posts, and photos** sync to Supabase when `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set in `.env` (see `.env.example`).
 
 ---
 
@@ -37,7 +54,7 @@ The prototype deliberately has **no network calls, API keys, or third-party auth
 - **Onboarding** — phone OTP flow (mocked), profile setup, newcomer opt-in for arrival checklist
 - **Feeds** — For You with **Hot/New** toggle, **80/20 joined/discovery** composition ([FEED_COMPOSITION.md](./FEED_COMPOSITION.md)), and permanent membership in the 8 official circles; Following tab; live activity signals. Ranking: [FEED_RANKING.md](./FEED_RANKING.md).
 - **Circles** — official topic communities + user-created circles; join/leave, create, edit, pin
-- **Q&A** — ask/answer/reply, anonymous posting, photo placeholders, bookmarks, upvotes with karma
+- **Q&A** — ask/answer/reply, anonymous posting, **real photo upload**, bookmarks, upvotes with karma
 - **Verified experts** — directory with filters, expert profiles, pinned expert answers, daily post cap
 - **Notifications** — grouped activity feed, digest scheduling (local `expo-notifications`)
 - **Arrival checklist** — first-60-days newcomer tasks with deep-links to community threads
@@ -123,7 +140,8 @@ npx expo export --platform ios
 - `FEED_RANKING.md` — For You Hot/New ranking spec (constants, snapshot approach)
 - `PRD.md` and `BUILD_BRIEF.md` — original product and design briefs used during prototype development
 - `BUGS.md` — navigation audit log from polish passes
-- No `.env` or secrets required to run this prototype
+- `src/constants/media.js` — upload limits + `ENABLE_REPLY_PHOTOS` flag
+- Copy `.env.example` → `.env` for Supabase (gitignored; never commit secrets)
 
 ---
 
