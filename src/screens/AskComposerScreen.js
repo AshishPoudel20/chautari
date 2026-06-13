@@ -58,8 +58,23 @@ export default function AskComposerScreen({ navigation, route }) {
 
   const addPickedPhoto = async (picked) => {
     if (!picked) return;
-    if (photos.length >= MAX_QUESTION_PHOTOS) return;
-    setPhotos((p) => [...p, { id: `ph_${Date.now()}`, uri: picked.uri }]);
+    const items = Array.isArray(picked) ? picked : [picked];
+    const room = MAX_QUESTION_PHOTOS - photos.length;
+    if (room <= 0) return;
+    const toAdd = items.slice(0, room).map((item, i) => ({
+      id: `ph_${Date.now()}_${i}`,
+      uri: item.uri,
+    }));
+    if (toAdd.length) setPhotos((p) => [...p, ...toAdd]);
+  };
+
+  const pickQuestionPhotos = async () => {
+    const remaining = MAX_QUESTION_PHOTOS - photos.length;
+    if (remaining <= 0) return;
+    await addPickedPhoto(await pickFromLibrary({
+      allowsMultipleSelection: remaining > 1,
+      selectionLimit: remaining,
+    }));
   };
 
   const removePhoto = (id) => setPhotos((arr) => arr.filter((x) => x.id !== id));
@@ -236,7 +251,7 @@ export default function AskComposerScreen({ navigation, route }) {
         onClose={() => setPickerOpen(false)}
         title="Add question photo"
         onCamera={async () => { addPickedPhoto(await takePhoto()); }}
-        onLibrary={async () => { addPickedPhoto(await pickFromLibrary()); }}
+        onLibrary={pickQuestionPhotos}
       />
 
       {posting && (

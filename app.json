@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Chautari needs photo library access so you can attach images to posts, answers, and your profile.",
+        "NSPhotoLibraryUsageDescription": "Allow Chautari to access your photos to attach images.",
         "NSCameraUsageDescription": "Chautari needs camera access so you can take photos for posts and your profile."
       }
     },
@@ -45,7 +45,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Chautari needs photo library access so you can attach images to posts, answers, and your profile.",
+          "photosPermission": "Allow Chautari to access your photos to attach images.",
           "cameraPermission": "Chautari needs camera access so you can take photos for posts and your profile."
         }
       ]

@@ -18,21 +18,26 @@ export default function PhotoSourceSheet({
     [colors, spacing, font, radius, shadow],
   );
 
+  const runAfterDismiss = (action) => {
+    onClose();
+    Promise.resolve(action?.()).catch(() => {});
+  };
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <Text style={styles.title}>{title}</Text>
-          <Pressable style={styles.row} onPress={() => { onClose(); onCamera?.(); }}>
+          <Pressable style={styles.row} onPress={() => runAfterDismiss(onCamera)}>
             <Text style={styles.icon}>📸</Text>
             <Text style={styles.label}>Take a photo</Text>
           </Pressable>
-          <Pressable style={styles.row} onPress={() => { onClose(); onLibrary?.(); }}>
+          <Pressable style={styles.row} onPress={() => runAfterDismiss(onLibrary)}>
             <Text style={styles.icon}>🖼</Text>
             <Text style={styles.label}>Choose from library</Text>
           </Pressable>
           {showRemove ? (
-            <Pressable style={styles.row} onPress={() => { onClose(); onRemove?.(); }}>
+            <Pressable style={styles.row} onPress={() => runAfterDismiss(onRemove)}>
               <Text style={styles.icon}>🗑️</Text>
               <Text style={[styles.label, { color: colors.danger }]}>Remove photo</Text>
             </Pressable>

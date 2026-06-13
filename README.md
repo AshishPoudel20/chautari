@@ -33,6 +33,8 @@ Real image pick → compress (HEIC→JPEG) → upload → public URL → render 
 
 **Client:** `expo-image-picker` + `expo-image-manipulator`; uploads via `fetch(uri).arrayBuffer()` in `src/services/mediaStorage.js` (React Native–safe). Requires signed-in Supabase user.
 
+**iOS gallery in Expo Go:** The shared picker requests `requestMediaLibraryPermissionsAsync()` then opens the library after the source sheet dismisses (iOS blocks the picker if it opens while a modal is closing). Fully quit and reopen Expo Go after changing `app.json` permission strings; those keys apply to dev builds, not Expo Go’s own Info.plist — if the library still never prompts, use a development build so `photosPermission` is embedded.
+
 ---
 
 ## Tech stack
