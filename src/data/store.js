@@ -69,6 +69,15 @@ function defaultJoinedCircles() {
   return [...seedJoinedCircles];
 }
 
+/** Official circles are permanent membership — always treated as joined. */
+function computeEffectiveJoinedCircleIds(state) {
+  const ids = new Set(state.joinedCircles);
+  for (const c of state.circles) {
+    if (c.isOfficial) ids.add(c.id);
+  }
+  return [...ids];
+}
+
 function mergeUsers(persisted = []) {
   const byId = new Map(persisted.map((u) => [u.id, u]));
   for (const su of seedUsers) {
@@ -499,8 +508,9 @@ function reducer(state, action) {
 
     case 'TOGGLE_JOIN_CIRCLE': {
       const { circleId } = action;
+      const circle = state.circles.find((c) => c.id === circleId);
+      if (circle?.isOfficial) return state;
       const has = state.joinedCircles.includes(circleId);
-      if (has && state.joinedCircles.length <= 1) return state;
       const joinedCircles = has
         ? state.joinedCircles.filter((id) => id !== circleId)
         : [...state.joinedCircles, circleId];
@@ -728,9 +738,14 @@ export function useSelectors() {
       .slice(0, limit);
 
   const circleById = (id) => state.circles.find((c) => c.id === id) || null;
-  const isJoinedCircle = (id) => state.joinedCircles.includes(id);
+  const isJoinedCircle = (id) => {
+    const c = circleById(id);
+    if (c?.isOfficial) return true;
+    return state.joinedCircles.includes(id);
+  };
+  const effectiveJoinedCircleIds = () => computeEffectiveJoinedCircleIds(state);
   const joinedCirclesList = () =>
-    state.joinedCircles.map((id) => circleById(id)).filter(Boolean);
+    computeEffectiveJoinedCircleIds(state).map((id) => circleById(id)).filter(Boolean);
   const officialCircles = () => state.circles.filter((c) => c.isOfficial);
   const userCircles = () => state.circles.filter((c) => !c.isOfficial);
 
@@ -863,7 +878,7 @@ export function useSelectors() {
     myQuestions, questionsByAuthor, expertAuthoredQuestions, savedQuestionsList, unreadNotifs,
     expertAnswerOn, hasExpertAnswer, newTodayCount, suggestedExperts,
     expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
-    circleById, isJoinedCircle, joinedCirclesList, officialCircles, userCircles,
+    circleById, isJoinedCircle, effectiveJoinedCircleIds, joinedCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,
     isChecklistItemDone, checklistDoneCount, isQuestionOwner, isNewcomerActive,

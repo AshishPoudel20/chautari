@@ -54,6 +54,7 @@ export function buildOfficialCircles() {
     memberCount: 800 + i * 220,
     createdAt: ago(400 * DAY),
     isOfficial: true,
+    isPrivate: false,
     pinnedQuestionId: OFFICIAL_PINNED[c.id] || null,
   }));
 }
@@ -70,6 +71,7 @@ export const seedUserCircles = [
     memberCount: 340,
     createdAt: ago(90 * DAY),
     isOfficial: false,
+    isPrivate: false,
   },
   {
     id: 'c_fhb',
@@ -82,6 +84,7 @@ export const seedUserCircles = [
     memberCount: 120,
     createdAt: ago(60 * DAY),
     isOfficial: false,
+    isPrivate: false,
     pinnedQuestionId: 'q_fhb_pin',
   },
   {
@@ -95,6 +98,7 @@ export const seedUserCircles = [
     memberCount: 85,
     createdAt: ago(45 * DAY),
     isOfficial: false,
+    isPrivate: false,
   },
   {
     id: 'c_cricket',
@@ -107,6 +111,7 @@ export const seedUserCircles = [
     memberCount: 60,
     createdAt: ago(30 * DAY),
     isOfficial: false,
+    isPrivate: false,
   },
   {
     id: 'c_tiny',
@@ -119,6 +124,7 @@ export const seedUserCircles = [
     memberCount: 4,
     createdAt: ago(3 * DAY),
     isOfficial: false,
+    isPrivate: false,
   },
 ];
 

@@ -13,7 +13,7 @@ import CircleIcon from '../components/CircleIcon';
 import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
 
@@ -88,12 +88,9 @@ export default function CircleDetailScreen({ navigation, route }) {
   }, [navigation]);
 
   const toggleJoin = useCallback(() => {
-    if (joined && joinedCirclesList().length <= 1) {
-      Alert.alert('Keep one circle', 'Stay in at least one circle so your feed never feels empty.');
-      return;
-    }
+    if (circle?.isOfficial) return;
     dispatch({ type: 'TOGGLE_JOIN_CIRCLE', circleId });
-  }, [joined, joinedCirclesList, dispatch, circleId]);
+  }, [circle, dispatch, circleId]);
 
   const openCreatorMenu = useCallback(() => {
     Alert.alert('Circle settings', null, [
@@ -129,11 +126,12 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={ei?.expert || null}
           onPress={() => openQuestion(item.id)}
           onCirclePress={() => {}}
+          onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
           hideCircleChip
         />
       </FadeRise>
     );
-  }, [userById, circle, answerCount, expertAnswerOn, openQuestion]);
+  }, [userById, circle, answerCount, expertAnswerOn, openQuestion, navigate]);
 
   const listHeader = useMemo(() => (
     <View>
@@ -157,12 +155,18 @@ export default function CircleDetailScreen({ navigation, route }) {
             </View>
             <Text style={[styles.bannerMembers, { color: `${accent?.onAccent}cc` }]}>{circle?.memberCount} members</Text>
           </View>
-          <Pressable
-            onPress={toggleJoin}
-            style={[styles.bannerJoin, { backgroundColor: `${accent?.onAccent}22`, borderColor: `${accent?.onAccent}66` }]}
-          >
-            <Text style={[styles.bannerJoinText, { color: accent?.onAccent }]}>{joined ? 'Joined' : 'Join'}</Text>
-          </Pressable>
+          {circle?.isOfficial ? (
+            <View style={[styles.bannerJoin, { backgroundColor: `${accent?.onAccent}22`, borderColor: `${accent?.onAccent}66` }]}>
+              <Text style={[styles.bannerJoinText, { color: accent?.onAccent }]}>Member</Text>
+            </View>
+          ) : (
+            <Pressable
+              onPress={toggleJoin}
+              style={[styles.bannerJoin, { backgroundColor: `${accent?.onAccent}22`, borderColor: `${accent?.onAccent}66` }]}
+            >
+              <Text style={[styles.bannerJoinText, { color: accent?.onAccent }]}>{joined ? 'Joined' : 'Join'}</Text>
+            </Pressable>
+          )}
         </Animated.View>
       </Animated.View>
 
@@ -183,6 +187,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={expertAnswerOn(pinned)?.expert || null}
           onPress={() => openQuestion(pinned.id)}
           onCirclePress={() => {}}
+          onAuthorPress={() => openAuthorProfile(navigate, userById, pinned.authorId, { anonymous: pinned.anonymous })}
           hideCircleChip
         />
       ) : null}
@@ -207,9 +212,15 @@ export default function CircleDetailScreen({ navigation, route }) {
             <CircleIcon circle={circle} size="chip" />
             <Text style={styles.compactTitle} numberOfLines={1}>{circle.name}</Text>
           </View>
-          <Pressable onPress={toggleJoin} style={[styles.compactJoin, joined && styles.compactJoinOn]}>
-            <Text style={[styles.compactJoinText, joined && { color: accent?.color }]}>{joined ? 'Joined' : 'Join'}</Text>
-          </Pressable>
+          {circle.isOfficial ? (
+            <View style={[styles.compactJoin, styles.compactJoinOn]}>
+              <Text style={[styles.compactJoinText, { color: accent?.color }]}>Member</Text>
+            </View>
+          ) : (
+            <Pressable onPress={toggleJoin} style={[styles.compactJoin, joined && styles.compactJoinOn]}>
+              <Text style={[styles.compactJoinText, joined && { color: accent?.color }]}>{joined ? 'Joined' : 'Join'}</Text>
+            </Pressable>
+          )}
         </View>
       </Animated.View>
 

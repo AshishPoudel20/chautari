@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, Pressable, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, SectionList, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
@@ -10,6 +10,7 @@ import CircleIcon from '../components/CircleIcon';
 function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colors }) {
   const accent = resolveCircleAccent(circle.accentId, isDark, colors.surface);
   const activity = circle._activity || 0;
+  const permanent = !!circle.isOfficial;
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceAlt }]}
@@ -31,13 +32,19 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
           {activity > 0 ? ` · ${activity} new today` : ''}
         </Text>
       </View>
-      <Pressable
-        onPress={(e) => { e.stopPropagation?.(); onToggleJoin(); }}
-        style={[styles.joinBtn, joined && styles.joinBtnActive]}
-        hitSlop={8}
-      >
-        <Text style={[styles.joinText, joined && styles.joinTextActive]}>{joined ? 'Joined' : 'Join'}</Text>
-      </Pressable>
+      {permanent ? (
+        <View style={[styles.joinBtn, styles.joinBtnActive]}>
+          <Text style={[styles.joinText, styles.joinTextActive]}>Member</Text>
+        </View>
+      ) : (
+        <Pressable
+          onPress={(e) => { e.stopPropagation?.(); onToggleJoin(); }}
+          style={[styles.joinBtn, joined && styles.joinBtnActive]}
+          hitSlop={8}
+        >
+          <Text style={[styles.joinText, joined && styles.joinTextActive]}>{joined ? 'Joined' : 'Join'}</Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }
@@ -45,7 +52,7 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
 export default function CirclesDirectoryScreen({ navigation }) {
   const { dispatch } = useData();
   const {
-    joinedCirclesList, officialCircles, userCircles, isJoinedCircle, circleActivitySince,
+    joinedCirclesList, officialCircles, userCircles, isJoinedCircle, circleActivitySince, circleById,
   } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
@@ -78,11 +85,7 @@ export default function CirclesDirectoryScreen({ navigation }) {
   }, [your, official, popular, newest]);
 
   const toggleJoin = (circleId) => {
-    const was = isJoinedCircle(circleId);
-    if (was && joinedCirclesList().length <= 1) {
-      Alert.alert('Keep one circle', 'Stay in at least one circle so your feed never feels empty.');
-      return;
-    }
+    if (circleById(circleId)?.isOfficial) return;
     dispatch({ type: 'TOGGLE_JOIN_CIRCLE', circleId });
   };
 
