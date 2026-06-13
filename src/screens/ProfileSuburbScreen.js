@@ -1,14 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
+import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Chip } from '../components/ui';
 import { useData } from '../data/store';
 import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { completeOnboarding } from '../services/profile';
+import { useImagePicker } from '../hooks/useImagePicker';
+import { uploadAvatar } from '../services/mediaStorage';
+import { photoUrl } from '../utils/photos';
 
 // Profile setup step 2 — suburb + photo, both optional and skippable.
 // This is the final onboarding step, so we create the account here.
@@ -17,44 +21,64 @@ export default function ProfileSuburbScreen({ navigation, route }) {
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
   const { dispatch, state } = useData();
+  const { pickFromLibrary, takePhoto } = useImagePicker();
   const name = route.params?.name || 'You';
   const [suburb, setSuburb] = useState(null);
   const [photo, setPhoto] = useState(null);
+  const [picker, setPicker] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [newcomer, setNewcomer] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const resolvePhotoUrl = async () => {
+    if (!photo) return null;
+    const existing = photoUrl(photo);
+    if (existing && !existing.startsWith('file:')) return existing;
+    if (photo?.uri) {
+      if (!isSupabaseConfigured()) return null;
+      setUploading(true);
+      try {
+        return await uploadAvatar({ uri: photo.uri });
+      } finally {
+        setUploading(false);
+      }
+    }
+    return existing;
+  };
+
   const finish = async () => {
-    if (saving) return;
+    if (saving || uploading) return;
     setSaving(true);
     setError('');
     try {
+      const photoUrlValue = await resolvePhotoUrl();
       let authUserId = state.authUserId;
       if (isSupabaseConfigured()) {
         authUserId = await completeOnboarding({
           name,
           suburb,
-          photo,
+          photo: photoUrlValue,
           newcomer,
           phone: route.params?.phoneE164 || route.params?.phone,
         });
         if (authUserId) dispatch({ type: 'SET_AUTH', userId: authUserId });
       }
       dispatch({ type: 'SIGN_UP', name, newcomer, authUserId });
-      if (suburb || photo) dispatch({ type: 'UPDATE_PROFILE', patch: { suburb, photo } });
+      if (suburb || photoUrlValue) dispatch({ type: 'UPDATE_PROFILE', patch: { suburb, photo: photoUrlValue } });
     } catch (e) {
       setError(e?.message || 'Could not save profile. Try again.');
       setSaving(false);
     }
   };
 
-  const mockPhoto = () => {
-    Alert.alert('Photo upload (mocked)', 'In this prototype, photo upload is simulated. Your letter avatar will be used.', [
-      { text: 'OK' },
-    ]);
+  const pickPhoto = async (pickerFn) => {
+    const picked = await pickerFn();
+    if (picked) setPhoto({ uri: picked.uri });
   };
 
   return (
+    <>
     <KeyboardScreen
       contentStyle={styles.body}
       footer={(
@@ -72,8 +96,8 @@ export default function ProfileSuburbScreen({ navigation, route }) {
             />
           </View>
           {error ? <Text style={styles.err}>{error}</Text> : null}
-          <Button title={saving ? 'Saving…' : 'Finish'} onPress={finish} disabled={saving} />
-          <Button title="Skip for now" variant="ghost" onPress={finish} disabled={saving} style={{ marginTop: 4 }} />
+          <Button title={saving ? 'Saving…' : uploading ? 'Uploading photo…' : 'Finish'} onPress={finish} disabled={saving || uploading} />
+          <Button title="Skip for now" variant="ghost" onPress={finish} disabled={saving || uploading} style={{ marginTop: 4 }} />
         </View>
       )}
     >
@@ -81,9 +105,9 @@ export default function ProfileSuburbScreen({ navigation, route }) {
       <Text style={styles.sub}>Both are optional — you can skip and add them later.</Text>
 
       <View style={styles.photoBlock}>
-        <Avatar name={name} photo={photo} size={88} />
-        <Pressable onPress={mockPhoto} style={styles.photoBtn}>
-          <Text style={styles.photoBtnText}>📷  Add photo</Text>
+        <Avatar name={name} photo={photoUrl(photo) || photo?.uri} size={88} />
+        <Pressable onPress={() => setPicker(true)} style={styles.photoBtn} disabled={uploading}>
+          <Text style={styles.photoBtnText}>{uploading ? 'Uploading…' : '📷  Add photo'}</Text>
         </Pressable>
       </View>
 
@@ -94,6 +118,17 @@ export default function ProfileSuburbScreen({ navigation, route }) {
         ))}
       </View>
     </KeyboardScreen>
+
+      <PhotoSourceSheet
+        visible={picker}
+        onClose={() => setPicker(false)}
+        title="Add profile photo"
+        showRemove={!!photo}
+        onCamera={() => pickPhoto(takePhoto)}
+        onLibrary={() => pickPhoto(pickFromLibrary)}
+        onRemove={() => setPhoto(null)}
+      />
+    </>
   );
 }
 
