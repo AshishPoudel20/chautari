@@ -132,7 +132,6 @@ function AppNavigator() {
             <Stack.Screen name="VerifiedApplication" component={VerifiedApplicationScreen} options={{ title: 'Become a Verified Expert' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Activity' }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
-            <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
             <Stack.Screen name="MyPosts" component={MyPostsScreen} options={{ title: 'My Posts' }} />
             <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Posts' }} />
             <Stack.Screen name="ArrivalChecklist" component={ArrivalChecklistScreen} options={{ title: 'First 30 Days' }} />
@@ -148,6 +147,7 @@ function AppNavigator() {
               <Stack.Screen name="AnswerComposer" component={AnswerComposerScreen} options={{ title: 'Your answer' }} />
               <Stack.Screen name="Report" component={ReportScreen} options={{ title: 'Report' }} />
               <Stack.Screen name="ImageViewer" component={ImageViewerScreen} options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
+              <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
             </Stack.Group>
           </Stack.Group>
         )}

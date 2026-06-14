@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { StackActions } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import { useTheme } from '../theme/ThemeContext';
@@ -15,11 +16,13 @@ export default function ProfilePhotoPreviewScreen({ navigation, route }) {
   );
 
   const returnWithParams = (params) => {
-    navigation.navigate({
-      name: returnScreen,
-      params,
-      merge: true,
-    });
+    if (!returnScreen) {
+      navigation.goBack();
+      return;
+    }
+    // navigate() from a modal can push a duplicate return screen, leaving preview in the stack
+    // so Save's goBack() lands on preview again — popTo dismisses the modal and merges params.
+    navigation.dispatch(StackActions.popTo(returnScreen, params, { merge: true }));
   };
 
   const usePhoto = () => {
