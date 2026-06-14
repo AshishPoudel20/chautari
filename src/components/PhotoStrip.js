@@ -24,10 +24,11 @@ export default function PhotoStrip({
 
   return (
     <View style={styles.row}>
-      {photos.map((p) => {
+      {photos.map((p, index) => {
         const src = photoUrl(p) || p.uri;
+        const key = p.id || (src ? `${src}-${index}` : `photo-${index}`);
         return (
-          <View key={p.id} style={styles.tileWrap}>
+          <View key={key} style={styles.tileWrap}>
             <Pressable
               style={styles.tile}
               onPress={() => (p.error && onRetry ? onRetry(p.id) : onRemove?.(p.id))}
