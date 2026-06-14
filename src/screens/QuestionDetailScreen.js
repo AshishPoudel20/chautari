@@ -48,7 +48,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const isMine = question && isQuestionOwner(question);
   const saved = isSaved(questionId);
   const qUpvoted = hasUpvotedQuestion(questionId);
-  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeReplyCommentId, setActiveReplyCommentId] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replyPhoto, setReplyPhoto] = useState(null);
   const [replyPickerOpen, setReplyPickerOpen] = useState(false);
@@ -68,10 +68,28 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   const cancelReply = useCallback(() => {
     Keyboard.dismiss();
-    setReplyingTo(null);
+    setActiveReplyCommentId(null);
     setReplyText('');
     setReplyPhoto(null);
   }, []);
+
+  const openReply = useCallback((answerId) => {
+    if (activeReplyCommentId === answerId) {
+      cancelReply();
+      return;
+    }
+    setReplyText('');
+    setReplyPhoto(null);
+    setActiveReplyCommentId(answerId);
+    requestAnimationFrame(() => scrollToAnswer(answerId));
+  }, [activeReplyCommentId, cancelReply, scrollToAnswer]);
+
+  useEffect(() => {
+    if (!activeReplyCommentId) return undefined;
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(event, () => scrollToAnswer(activeReplyCommentId));
+    return () => sub.remove();
+  }, [activeReplyCommentId, scrollToAnswer]);
 
   const openMenu = useCallback(() => {
     if (!question) return;
@@ -192,7 +210,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
       });
       setReplyText('');
       setReplyPhoto(null);
-      setReplyingTo(null);
+      setActiveReplyCommentId(null);
       Keyboard.dismiss();
     } catch (e) {
       Alert.alert('Could not post reply', e?.message || 'Try again.');
@@ -209,13 +227,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const openPhotoViewer = (photos, index = 0) => {
     navigate('ImageViewer', { photos: normalizePhotoUrls(photos), index });
   };
-
-  useEffect(() => {
-    if (!replyingTo) return undefined;
-    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(event, () => scrollToAnswer(replyingTo));
-    return () => sub.remove();
-  }, [replyingTo, scrollToAnswer]);
 
   const renderAnswer = (ans, isPinned) => {
     const aAuthor = displayAuthor(userById(ans.authorId), ans.anonymous);
@@ -259,16 +270,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
             active={hasUpvotedAnswer(ans.id)}
             onToggle={() => dispatch({ type: 'TOGGLE_UPVOTE_ANSWER', answerId: ans.id })}
           />
-          <Pressable onPress={() => {
-            if (replyingTo === ans.id) {
-              cancelReply();
-              return;
-            }
-            setReplyText('');
-            setReplyPhoto(null);
-            setReplyingTo(ans.id);
-            requestAnimationFrame(() => scrollToAnswer(ans.id));
-          }} hitSlop={6}>
+          <Pressable onPress={() => openReply(ans.id)} hitSlop={6}>
             <Text style={styles.replyBtn}>↩ Reply</Text>
           </Pressable>
           <Pressable onPress={() => navigate('Report', { kind: 'content', targetTitle: 'this answer' })} hitSlop={6}>
@@ -303,7 +305,17 @@ export default function QuestionDetailScreen({ navigation, route }) {
           );
         })}
 
-        {replyingTo === ans.id && (
+        {activeReplyCommentId === ans.id ? (
+          <Text style={styles.replyingHint}>Replying below…</Text>
+        ) : null}
+      </View>
+    );
+  };
+
+  const renderBottomBar = () => {
+    if (activeReplyCommentId) {
+      return (
+        <View style={styles.stickyBottom}>
           <View style={styles.replyComposer}>
             <TextInput
               style={styles.replyInput}
@@ -314,7 +326,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
               multiline
               autoFocus
               maxLength={1000}
-              onFocus={() => scrollToAnswer(ans.id)}
+              onFocus={() => scrollToAnswer(activeReplyCommentId)}
             />
             {ENABLE_REPLY_PHOTOS ? (
               <PhotoStrip
@@ -326,14 +338,25 @@ export default function QuestionDetailScreen({ navigation, route }) {
               />
             ) : null}
             <Pressable
-              onPress={() => submitReply(ans.id)}
+              onPress={() => submitReply(activeReplyCommentId)}
               disabled={replyText.trim().length < 5 || replySubmitting}
               style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && styles.replySendDisabled]}
             >
               <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>
             </Pressable>
           </View>
-        )}
+          <Pressable onPress={cancelReply} style={styles.replyCancelBtn} hitSlop={8}>
+            <Text style={styles.replyCancelText}>Cancel reply</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.footer}>
+        <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={() => navigate('AnswerComposer', { questionId })}>
+          <Text style={styles.answerCtaText}>✍️  Write an answer</Text>
+        </Pressable>
       </View>
     );
   };
@@ -347,7 +370,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
     >
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingBottom: replyingTo ? spacing.xxl : 110 }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
@@ -434,13 +458,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
         {community.map((a) => renderAnswer(a, false))}
       </ScrollView>
 
-      {!replyingTo ? (
-        <View style={styles.footer}>
-          <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={() => navigate('AnswerComposer', { questionId })}>
-            <Text style={styles.answerCtaText}>✍️  Write an answer</Text>
-          </Pressable>
-        </View>
-      ) : null}
+      {renderBottomBar()}
     </KeyboardAvoidingView>
 
       {ENABLE_REPLY_PHOTOS ? (
@@ -460,6 +478,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
 const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: spacing.lg },
   missing: { padding: spacing.xl, color: colors.textMuted, textAlign: 'center', marginTop: 40 },
 
   postedBanner: { backgroundColor: colors.successTint, paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
@@ -516,13 +536,21 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    zIndex: 2,
-    elevation: 2,
   },
+  replyingHint: {
+    marginTop: spacing.sm,
+    fontSize: font.tiny,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  stickyBottom: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  replyCancelBtn: { alignSelf: 'center', marginTop: spacing.sm, paddingVertical: spacing.xs },
+  replyCancelText: { color: colors.textMuted, fontWeight: '700', fontSize: font.caption },
   replyInput: {
     flex: 1,
     minWidth: 0,
