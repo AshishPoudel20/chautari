@@ -4,9 +4,11 @@ import Avatar from './Avatar';
 import CircleChip from './CircleChip';
 import VerifiedBadge from './VerifiedBadge';
 import ExpertMarker from './ExpertMarker';
+import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
 import { professionLabel } from '../data/categories';
+import { normalizePhotoUrls } from '../utils/photos';
 
 function QuestionCard({
   question, author, circle, expert,
@@ -23,6 +25,7 @@ function QuestionCard({
   const rawAnswers = question.answers?.length || 0;
   const canOpenProfile = !!onAuthorPress && !question.anonymous && !a.anon;
   const skipCardPress = useRef(false);
+  const hasPhotos = normalizePhotoUrls(question.photos).length > 0;
 
   const handleCardPress = () => {
     if (skipCardPress.current) {
@@ -77,13 +80,19 @@ function QuestionCard({
         <Text style={styles.metaTime}>{timeAgo(question.createdAt)}</Text>
       </View>
 
-      <Text style={[styles.title, isExpertPost && styles.titleExpert]} numberOfLines={2}>
-        {question.title}
-      </Text>
+      <View style={[styles.previewRow, isExpertPost && styles.previewRowExpert]}>
+        <View style={styles.previewText}>
+          <Text style={[styles.title, isExpertPost && styles.titleExpert]} numberOfLines={2}>
+            {question.title}
+          </Text>
 
-      <Text style={[styles.body, isExpertPost && styles.bodyExpert]} numberOfLines={isExpertPost ? 2 : 1}>
-        {question.body}
-      </Text>
+          <Text style={[styles.body, isExpertPost && styles.bodyExpert]} numberOfLines={isExpertPost ? 2 : 1}>
+            {question.body}
+          </Text>
+        </View>
+
+        {hasPhotos ? <QuestionCardPhotoThumb photos={question.photos} /> : null}
+      </View>
 
       {circle && !hideCircleChip ? (
         <View style={styles.chipRow}>
@@ -149,15 +158,27 @@ const createStyles = (colors, shadow, spacing, radius, font) => StyleSheet.creat
   metaDot: { color: colors.textFaint, fontSize: font.tiny },
   metaTime: { color: colors.textMuted, fontSize: font.tiny, fontWeight: '600', flexShrink: 0 },
 
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  previewRowExpert: {
+    marginTop: spacing.md,
+  },
+  previewText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
   title: {
     fontSize: font.subtitle,
     fontWeight: '800',
     color: colors.text,
     lineHeight: 23,
-    marginTop: spacing.sm,
   },
   titleExpert: {
-    marginTop: spacing.md,
     lineHeight: 25,
   },
 
