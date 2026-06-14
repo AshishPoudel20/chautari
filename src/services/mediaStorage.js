@@ -1,4 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator';
+import { File } from 'expo-file-system';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   MEDIA_BUCKET,
@@ -13,17 +14,26 @@ function storagePath(prefix, userId, entityId, fileName) {
   return `${prefix}/${userId}/${entityId}/${fileName}`;
 }
 
-async function readFileAsArrayBuffer(uri) {
+/** Read local image bytes for Supabase upload (RN-safe; never pass a URI string to .upload()). */
+async function readFileBytes(uri) {
+  if (!uri) throw new Error('Photo file path is missing.');
+
+  if (uri.startsWith('file://')) {
+    const file = new File(uri);
+    const bytes = await file.bytes();
+    if (!bytes.byteLength) throw new Error('Photo file is empty.');
+    return bytes;
+  }
+
   const response = await fetch(uri);
   if (!response.ok) throw new Error('Could not read the selected photo.');
   const buffer = await response.arrayBuffer();
   if (!buffer.byteLength) throw new Error('Photo file is empty.');
-  return buffer;
+  return new Uint8Array(buffer);
 }
 
 async function fileByteSize(uri) {
-  const buffer = await readFileAsArrayBuffer(uri);
-  return buffer.byteLength;
+  return (await readFileBytes(uri)).byteLength;
 }
 
 export function getMediaPublicUrl(path) {
@@ -88,7 +98,8 @@ export async function uploadMediaFile({
 }) {
   const userId = await requireAuthUserId();
   const path = storagePath(prefix, userId, entityId, fileName);
-  const body = await readFileAsArrayBuffer(localUri);
+  const body = await readFileBytes(localUri);
+  if (!body.byteLength) throw new Error('Photo file is empty — could not read image bytes.');
 
   const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, {
     contentType: UPLOAD_CONTENT_TYPE,

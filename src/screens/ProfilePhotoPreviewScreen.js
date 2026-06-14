@@ -2,8 +2,11 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
+import { useToast } from '../components/Toast';
+import { useData } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { updateProfile } from '../services/profile';
 import { uploadAvatar } from '../services/mediaStorage';
 import { PROFILE_AVATAR_SIZE } from '../constants/media';
 
@@ -14,8 +17,19 @@ export default function ProfilePhotoPreviewScreen({ navigation, route }) {
     () => createStyles(colors, spacing, font, radius, shadow),
     [colors, spacing, font, radius, shadow],
   );
+  const { dispatch } = useData();
+  const showToast = useToast();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
+
+  const returnWithParams = (params) => {
+    // navigate() pops this modal when returnScreen is already in the stack — do NOT goBack() after.
+    navigation.navigate({
+      name: returnScreen,
+      params,
+      merge: true,
+    });
+  };
 
   const usePhoto = async () => {
     if (uploading || !localUri) return;
@@ -25,13 +39,16 @@ export default function ProfilePhotoPreviewScreen({ navigation, route }) {
       if (!isSupabaseConfigured()) {
         throw new Error('Photo upload requires Supabase — check your .env.');
       }
+
       const url = await uploadAvatar({ uri: localUri });
-      navigation.navigate({
-        name: returnScreen,
-        params: { confirmedPhotoUrl: url },
-        merge: true,
-      });
-      navigation.goBack();
+
+      if (returnScreen === 'EditProfile') {
+        await updateProfile({ photo: url });
+        dispatch({ type: 'UPDATE_PROFILE', patch: { photo: url } });
+      }
+
+      returnWithParams({ confirmedPhotoUrl: url });
+      showToast('Profile photo updated', { tone: 'success' });
     } catch (e) {
       setError(e?.message || 'Could not upload photo. Try again.');
     } finally {
@@ -40,12 +57,7 @@ export default function ProfilePhotoPreviewScreen({ navigation, route }) {
   };
 
   const retake = () => {
-    navigation.navigate({
-      name: returnScreen,
-      params: { retakePhoto: true },
-      merge: true,
-    });
-    navigation.goBack();
+    returnWithParams({ retakePhoto: true });
   };
 
   return (
