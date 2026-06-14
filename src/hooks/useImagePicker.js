@@ -60,7 +60,6 @@ export function useImagePicker() {
     allowsMultipleSelection = false,
     selectionLimit = 1,
   } = {}) => {
-    await waitForPickerPresentation();
     if (!(await ensureMediaLibraryPermission())) return null;
 
     const multi = allowsMultipleSelection && selectionLimit > 1;
@@ -100,7 +99,6 @@ export function useImagePicker() {
   }, []);
 
   const takePhoto = useCallback(async () => {
-    await waitForPickerPresentation();
     if (!(await ensureCameraPermission())) return null;
 
     try {

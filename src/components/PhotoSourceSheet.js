@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { Modal, Pressable, Text, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Modal, Platform, Pressable, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { waitForPickerPresentation } from '../hooks/useImagePicker';
 
 /** Bottom sheet: camera, library, optional remove. */
 export default function PhotoSourceSheet({
@@ -18,26 +19,65 @@ export default function PhotoSourceSheet({
     [colors, spacing, font, radius, shadow],
   );
 
-  const runAfterDismiss = (action) => {
+  // iOS cannot present the image picker while this modal is still up — queue the action
+  // and run it only after onDismiss (or after visible=false on Android).
+  const pendingRef = useRef(null);
+  const flushingRef = useRef(false);
+
+  const flushPending = useCallback(async () => {
+    if (flushingRef.current || !pendingRef.current) return;
+    flushingRef.current = true;
+    const kind = pendingRef.current;
+    pendingRef.current = null;
+    await waitForPickerPresentation();
+    try {
+      if (kind === 'camera') await onCamera?.();
+      else if (kind === 'library') await onLibrary?.();
+      else if (kind === 'remove') await onRemove?.();
+    } catch {
+      // Parent handlers show alerts for picker/upload failures.
+    } finally {
+      flushingRef.current = false;
+    }
+  }, [onCamera, onLibrary, onRemove]);
+
+  const queueAction = useCallback((kind) => {
+    pendingRef.current = kind;
     onClose();
-    Promise.resolve(action?.()).catch(() => {});
-  };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (visible || !pendingRef.current) return;
+    // Fallback when onDismiss does not fire (some transparent modal configs on iOS).
+    const t = setTimeout(flushPending, Platform.OS === 'ios' ? 400 : 0);
+    return () => clearTimeout(t);
+  }, [visible, flushPending]);
+
+  const handleDismiss = useCallback(() => {
+    flushPending();
+  }, [flushPending]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      onDismiss={handleDismiss}
+    >
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
           <Text style={styles.title}>{title}</Text>
-          <Pressable style={styles.row} onPress={() => runAfterDismiss(onCamera)}>
+          <Pressable style={styles.row} onPress={() => queueAction('camera')}>
             <Text style={styles.icon}>📸</Text>
             <Text style={styles.label}>Take a photo</Text>
           </Pressable>
-          <Pressable style={styles.row} onPress={() => runAfterDismiss(onLibrary)}>
+          <Pressable style={styles.row} onPress={() => queueAction('library')}>
             <Text style={styles.icon}>🖼</Text>
             <Text style={styles.label}>Choose from library</Text>
           </Pressable>
           {showRemove ? (
-            <Pressable style={styles.row} onPress={() => runAfterDismiss(onRemove)}>
+            <Pressable style={styles.row} onPress={() => queueAction('remove')}>
               <Text style={styles.icon}>🗑️</Text>
               <Text style={[styles.label, { color: colors.danger }]}>Remove photo</Text>
             </Pressable>
