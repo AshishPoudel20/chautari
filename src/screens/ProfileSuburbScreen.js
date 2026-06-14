@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
 import Button from '../components/Button';
 import Avatar from '../components/Avatar';
@@ -10,8 +10,7 @@ import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { completeOnboarding } from '../services/profile';
-import { useImagePicker } from '../hooks/useImagePicker';
-import { uploadAvatar } from '../services/mediaStorage';
+import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
 import { photoUrl } from '../utils/photos';
 
 // Profile setup step 2 — suburb + photo, both optional and skippable.
@@ -21,38 +20,35 @@ export default function ProfileSuburbScreen({ navigation, route }) {
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
   const { dispatch, state } = useData();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
   const name = route.params?.name || 'You';
   const [suburb, setSuburb] = useState(null);
   const [photo, setPhoto] = useState(null);
-  const [picker, setPicker] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [newcomer, setNewcomer] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const resolvePhotoUrl = async () => {
-    if (!photo) return null;
-    const existing = photoUrl(photo);
-    if (existing && !existing.startsWith('file:')) return existing;
-    if (photo?.uri) {
-      if (!isSupabaseConfigured()) return null;
-      setUploading(true);
-      try {
-        return await uploadAvatar({ uri: photo.uri });
-      } finally {
-        setUploading(false);
-      }
-    }
-    return existing;
-  };
+  const onPhotoConfirmed = useCallback((url) => setPhoto(url), []);
+  const onPhotoRemoved = useCallback(() => setPhoto(null), []);
+
+  const {
+    pickerOpen,
+    setPickerOpen,
+    pickPhoto,
+    pickProfileFromLibrary,
+    takeProfilePhoto,
+    removePhoto,
+  } = useProfilePhotoFlow(navigation, route, {
+    displayName: name,
+    onPhotoConfirmed,
+    onPhotoRemoved,
+  });
 
   const finish = async () => {
-    if (saving || uploading) return;
+    if (saving) return;
     setSaving(true);
     setError('');
     try {
-      const photoUrlValue = await resolvePhotoUrl();
+      const photoUrlValue = photoUrl(photo) || null;
       let authUserId = state.authUserId;
       if (isSupabaseConfigured()) {
         authUserId = await completeOnboarding({
@@ -72,61 +68,56 @@ export default function ProfileSuburbScreen({ navigation, route }) {
     }
   };
 
-  const pickPhoto = async (pickerFn) => {
-    const picked = await pickerFn();
-    if (picked) setPhoto({ uri: picked.uri });
-  };
-
   return (
     <>
-    <KeyboardScreen
-      contentStyle={styles.body}
-      footer={(
-        <View style={styles.footer}>
-          <View style={styles.newcomerRow}>
-            <View style={styles.newcomerCopy}>
-              <Text style={styles.newcomerLabel}>I'm new to Australia</Text>
-              <Text style={styles.newcomerHint}>Select to unlock features made for newcomers.</Text>
+      <KeyboardScreen
+        contentStyle={styles.body}
+        footer={(
+          <View style={styles.footer}>
+            <View style={styles.newcomerRow}>
+              <View style={styles.newcomerCopy}>
+                <Text style={styles.newcomerLabel}>I'm new to Australia</Text>
+                <Text style={styles.newcomerHint}>Select to unlock features made for newcomers.</Text>
+              </View>
+              <Switch
+                value={newcomer}
+                onValueChange={setNewcomer}
+                trackColor={{ true: colors.primary, false: colors.borderStrong }}
+                thumbColor={colors.onPrimary}
+              />
             </View>
-            <Switch
-              value={newcomer}
-              onValueChange={setNewcomer}
-              trackColor={{ true: colors.primary, false: colors.borderStrong }}
-              thumbColor={colors.onPrimary}
-            />
+            {error ? <Text style={styles.err}>{error}</Text> : null}
+            <Button title={saving ? 'Saving…' : 'Finish'} onPress={finish} disabled={saving} />
+            <Button title="Skip for now" variant="ghost" onPress={finish} disabled={saving} style={{ marginTop: 4 }} />
           </View>
-          {error ? <Text style={styles.err}>{error}</Text> : null}
-          <Button title={saving ? 'Saving…' : uploading ? 'Uploading photo…' : 'Finish'} onPress={finish} disabled={saving || uploading} />
-          <Button title="Skip for now" variant="ghost" onPress={finish} disabled={saving || uploading} style={{ marginTop: 4 }} />
+        )}
+      >
+        <Text style={styles.title}>Add a few details</Text>
+        <Text style={styles.sub}>Both are optional — you can skip and add them later.</Text>
+
+        <View style={styles.photoBlock}>
+          <Avatar name={name} photo={photoUrl(photo)} size={88} />
+          <Pressable onPress={() => setPickerOpen(true)} style={styles.photoBtn}>
+            <Text style={styles.photoBtnText}>📷  Add photo</Text>
+          </Pressable>
         </View>
-      )}
-    >
-      <Text style={styles.title}>Add a few details</Text>
-      <Text style={styles.sub}>Both are optional — you can skip and add them later.</Text>
 
-      <View style={styles.photoBlock}>
-        <Avatar name={name} photo={photoUrl(photo) || photo?.uri} size={88} />
-        <Pressable onPress={() => setPicker(true)} style={styles.photoBtn} disabled={uploading}>
-          <Text style={styles.photoBtnText}>{uploading ? 'Uploading…' : '📷  Add photo'}</Text>
-        </Pressable>
-      </View>
-
-      <Text style={styles.label}>Your suburb (Greater Melbourne)</Text>
-      <View style={styles.chips}>
-        {SUBURBS.map((s) => (
-          <Chip key={s} label={s} active={suburb === s} onPress={() => setSuburb(suburb === s ? null : s)} />
-        ))}
-      </View>
-    </KeyboardScreen>
+        <Text style={styles.label}>Your suburb (Greater Melbourne)</Text>
+        <View style={styles.chips}>
+          {SUBURBS.map((s) => (
+            <Chip key={s} label={s} active={suburb === s} onPress={() => setSuburb(suburb === s ? null : s)} />
+          ))}
+        </View>
+      </KeyboardScreen>
 
       <PhotoSourceSheet
-        visible={picker}
-        onClose={() => setPicker(false)}
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
         title="Add profile photo"
         showRemove={!!photo}
-        onCamera={() => pickPhoto(takePhoto)}
-        onLibrary={() => pickPhoto(pickFromLibrary)}
-        onRemove={() => setPhoto(null)}
+        onCamera={() => pickPhoto(takeProfilePhoto)}
+        onLibrary={() => pickPhoto(pickProfileFromLibrary)}
+        onRemove={removePhoto}
       />
     </>
   );

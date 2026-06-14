@@ -19,3 +19,6 @@ export const MEDIA_PATH_PREFIX = {
   ANSWER: 'answers',
   REPLY: 'replies',
 };
+
+/** Diameter used on My Profile, Edit Profile, and the photo preview confirm screen. */
+export const PROFILE_AVATAR_SIZE = 88;

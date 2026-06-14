@@ -35,10 +35,19 @@ import ImageViewerScreen from '../screens/ImageViewerScreen';
 import MyPostsScreen from '../screens/MyPostsScreen';
 import SavedPostsScreen from '../screens/SavedPostsScreen';
 import ArrivalChecklistScreen from '../screens/ArrivalChecklistScreen';
+import ProfilePhotoPreviewScreen from '../screens/ProfilePhotoPreviewScreen';
 
 const Stack = createNativeStackNavigator();
 
 const modalOptions = {
+  presentation: 'modal',
+  animation: 'slide_from_bottom',
+  headerBackTitle: 'Cancel',
+};
+
+const profilePhotoPreviewOptions = {
+  title: 'Preview photo',
+  headerShown: true,
   presentation: 'modal',
   animation: 'slide_from_bottom',
   headerBackTitle: 'Cancel',
@@ -98,6 +107,7 @@ function AppNavigator() {
             <Stack.Group screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
               <Stack.Screen name="ProfileName" component={ProfileNameScreen} options={{ headerShown: true, title: 'Your profile', headerBackTitle: 'Back' }} />
               <Stack.Screen name="ProfileSuburb" component={ProfileSuburbScreen} options={{ headerShown: true, title: 'Almost there', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
             </Stack.Group>
           ) : (
             <Stack.Group screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
@@ -106,6 +116,7 @@ function AppNavigator() {
               <Stack.Screen name="Otp" component={OtpScreen} options={{ headerShown: true, title: '', headerBackTitle: 'Back' }} />
               <Stack.Screen name="ProfileName" component={ProfileNameScreen} options={{ headerShown: true, title: 'Your profile', headerBackTitle: 'Back' }} />
               <Stack.Screen name="ProfileSuburb" component={ProfileSuburbScreen} options={{ headerShown: true, title: 'Almost there', headerBackTitle: 'Back' }} />
+              <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
             </Stack.Group>
           )
         ) : (
@@ -121,6 +132,7 @@ function AppNavigator() {
             <Stack.Screen name="VerifiedApplication" component={VerifiedApplicationScreen} options={{ title: 'Become a Verified Expert' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Activity' }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
+            <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
             <Stack.Screen name="MyPosts" component={MyPostsScreen} options={{ title: 'My Posts' }} />
             <Stack.Screen name="SavedPosts" component={SavedPostsScreen} options={{ title: 'Saved Posts' }} />
             <Stack.Screen name="ArrivalChecklist" component={ArrivalChecklistScreen} options={{ title: 'First 30 Days' }} />

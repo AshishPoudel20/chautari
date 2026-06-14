@@ -25,13 +25,15 @@ Real image pick → compress (HEIC→JPEG) → upload → public URL → render 
 | Target | Limit | Config |
 |--------|-------|--------|
 | Question photos | Up to 5, ~5 MB each, JPEG/PNG/HEIC | Always on |
-| Profile avatar | Single image | Always on |
+| Profile avatar | Single image; native 1:1 crop + circular preview confirm | Always on |
 | Circle banner | Single image (create/edit) | Always on; accent fallback when none |
 | Answer / reply photos | Single each | `ENABLE_REPLY_PHOTOS` in `src/constants/media.js` (PRD excludes these; prototype flag) |
 
 **Bucket:** public `media` — see [`supabase/migrations/006_storage_media.sql`](supabase/migrations/006_storage_media.sql) and [`supabase/README.md`](supabase/README.md).
 
 **Client:** `expo-image-picker` + `expo-image-manipulator`; uploads via `fetch(uri).arrayBuffer()` in `src/services/mediaStorage.js` (React Native–safe). Requires signed-in Supabase user.
+
+**Profile photo flow:** chooser → native square crop (`allowsEditing` + `aspect: [1, 1]`) → `ProfilePhotoPreview` screen (circular `Avatar` at 88pt) → upload on confirm. Question/circle/answer flows skip preview/crop.
 
 **iOS gallery in Expo Go:** The shared picker requests `requestMediaLibraryPermissionsAsync()` then opens the library after the source sheet dismisses (iOS blocks the picker if it opens while a modal is closing). Fully quit and reopen Expo Go after changing `app.json` permission strings; those keys apply to dev builds, not Expo Go’s own Info.plist — if the library still never prompts, use a development build so `photosPermission` is embedded.
 

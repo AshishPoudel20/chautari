@@ -55,6 +55,19 @@ async function prepareAsset(asset) {
   return { asset, ...prepared };
 }
 
+const PROFILE_PICKER_OPTIONS = {
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  aspect: [1, 1],
+  quality: 1,
+  exif: false,
+};
+
+function profilePickResult(result) {
+  if (result.canceled || !result.assets?.[0]?.uri) return null;
+  return { uri: result.assets[0].uri };
+}
+
 export function useImagePicker() {
   const pickFromLibrary = useCallback(async ({
     allowsMultipleSelection = false,
@@ -122,5 +135,31 @@ export function useImagePicker() {
     }
   }, []);
 
-  return { pickFromLibrary, takePhoto };
+  /** Profile photo only — native square crop, no compression until upload confirm. */
+  const pickProfileFromLibrary = useCallback(async () => {
+    if (!(await ensureMediaLibraryPermission())) return null;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync(PROFILE_PICKER_OPTIONS);
+      return profilePickResult(result);
+    } catch (e) {
+      Alert.alert('Could not open gallery', e?.message || 'Try again.');
+      return null;
+    }
+  }, []);
+
+  const takeProfilePhoto = useCallback(async () => {
+    if (!(await ensureCameraPermission())) return null;
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        ...PROFILE_PICKER_OPTIONS,
+        cameraType: ImagePicker.CameraType.front,
+      });
+      return profilePickResult(result);
+    } catch (e) {
+      Alert.alert('Could not open camera', e?.message || 'Try again.');
+      return null;
+    }
+  }, []);
+
+  return { pickFromLibrary, takePhoto, pickProfileFromLibrary, takeProfilePhoto };
 }

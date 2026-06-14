@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
@@ -11,54 +11,50 @@ import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { updateProfile } from '../services/profile';
-import { useImagePicker } from '../hooks/useImagePicker';
-import { uploadAvatar } from '../services/mediaStorage';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
+import { photoUrl } from '../utils/photos';
 
-export default function EditProfileScreen({ navigation }) {
+export default function EditProfileScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
   const { dispatch } = useData();
   const { me } = useSelectors();
   const showToast = useToast();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
   const user = me();
   const [name, setName] = useState(user?.name || '');
   const [suburb, setSuburb] = useState(user?.suburb || null);
   const [bio, setBio] = useState(user?.bio || '');
   const [photo, setPhoto] = useState(user?.photo || null);
-  const [picker, setPicker] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const onPhotoConfirmed = useCallback((url) => setPhoto(url), []);
+  const onPhotoRemoved = useCallback(() => {
+    setPhoto(null);
+    showToast('Photo removed');
+  }, [showToast]);
+
+  const {
+    pickerOpen,
+    setPickerOpen,
+    pickPhoto,
+    pickProfileFromLibrary,
+    takeProfilePhoto,
+    removePhoto,
+  } = useProfilePhotoFlow(navigation, route, {
+    displayName: name,
+    onPhotoConfirmed,
+    onPhotoRemoved,
+  });
 
   const valid = name.trim().length >= 2;
   const displayPhoto = photoUrl(photo) || (typeof photo === 'object' ? photo?.uri : photo);
 
-  const resolvePhotoUrl = async () => {
-    if (!photo) return null;
-    const existing = photoUrl(photo);
-    if (existing && !isLocalPhotoUri(existing)) return existing;
-    if (photo?.uri && isLocalPhotoUri(photo.uri)) {
-      if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
-      setUploading(true);
-      try {
-        const url = await uploadAvatar({ uri: photo.uri });
-        setPhoto(url);
-        return url;
-      } finally {
-        setUploading(false);
-      }
-    }
-    return existing;
-  };
-
   const save = async () => {
-    if (!valid || saving || uploading) return;
+    if (!valid || saving) return;
     setSaving(true);
     try {
-      const photoUrlValue = await resolvePhotoUrl();
-      const patch = { name: name.trim(), suburb, bio: bio.trim(), photo: photoUrlValue };
+      const patch = { name: name.trim(), suburb, bio: bio.trim(), photo: photoUrl(photo) || null };
       if (isSupabaseConfigured()) await updateProfile(patch);
       dispatch({ type: 'UPDATE_PROFILE', patch });
       showToast('Profile updated', { tone: 'success' });
@@ -70,11 +66,6 @@ export default function EditProfileScreen({ navigation }) {
     }
   };
 
-  const pickPhoto = async (pickerFn) => {
-    const picked = await pickerFn();
-    if (picked) setPhoto({ uri: picked.uri });
-  };
-
   return (
     <View style={styles.container}>
       <KeyboardScreen
@@ -82,14 +73,14 @@ export default function EditProfileScreen({ navigation }) {
         contentStyle={styles.body}
         footer={(
           <View style={styles.footer}>
-            <Button title={saving ? 'Saving…' : uploading ? 'Uploading photo…' : 'Save changes'} onPress={save} disabled={!valid || saving || uploading} />
+            <Button title={saving ? 'Saving…' : 'Save changes'} onPress={save} disabled={!valid || saving} />
           </View>
         )}
       >
         <View style={styles.photoBlock}>
           <Avatar name={name} photo={displayPhoto} size={88} />
-          <Pressable onPress={() => setPicker(true)} style={styles.photoBtn} disabled={uploading}>
-            <Text style={styles.photoBtnText}>{uploading ? 'Uploading…' : '📷  Change photo'}</Text>
+          <Pressable onPress={() => setPickerOpen(true)} style={styles.photoBtn}>
+            <Text style={styles.photoBtnText}>📷  Change photo</Text>
           </Pressable>
         </View>
 
@@ -109,13 +100,13 @@ export default function EditProfileScreen({ navigation }) {
       </KeyboardScreen>
 
       <PhotoSourceSheet
-        visible={picker}
-        onClose={() => setPicker(false)}
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
         title="Change profile photo"
         showRemove={!!photo}
-        onCamera={() => pickPhoto(takePhoto)}
-        onLibrary={() => pickPhoto(pickFromLibrary)}
-        onRemove={() => { setPhoto(null); showToast('Photo removed'); }}
+        onCamera={() => pickPhoto(takeProfilePhoto)}
+        onLibrary={() => pickPhoto(pickProfileFromLibrary)}
+        onRemove={removePhoto}
       />
     </View>
   );
