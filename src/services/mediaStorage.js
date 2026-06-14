@@ -1,5 +1,6 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   MEDIA_BUCKET,
@@ -14,26 +15,25 @@ function storagePath(prefix, userId, entityId, fileName) {
   return `${prefix}/${userId}/${entityId}/${fileName}`;
 }
 
-/** Read local image bytes for Supabase upload (RN-safe; never pass a URI string to .upload()). */
-async function readFileBytes(uri) {
-  if (!uri) throw new Error('Photo file path is missing.');
-
-  if (uri.startsWith('file://')) {
-    const file = new File(uri);
-    const bytes = await file.bytes();
-    if (!bytes.byteLength) throw new Error('Photo file is empty.');
-    return bytes;
+/**
+ * Read a prepared file:// JPEG into an ArrayBuffer for Supabase upload.
+ * Never fetch() blob:/content:/ph: URIs — RN has no blob: handler.
+ */
+async function readFileAsArrayBuffer(fileUri) {
+  if (!fileUri?.startsWith('file://')) {
+    throw new Error('Photo must be saved as a local file before upload. Try selecting the photo again.');
   }
 
-  const response = await fetch(uri);
-  if (!response.ok) throw new Error('Could not read the selected photo.');
-  const buffer = await response.arrayBuffer();
-  if (!buffer.byteLength) throw new Error('Photo file is empty.');
-  return new Uint8Array(buffer);
+  const base64 = await FileSystem.readAsStringAsync(fileUri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const arrayBuffer = decodeBase64(base64);
+  if (!arrayBuffer.byteLength) throw new Error('Photo file is empty.');
+  return arrayBuffer;
 }
 
-async function fileByteSize(uri) {
-  return (await readFileBytes(uri)).byteLength;
+async function fileByteSize(fileUri) {
+  return (await readFileAsArrayBuffer(fileUri)).byteLength;
 }
 
 export function getMediaPublicUrl(path) {
@@ -42,7 +42,10 @@ export function getMediaPublicUrl(path) {
   return data.publicUrl;
 }
 
-/** Compress, convert HEIC→JPEG, enforce size/type limits. Returns local JPEG uri. */
+/**
+ * Normalize any picker/crop URI (blob:, file:, ph:, …) to a compressed JPEG file://
+ * via expo-image-manipulator, then validate size.
+ */
 export async function prepareImageForUpload(asset) {
   const mime = (asset.mimeType || asset.type || '').toLowerCase();
   if (mime && !PICKER_IMAGE_TYPES.some((t) => mime.includes(t.replace('image/', '')))) {
@@ -65,6 +68,10 @@ export async function prepareImageForUpload(asset) {
     actions,
     { compress: JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   );
+
+  if (!manipulated.uri.startsWith('file://')) {
+    throw new Error('Could not prepare photo for upload — try selecting the image again.');
+  }
 
   const size = await fileByteSize(manipulated.uri);
   if (size > MAX_IMAGE_BYTES) {
@@ -98,10 +105,10 @@ export async function uploadMediaFile({
 }) {
   const userId = await requireAuthUserId();
   const path = storagePath(prefix, userId, entityId, fileName);
-  const body = await readFileBytes(localUri);
-  if (!body.byteLength) throw new Error('Photo file is empty — could not read image bytes.');
+  const arrayBuffer = await readFileAsArrayBuffer(localUri);
+  if (!arrayBuffer.byteLength) throw new Error('Photo file is empty — could not read image bytes.');
 
-  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, body, {
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, arrayBuffer, {
     contentType: UPLOAD_CONTENT_TYPE,
     upsert,
     cacheControl: '3600',
