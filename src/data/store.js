@@ -750,6 +750,10 @@ export function useSelectors() {
   const effectiveJoinedCircleIds = () => computeEffectiveJoinedCircleIds(state);
   const joinedCirclesList = () =>
     computeEffectiveJoinedCircleIds(state).map((id) => circleById(id)).filter(Boolean);
+  const joinedUserCirclesList = () =>
+    state.joinedCircles
+      .map((id) => circleById(id))
+      .filter((c) => c && !c.isOfficial);
   const officialCircles = () => state.circles.filter((c) => c.isOfficial);
   const userCircles = () => state.circles.filter((c) => !c.isOfficial);
 
@@ -882,7 +886,7 @@ export function useSelectors() {
     myQuestions, questionsByAuthor, expertAuthoredQuestions, savedQuestionsList, unreadNotifs,
     expertAnswerOn, hasExpertAnswer, newTodayCount, suggestedExperts,
     expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
-    circleById, isJoinedCircle, effectiveJoinedCircleIds, joinedCirclesList, officialCircles, userCircles,
+    circleById, isJoinedCircle, effectiveJoinedCircleIds, joinedCirclesList, joinedUserCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,
     isChecklistItemDone, checklistDoneCount, isQuestionOwner, isNewcomerActive,

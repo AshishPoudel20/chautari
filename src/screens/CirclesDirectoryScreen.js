@@ -32,11 +32,7 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
           {activity > 0 ? ` · ${activity} new today` : ''}
         </Text>
       </View>
-      {permanent ? (
-        <View style={[styles.joinBtn, styles.joinBtnActive]}>
-          <Text style={[styles.joinText, styles.joinTextActive]}>Member</Text>
-        </View>
-      ) : (
+      {!permanent ? (
         <Pressable
           onPress={(e) => { e.stopPropagation?.(); onToggleJoin(); }}
           style={[styles.joinBtn, joined && styles.joinBtnActive]}
@@ -44,7 +40,7 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
         >
           <Text style={[styles.joinText, joined && styles.joinTextActive]}>{joined ? 'Joined' : 'Join'}</Text>
         </Pressable>
-      )}
+      ) : null}
     </Pressable>
   );
 }
@@ -52,7 +48,7 @@ function CircleRow({ circle, joined, onPress, onToggleJoin, isDark, styles, colo
 export default function CirclesDirectoryScreen({ navigation }) {
   const { dispatch } = useData();
   const {
-    joinedCirclesList, officialCircles, userCircles, isJoinedCircle, circleActivitySince, circleById,
+    joinedUserCirclesList, officialCircles, userCircles, isJoinedCircle, circleActivitySince, circleById,
   } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
@@ -70,14 +66,13 @@ export default function CirclesDirectoryScreen({ navigation }) {
     ));
   };
 
-  const your = filterList(joinedCirclesList());
+  const your = filterList(joinedUserCirclesList());
   const official = filterList(officialCircles());
   const popular = filterList([...userCircles()].sort((a, b) => b.memberCount - a.memberCount));
   const newest = filterList([...userCircles()].sort((a, b) => b.createdAt - a.createdAt));
 
   const sections = useMemo(() => {
-    const s = [];
-    if (your.length) s.push({ title: 'Your Circles', data: your });
+    const s = [{ title: 'Your Circles', data: your, emptyHint: your.length ? null : 'Join circles to see them here.' }];
     if (official.length) s.push({ title: 'Official', data: official });
     if (popular.length) s.push({ title: 'Popular', data: popular });
     if (newest.length) s.push({ title: 'New circles', data: newest });
@@ -110,13 +105,15 @@ export default function CirclesDirectoryScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 }}
         stickySectionHeadersEnabled={false}
-        ListHeaderComponent={(
-          <Pressable style={styles.createRow} onPress={() => navigate('CreateCircle')}>
-            <Text style={styles.createText}>＋ Create a Circle</Text>
-          </Pressable>
-        )}
         renderSectionHeader={({ section: { title } }) => (
           <Text style={styles.sectionLabel}>{title.toUpperCase()}</Text>
+        )}
+        renderSectionFooter={({ section }) => (
+          section.emptyHint && !query.trim() ? (
+            <View style={styles.sectionEmpty}>
+              <Text style={styles.sectionEmptyText}>{section.emptyHint}</Text>
+            </View>
+          ) : null
         )}
         renderItem={({ item }) => (
           <CircleRow
@@ -145,8 +142,6 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   title: { fontSize: font.h2, fontWeight: '800', color: colors.text },
   searchWrap: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   search: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 11, color: colors.text, fontSize: font.body },
-  createRow: { marginHorizontal: spacing.lg, marginBottom: spacing.md, paddingVertical: spacing.md, alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, borderStyle: 'dashed' },
-  createText: { color: colors.textMuted, fontWeight: '700', fontSize: font.small },
   sectionLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textMuted, letterSpacing: 0.8, marginLeft: spacing.lg + 4, marginTop: spacing.md, marginBottom: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', marginHorizontal: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card },
   rowBody: { flex: 1, marginLeft: spacing.md, marginRight: spacing.sm },
@@ -162,4 +157,6 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   joinTextActive: { color: colors.primaryDark },
   empty: { padding: spacing.xl, alignItems: 'center' },
   emptyText: { color: colors.textMuted },
+  sectionEmpty: { marginHorizontal: spacing.lg, marginBottom: spacing.md, padding: spacing.lg, backgroundColor: colors.bgSunken, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border },
+  sectionEmptyText: { color: colors.textMuted, fontSize: font.small, textAlign: 'center', lineHeight: 20 },
 });
