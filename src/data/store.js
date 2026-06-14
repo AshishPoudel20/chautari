@@ -808,7 +808,7 @@ export function useSelectors() {
         });
       });
     return state.circles
-      .filter((c) => !joined.has(c.id))
+      .filter((c) => !c.isOfficial && !joined.has(c.id))
       .map((c) => {
         let score = c.memberCount || 0;
         `${c.name} ${c.description}`.toLowerCase().split(/\W+/).forEach((w) => {

@@ -4,6 +4,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';
 import { useData } from '../data/store';
+import { CIRCLE_DIR_SEE_ALL_TITLES } from '../utils/circleDirectory';
 
 import SplashScreen from '../screens/SplashScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
@@ -14,9 +15,9 @@ import ProfileSuburbScreen from '../screens/ProfileSuburbScreen';
 import MainTabs from './MainTabs';
 import QuestionDetailScreen from '../screens/QuestionDetailScreen';
 import AskComposerScreen from '../screens/AskComposerScreen';
-import AnswerComposerScreen from '../screens/AnswerComposerScreen';
 import CircleDetailScreen from '../screens/CircleDetailScreen';
 import CreateCircleScreen from '../screens/CreateCircleScreen';
+import CirclesSectionSeeAllScreen from '../screens/CirclesSectionSeeAllScreen';
 import EditCircleScreen from '../screens/EditCircleScreen';
 import SearchScreen from '../screens/SearchScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
@@ -124,6 +125,11 @@ function AppNavigator() {
             <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false, animation: 'fade' }} />
             <Stack.Screen name="QuestionDetail" component={QuestionDetailScreen} options={{ title: 'Question' }} />
             <Stack.Screen name="CircleDetail" component={CircleDetailScreen} options={{ title: '' }} />
+            <Stack.Screen
+              name="CirclesSectionSeeAll"
+              component={CirclesSectionSeeAllScreen}
+              options={({ route }) => ({ title: CIRCLE_DIR_SEE_ALL_TITLES[route.params?.sectionKey] || 'Circles' })}
+            />
             <Stack.Screen name="CreateCircle" component={CreateCircleScreen} options={{ title: 'Create a Circle' }} />
             <Stack.Screen name="EditCircle" component={EditCircleScreen} options={{ title: 'Edit circle' }} />
             <Stack.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
@@ -144,7 +150,6 @@ function AppNavigator() {
 
             <Stack.Group screenOptions={modalOptions}>
               <Stack.Screen name="AskComposer" component={AskComposerScreen} options={{ title: 'Ask a question' }} />
-              <Stack.Screen name="AnswerComposer" component={AnswerComposerScreen} options={{ title: 'Your answer' }} />
               <Stack.Screen name="Report" component={ReportScreen} options={{ title: 'Report' }} />
               <Stack.Screen name="ImageViewer" component={ImageViewerScreen} options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
               <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />
