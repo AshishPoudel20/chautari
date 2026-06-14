@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useLayoutEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useMemo, useState, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -55,7 +55,23 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const [replySubmitting, setReplySubmitting] = useState(false);
   const [sort, setSort] = useState('top'); // 'top' | 'new' — for community answers
   const scrollRef = useRef(null);
+  const answerOffsets = useRef({});
   const headerHeight = useHeaderHeight();
+
+  const scrollToAnswer = useCallback((answerId) => {
+    const y = answerOffsets.current[answerId];
+    if (y == null || !scrollRef.current) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+    });
+  }, []);
+
+  const cancelReply = useCallback(() => {
+    Keyboard.dismiss();
+    setReplyingTo(null);
+    setReplyText('');
+    setReplyPhoto(null);
+  }, []);
 
   const openMenu = useCallback(() => {
     if (!question) return;
@@ -177,6 +193,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
       setReplyText('');
       setReplyPhoto(null);
       setReplyingTo(null);
+      Keyboard.dismiss();
     } catch (e) {
       Alert.alert('Could not post reply', e?.message || 'Try again.');
     } finally {
@@ -193,10 +210,21 @@ export default function QuestionDetailScreen({ navigation, route }) {
     navigate('ImageViewer', { photos: normalizePhotoUrls(photos), index });
   };
 
+  useEffect(() => {
+    if (!replyingTo) return undefined;
+    const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const sub = Keyboard.addListener(event, () => scrollToAnswer(replyingTo));
+    return () => sub.remove();
+  }, [replyingTo, scrollToAnswer]);
+
   const renderAnswer = (ans, isPinned) => {
     const aAuthor = displayAuthor(userById(ans.authorId), ans.anonymous);
     return (
-      <View key={ans.id} style={[styles.answer, isPinned && styles.answerPinned]}>
+      <View
+        key={ans.id}
+        style={[styles.answer, isPinned && styles.answerPinned]}
+        onLayout={(e) => { answerOffsets.current[ans.id] = e.nativeEvent.layout.y; }}
+      >
         {isPinned && (
           <View style={styles.pinnedBanner}>
             <Text style={styles.pinnedText}>✓ VERIFIED EXPERT ANSWER</Text>
@@ -232,11 +260,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
             onToggle={() => dispatch({ type: 'TOGGLE_UPVOTE_ANSWER', answerId: ans.id })}
           />
           <Pressable onPress={() => {
-            const opening = replyingTo !== ans.id;
-            setReplyingTo(opening ? ans.id : null);
+            if (replyingTo === ans.id) {
+              cancelReply();
+              return;
+            }
             setReplyText('');
             setReplyPhoto(null);
-            if (opening) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+            setReplyingTo(ans.id);
+            requestAnimationFrame(() => scrollToAnswer(ans.id));
           }} hitSlop={6}>
             <Text style={styles.replyBtn}>↩ Reply</Text>
           </Pressable>
@@ -274,31 +305,30 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
         {replyingTo === ans.id && (
           <View style={styles.replyComposer}>
-            <View style={{ flex: 1 }}>
-              <TextInput
-                style={styles.replyInput}
-                placeholder="Write a reply…"
-                placeholderTextColor={colors.textFaint}
-                value={replyText}
-                onChangeText={setReplyText}
-                multiline
-                autoFocus
-                maxLength={1000}
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Write a reply…"
+              placeholderTextColor={colors.textFaint}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              autoFocus
+              maxLength={1000}
+              onFocus={() => scrollToAnswer(ans.id)}
+            />
+            {ENABLE_REPLY_PHOTOS ? (
+              <PhotoStrip
+                photos={replyPhoto ? [replyPhoto] : []}
+                maxCount={1}
+                onAdd={() => setReplyPickerOpen(true)}
+                onRemove={() => setReplyPhoto(null)}
+                tileSize={44}
               />
-              {ENABLE_REPLY_PHOTOS ? (
-                <PhotoStrip
-                  photos={replyPhoto ? [replyPhoto] : []}
-                  maxCount={1}
-                  onAdd={() => setReplyPickerOpen(true)}
-                  onRemove={() => setReplyPhoto(null)}
-                  tileSize={56}
-                />
-              ) : null}
-            </View>
+            ) : null}
             <Pressable
               onPress={() => submitReply(ans.id)}
               disabled={replyText.trim().length < 5 || replySubmitting}
-              style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && { opacity: 0.4 }]}
+              style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && styles.replySendDisabled]}
             >
               <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>
             </Pressable>
@@ -312,12 +342,12 @@ export default function QuestionDetailScreen({ navigation, route }) {
     <>
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingBottom: 110 }}
+        contentContainerStyle={{ paddingBottom: replyingTo ? spacing.xxl : 110 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
@@ -404,11 +434,13 @@ export default function QuestionDetailScreen({ navigation, route }) {
         {community.map((a) => renderAnswer(a, false))}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={() => navigate('AnswerComposer', { questionId })}>
-          <Text style={styles.answerCtaText}>✍️  Write an answer</Text>
-        </Pressable>
-      </View>
+      {!replyingTo ? (
+        <View style={styles.footer}>
+          <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={() => navigate('AnswerComposer', { questionId })}>
+            <Text style={styles.answerCtaText}>✍️  Write an answer</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
 
       {ENABLE_REPLY_PHOTOS ? (
@@ -480,10 +512,40 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   replyAuthor: { fontWeight: '800', color: colors.text, fontSize: font.tiny },
   replyBody: { fontSize: font.caption, color: colors.text, lineHeight: 20, marginTop: 4 },
 
-  replyComposer: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: spacing.md },
-  replyInput: { flex: 1, borderWidth: 1, borderColor: colors.borderStrong, borderRadius: radius.md, padding: spacing.sm, minHeight: 42, maxHeight: 120, color: colors.text, backgroundColor: colors.bg },
-  replySend: { backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 11, borderRadius: radius.md },
-  replySendText: { color: colors.onPrimary, fontWeight: '800' },
+  replyComposer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    zIndex: 2,
+    elevation: 2,
+  },
+  replyInput: {
+    flex: 1,
+    minWidth: 0,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    minHeight: 42,
+    maxHeight: 120,
+    color: colors.text,
+    backgroundColor: colors.bg,
+  },
+  replySend: {
+    flexShrink: 0,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: radius.md,
+    minHeight: 42,
+    justifyContent: 'center',
+  },
+  replySendDisabled: { opacity: 0.4 },
+  replySendText: { color: colors.onPrimary, fontWeight: '800', fontSize: font.caption },
 
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   answerCta: { backgroundColor: colors.primary, paddingVertical: 15, borderRadius: radius.md, alignItems: 'center', ...shadow.card },
