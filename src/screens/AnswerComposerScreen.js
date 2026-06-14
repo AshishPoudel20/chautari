@@ -1,11 +1,10 @@
 import React, { useMemo, useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Switch, Pressable, Alert,
-  KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, StyleSheet, Switch, Pressable, Alert, Keyboard,
 } from 'react-native';
-import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
+import KeyboardScreen from '../components/KeyboardScreen';
 import SinglePhotoPicker from '../components/SinglePhotoPicker';
 import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Field, Input, CharCount } from '../components/ui';
@@ -23,7 +22,6 @@ const BODY_MIN = 20, BODY_MAX = 4000;
 export default function AnswerComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
-  const headerHeight = useHeaderHeight();
 
   const { questionId } = route.params;
   const { dispatch } = useData();
@@ -81,6 +79,7 @@ export default function AnswerComposerScreen({ navigation, route }) {
         anonymous,
         photoUrl: photoUrlValue,
       });
+      Keyboard.dismiss();
       navigation.goBack();
       showToast('Answer posted', { tone: 'success' });
     } catch (e) {
@@ -92,17 +91,21 @@ export default function AnswerComposerScreen({ navigation, route }) {
 
   return (
     <>
-      <KeyboardAvoidingView
-        style={styles.fill}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={headerHeight}
-      >
-        <ScrollView
-          style={styles.fill}
-          contentContainerStyle={styles.body}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
+      <View style={styles.wrap}>
+        <KeyboardScreen
+          safe={false}
+          contentStyle={styles.body}
+          footer={(
+            <View style={styles.footer}>
+              <Button
+                title={submitting ? 'Posting…' : 'Post answer'}
+                icon="✍️"
+                onPress={submit}
+                disabled={!valid || submitting}
+                loading={submitting}
+              />
+            </View>
+          )}
         >
           {question && (
             <View style={styles.qContext}>
@@ -163,12 +166,8 @@ export default function AnswerComposerScreen({ navigation, route }) {
               <Text style={styles.previewMeta}>· just now</Text>
             </View>
           </View>
-
-          <View style={styles.footer}>
-            <Button title={submitting ? 'Posting…' : 'Post answer'} icon="✍️" onPress={submit} disabled={!valid || submitting} />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </KeyboardScreen>
+      </View>
 
       {ENABLE_REPLY_PHOTOS ? (
         <PhotoSourceSheet
@@ -186,8 +185,8 @@ export default function AnswerComposerScreen({ navigation, route }) {
 }
 
 const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
-  fill: { flex: 1, backgroundColor: colors.bg },
-  body: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  wrap: { flex: 1, backgroundColor: colors.bg },
+  body: { padding: spacing.lg, paddingBottom: spacing.xl },
   qContext: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.lg },
   qContextLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textFaint, letterSpacing: 0.8, marginBottom: 4 },
   qContextTitle: { fontSize: font.body, fontWeight: '700', color: colors.text, lineHeight: 21 },
@@ -201,5 +200,5 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   previewRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: spacing.lg, backgroundColor: colors.bgSunken, borderRadius: radius.md, padding: spacing.md },
   previewName: { fontWeight: '800', color: colors.text, fontSize: font.caption },
   previewMeta: { color: colors.textMuted, fontSize: font.tiny },
-  footer: { marginTop: spacing.lg, paddingTop: spacing.md },
+  footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
 });
