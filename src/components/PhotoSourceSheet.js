@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Modal, Platform, Pressable, Text, StyleSheet } from 'react-native';
+import { Modal, Platform, Pressable, Text, StyleSheet, View } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { waitForPickerPresentation } from '../hooks/useImagePicker';
 
-/** Bottom sheet: camera, library, optional remove. */
+/** Bottom sheet: camera, library, optional remove. Renders in a root Modal above all screen content. */
 export default function PhotoSourceSheet({
   visible,
   onClose,
@@ -62,37 +62,52 @@ export default function PhotoSourceSheet({
       visible={visible}
       transparent
       animationType="fade"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
       onRequestClose={onClose}
       onDismiss={handleDismiss}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
-          <Text style={styles.title}>{title}</Text>
-          <Pressable style={styles.row} onPress={() => queueAction('camera')}>
-            <Text style={styles.icon}>📸</Text>
-            <Text style={styles.label}>Take a photo</Text>
-          </Pressable>
-          <Pressable style={styles.row} onPress={() => queueAction('library')}>
-            <Text style={styles.icon}>🖼</Text>
-            <Text style={styles.label}>Choose from library</Text>
-          </Pressable>
-          {showRemove ? (
-            <Pressable style={styles.row} onPress={() => queueAction('remove')}>
-              <Text style={styles.icon}>🗑️</Text>
-              <Text style={[styles.label, { color: colors.danger }]}>Remove photo</Text>
+      <View style={styles.root}>
+        <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss">
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <Text style={styles.title}>{title}</Text>
+            <Pressable style={styles.row} onPress={() => queueAction('camera')}>
+              <Text style={styles.icon}>📸</Text>
+              <Text style={styles.label}>Take a photo</Text>
             </Pressable>
-          ) : null}
-          <Pressable style={[styles.row, styles.cancel]} onPress={onClose}>
-            <Text style={[styles.label, styles.cancelText]}>Cancel</Text>
+            <Pressable style={styles.row} onPress={() => queueAction('library')}>
+              <Text style={styles.icon}>🖼</Text>
+              <Text style={styles.label}>Choose from library</Text>
+            </Pressable>
+            {showRemove ? (
+              <Pressable style={styles.row} onPress={() => queueAction('remove')}>
+                <Text style={styles.icon}>🗑️</Text>
+                <Text style={[styles.label, { color: colors.danger }]}>Remove photo</Text>
+              </Pressable>
+            ) : null}
+            <Pressable style={[styles.row, styles.cancel]} onPress={onClose}>
+              <Text style={[styles.label, styles.cancelText]}>Cancel</Text>
+            </Pressable>
           </Pressable>
         </Pressable>
-      </Pressable>
+      </View>
     </Modal>
   );
 }
 
 const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  root: {
+    flex: 1,
+    ...Platform.select({
+      ios: { zIndex: 9999 },
+      android: { elevation: 9999 },
+    }),
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+    justifyContent: 'flex-end',
+  },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
@@ -100,6 +115,10 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
     padding: spacing.lg,
     paddingBottom: spacing.xl,
     ...shadow.raised,
+    ...Platform.select({
+      ios: { zIndex: 10000 },
+      android: { elevation: 10000 },
+    }),
   },
   title: { fontSize: font.body, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
