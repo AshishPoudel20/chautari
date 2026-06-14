@@ -11,7 +11,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { completeOnboarding } from '../services/profile';
 import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
-import { photoUrl } from '../utils/photos';
+import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import { uploadAvatar } from '../services/mediaStorage';
 
 // Profile setup step 2 — suburb + photo, both optional and skippable.
 // This is the final onboarding step, so we create the account here.
@@ -48,7 +49,13 @@ export default function ProfileSuburbScreen({ navigation, route }) {
     setSaving(true);
     setError('');
     try {
-      const photoUrlValue = photoUrl(photo) || null;
+      let photoUrlValue = photoUrl(photo) || null;
+      if (photoUrlValue && isLocalPhotoUri(photoUrlValue)) {
+        if (!isSupabaseConfigured()) {
+          throw new Error('Photo upload requires Supabase — check your .env.');
+        }
+        photoUrlValue = await uploadAvatar({ uri: photoUrlValue });
+      }
       let authUserId = state.authUserId;
       if (isSupabaseConfigured()) {
         authUserId = await completeOnboarding({

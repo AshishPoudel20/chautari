@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useImagePicker } from './useImagePicker';
 
-/** Shared profile-photo chooser -> preview -> confirm wiring for Edit Profile and onboarding. */
+/** Shared profile-photo chooser -> preview -> stage wiring for Edit Profile and onboarding. */
 export function useProfilePhotoFlow(navigation, route, { displayName, onPhotoConfirmed, onPhotoRemoved }) {
   const { pickProfileFromLibrary, takeProfilePhoto } = useImagePicker();
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
-    if (route.params?.confirmedPhotoUrl) {
-      onPhotoConfirmed?.(route.params.confirmedPhotoUrl);
-      navigation.setParams({ confirmedPhotoUrl: undefined });
+    const stagedUri = route.params?.confirmedLocalUri;
+    if (stagedUri) {
+      onPhotoConfirmed?.(stagedUri);
+      navigation.setParams({ confirmedLocalUri: undefined });
     }
     if (route.params?.retakePhoto) {
       navigation.setParams({ retakePhoto: undefined });
       setPickerOpen(true);
     }
-  }, [navigation, route.params?.confirmedPhotoUrl, route.params?.retakePhoto, onPhotoConfirmed]);
+  }, [navigation, route.params?.confirmedLocalUri, route.params?.retakePhoto, onPhotoConfirmed]);
 
   const openPreview = useCallback((localUri) => {
     navigation.navigate('ProfilePhotoPreview', {

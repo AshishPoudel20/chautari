@@ -11,8 +11,9 @@ import { SUBURBS } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { updateProfile } from '../services/profile';
+import { uploadAvatar } from '../services/mediaStorage';
 import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
-import { photoUrl } from '../utils/photos';
+import { isLocalPhotoUri, photoUrl } from '../utils/photos';
 
 export default function EditProfileScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
@@ -28,11 +29,10 @@ export default function EditProfileScreen({ navigation, route }) {
   const [photo, setPhoto] = useState(user?.photo || null);
   const [saving, setSaving] = useState(false);
 
-  const onPhotoConfirmed = useCallback((url) => setPhoto(url), []);
+  const onPhotoConfirmed = useCallback((localUri) => setPhoto(localUri), []);
   const onPhotoRemoved = useCallback(() => {
     setPhoto(null);
-    showToast('Photo removed');
-  }, [showToast]);
+  }, []);
 
   const {
     pickerOpen,
@@ -48,13 +48,22 @@ export default function EditProfileScreen({ navigation, route }) {
   });
 
   const valid = name.trim().length >= 2;
-  const displayPhoto = photoUrl(photo) || (typeof photo === 'object' ? photo?.uri : photo);
+  const displayPhoto = photoUrl(photo);
+  const hasPendingPhoto = !!displayPhoto && isLocalPhotoUri(displayPhoto);
 
   const save = async () => {
     if (!valid || saving) return;
     setSaving(true);
     try {
-      const patch = { name: name.trim(), suburb, bio: bio.trim(), photo: photoUrl(photo) || null };
+      let photoToSave = displayPhoto || null;
+      if (photoToSave && isLocalPhotoUri(photoToSave)) {
+        if (!isSupabaseConfigured()) {
+          throw new Error('Photo upload requires Supabase — check your .env.');
+        }
+        photoToSave = await uploadAvatar({ uri: photoToSave });
+      }
+
+      const patch = { name: name.trim(), suburb, bio: bio.trim(), photo: photoToSave };
       if (isSupabaseConfigured()) await updateProfile(patch);
       dispatch({ type: 'UPDATE_PROFILE', patch });
       showToast('Profile updated', { tone: 'success' });
@@ -67,48 +76,58 @@ export default function EditProfileScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardScreen
-        safe={false}
-        contentStyle={styles.body}
-        footer={(
-          <View style={styles.footer}>
-            <Button title={saving ? 'Saving…' : 'Save changes'} onPress={save} disabled={!valid || saving} />
+    <>
+      <View style={styles.container}>
+        <KeyboardScreen
+          safe={false}
+          contentStyle={styles.body}
+          footer={(
+            <View style={styles.footer}>
+              <Button
+                title={saving ? 'Saving…' : 'Save changes'}
+                onPress={save}
+                disabled={!valid || saving}
+                loading={saving}
+              />
+            </View>
+          )}
+        >
+          <View style={styles.photoBlock}>
+            <Avatar name={name} photo={displayPhoto} size={88} />
+            {hasPendingPhoto ? (
+              <Text style={styles.pendingHint}>New photo — tap Save changes to apply</Text>
+            ) : null}
+            <Pressable onPress={() => setPickerOpen(true)} style={styles.photoBtn}>
+              <Text style={styles.photoBtnText}>📷  Change photo</Text>
+            </Pressable>
           </View>
-        )}
-      >
-        <View style={styles.photoBlock}>
-          <Avatar name={name} photo={displayPhoto} size={88} />
-          <Pressable onPress={() => setPickerOpen(true)} style={styles.photoBtn}>
-            <Text style={styles.photoBtnText}>📷  Change photo</Text>
-          </Pressable>
-        </View>
 
-        <Field label="Name">
-          <Input value={name} onChangeText={setName} autoCapitalize="words" placeholder="Your name" />
-        </Field>
-        <Field label="Bio (optional)">
-          <Input value={bio} onChangeText={setBio} multiline placeholder="Tell the community a little about yourself" />
-        </Field>
-        <Field label="Suburb (optional)">
-          <View style={styles.chips}>
-            {SUBURBS.map((s) => (
-              <Chip key={s} label={s} active={suburb === s} onPress={() => setSuburb(suburb === s ? null : s)} />
-            ))}
-          </View>
-        </Field>
-      </KeyboardScreen>
+          <Field label="Name">
+            <Input value={name} onChangeText={setName} autoCapitalize="words" placeholder="Your name" />
+          </Field>
+          <Field label="Bio (optional)">
+            <Input value={bio} onChangeText={setBio} multiline placeholder="Tell the community a little about yourself" />
+          </Field>
+          <Field label="Suburb (optional)">
+            <View style={styles.chips}>
+              {SUBURBS.map((s) => (
+                <Chip key={s} label={s} active={suburb === s} onPress={() => setSuburb(suburb === s ? null : s)} />
+              ))}
+            </View>
+          </Field>
+        </KeyboardScreen>
+      </View>
 
       <PhotoSourceSheet
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         title="Change profile photo"
-        showRemove={!!photo}
+        showRemove={!!displayPhoto}
         onCamera={() => pickPhoto(takeProfilePhoto)}
         onLibrary={() => pickPhoto(pickProfileFromLibrary)}
         onRemove={removePhoto}
       />
-    </View>
+    </>
   );
 }
 
@@ -116,6 +135,13 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   container: { flex: 1, backgroundColor: colors.bg },
   body: { padding: spacing.lg },
   photoBlock: { alignItems: 'center', marginBottom: spacing.lg },
+  pendingHint: {
+    marginTop: spacing.sm,
+    fontSize: font.tiny,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+  },
   photoBtn: { marginTop: spacing.md, paddingVertical: 9, paddingHorizontal: 18, borderRadius: radius.pill, backgroundColor: colors.primaryTint },
   photoBtnText: { color: colors.primary, fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
