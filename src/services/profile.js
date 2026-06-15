@@ -43,6 +43,8 @@ export function profileRowToUser(row) {
     verified: !!row.verified,
     verifiedCategory: row.verified_category || null,
     profession: row.profession || null,
+    expertBadgeTitle: row.expert_badge_title || null,
+    expertCircleId: row.expert_circle_id || null,
     contact: row.contact || null,
     isFoundingMember: !!row.is_founding_member,
     followers: row.followers_count ?? 0,
@@ -75,6 +77,10 @@ function patchToRow(patch) {
   if (patch.checklistCardDismissed !== undefined) {
     row.checklist_card_dismissed = patch.checklistCardDismissed;
   }
+  if (patch.expertBadgeTitle !== undefined) row.expert_badge_title = patch.expertBadgeTitle;
+  if (patch.expertCircleId !== undefined) row.expert_circle_id = patch.expertCircleId;
+  if (patch.profession !== undefined) row.profession = patch.profession;
+  if (patch.verifiedCategory !== undefined) row.verified_category = patch.verifiedCategory;
   return row;
 }
 

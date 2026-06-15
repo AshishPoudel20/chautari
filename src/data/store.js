@@ -8,6 +8,7 @@ import {
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
+import { verifiedCategoryFromCircle } from '../utils/expertPost';
 import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -36,17 +37,53 @@ function normalizeQuestion(q) {
   };
 }
 
+function mergeSeedReplyExpertFlags(existingReplies, seedReplies) {
+  if (!seedReplies?.length) return existingReplies;
+  const byId = new Map(seedReplies.map((r) => [r.id, r]));
+  return (existingReplies || []).map((r) => {
+    const seed = byId.get(r.id);
+    if (!seed || seed.postedAsExpert == null) return r;
+    return {
+      ...r,
+      postedAsExpert: seed.postedAsExpert,
+      professionLabel: seed.professionLabel ?? null,
+    };
+  });
+}
+
+function mergeSeedAnswerExpertFlags(existingAnswers, seedAnswers) {
+  if (!seedAnswers?.length) return existingAnswers;
+  const byId = new Map(seedAnswers.map((a) => [a.id, a]));
+  return (existingAnswers || []).map((a) => {
+    const seed = byId.get(a.id);
+    if (!seed) return a;
+    return {
+      ...a,
+      replies: mergeSeedReplyExpertFlags(a.replies, seed.replies),
+    };
+  });
+}
+
 // Pull in new seed questions and refresh relative timestamps on every launch.
 function mergeQuestions(persisted = []) {
   const byId = new Map(persisted.map((q) => [q.id, normalizeQuestion(q)]));
   for (const sq of seedQuestions) {
     const existing = byId.get(sq.id);
     const normalized = normalizeQuestion(sq);
-    byId.set(sq.id, existing ? {
+    if (!existing) {
+      byId.set(sq.id, normalized);
+      continue;
+    }
+    byId.set(sq.id, {
       ...existing,
       createdAt: normalized.createdAt,
       circleId: normalized.circleId,
-    } : normalized);
+      ...(normalized.postedAsExpert != null ? {
+        postedAsExpert: normalized.postedAsExpert,
+        professionLabel: normalized.professionLabel ?? null,
+      } : {}),
+      answers: mergeSeedAnswerExpertFlags(existing.answers, normalized.answers),
+    });
   }
   return sortQuestions([...byId.values()]);
 }
@@ -94,6 +131,8 @@ function mergeUsers(persisted = []) {
         verified: su.verified,
         profession: su.profession,
         verifiedCategory: su.verifiedCategory,
+        expertBadgeTitle: su.expertBadgeTitle,
+        expertCircleId: su.expertCircleId,
         bio: su.bio,
         name: su.name,
         suburb: su.suburb,
@@ -251,11 +290,14 @@ function reducer(state, action) {
       }
       const postedAsExpert = !!(author?.verified && action.postedAsExpert);
       const anonymous = postedAsExpert ? false : !!action.anonymous;
+      const circleId = postedAsExpert && author?.expertCircleId
+        ? author.expertCircleId
+        : action.circleId;
       const q = {
         id: action.id || uid('q'),
         authorId: 'me',
         anonymous,
-        circleId: action.circleId,
+        circleId,
         title: action.title.trim(),
         body: action.body.trim(),
         photos: sanitizePhotoUrlsForStorage(action.photos || []),
@@ -479,11 +521,11 @@ function reducer(state, action) {
       return {
         ...state,
         expertApplication: {
-          category: action.category,
-          customCategory: action.customCategory || null,
+          expertBadgeTitle: action.expertBadgeTitle,
+          expertCircleId: action.expertCircleId,
           credentialName: action.credentialName || null,
           credentialUrl: action.credentialUrl || null,
-          status: action.status, // 'approved' | 'pending'
+          status: action.status,
           submittedAt: Date.now(),
         },
         users:
@@ -493,13 +535,34 @@ function reducer(state, action) {
                   ? {
                       ...u,
                       verified: true,
-                      verifiedCategory: action.category,
-                      profession: action.customCategory || u.profession || 'Verified Expert',
+                      verifiedCategory: verifiedCategoryFromCircle(action.expertCircleId),
+                      profession: action.expertBadgeTitle,
+                      expertBadgeTitle: action.expertBadgeTitle,
+                      expertCircleId: action.expertCircleId,
                     }
                   : u
               )
             : state.users,
       };
+
+    case 'SET_EXPERT_PROFESSIONAL_PROFILE': {
+      const title = action.expertBadgeTitle?.trim();
+      if (!title || !action.expertCircleId) return state;
+      return {
+        ...state,
+        users: state.users.map((u) =>
+          u.id === 'me'
+            ? {
+                ...u,
+                expertBadgeTitle: title,
+                expertCircleId: action.expertCircleId,
+                profession: title,
+                verifiedCategory: verifiedCategoryFromCircle(action.expertCircleId),
+              }
+            : u
+        ),
+      };
+    }
 
     case 'ADD_REPORT':
       return { ...state, reports: [...state.reports, { id: uid('rep'), ...action.report, createdAt: Date.now() }] };

@@ -23,6 +23,7 @@ import SearchScreen from '../screens/SearchScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import VerifiedApplicationScreen from '../screens/VerifiedApplicationScreen';
+import ExpertProfessionalSetupScreen from '../screens/ExpertProfessionalSetupScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -136,6 +137,7 @@ function AppNavigator() {
             <Stack.Screen name="ExpertProfile" component={ExpertProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Expert' })} />
             <Stack.Screen name="UserProfile" component={UserProfileScreen} options={({ route }) => ({ title: route.params?.title || 'Profile' })} />
             <Stack.Screen name="VerifiedApplication" component={VerifiedApplicationScreen} options={{ title: 'Become a Verified Expert' }} />
+            <Stack.Screen name="ExpertProfessionalSetup" component={ExpertProfessionalSetupScreen} options={{ title: 'Professional posting setup' }} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Activity' }} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit profile' }} />
             <Stack.Screen name="MyPosts" component={MyPostsScreen} options={{ title: 'My Posts' }} />

@@ -17,6 +17,7 @@ export const categoryName = (id) => categoryById(id)?.name || 'Others';
 // label derived from the category they're verified in.
 export function professionLabel(user) {
   if (!user) return 'Verified Expert';
+  if (user.expertBadgeTitle?.trim()) return user.expertBadgeTitle.trim();
   if (user.profession) return user.profession;
   if (user.verifiedCategory) return `${categoryName(user.verifiedCategory)} expert`;
   return 'Verified Expert';

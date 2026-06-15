@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
 import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
 import { isLiveQuestionId, makeId } from './ids';
+import { verifiedCategoryFromCircle } from '../../utils/expertPost';
 
 const SYNC_ACTIONS = new Set([
   'ASK_QUESTION', 'ADD_ANSWER', 'ADD_REPLY', 'DELETE_QUESTION',
@@ -9,7 +10,7 @@ const SYNC_ACTIONS = new Set([
   'TOGGLE_SAVE_QUESTION', 'TOGGLE_FOLLOW', 'TOGGLE_JOIN_CIRCLE',
   'CREATE_CIRCLE', 'UPDATE_CIRCLE', 'PIN_QUESTION_TO_CIRCLE', 'UNPIN_QUESTION_FROM_CIRCLE',
   'TOGGLE_CHECKLIST_ITEM', 'DISMISS_CHECKLIST_CARD', 'SET_DIGEST_MODE',
-  'ADD_REPORT', 'SUBMIT_EXPERT_APPLICATION',
+  'ADD_REPORT', 'SUBMIT_EXPERT_APPLICATION', 'SET_EXPERT_PROFESSIONAL_PROFILE',
 ]);
 
 export function shouldSyncAction(action) {
@@ -304,19 +305,32 @@ export async function persistAction(action, state, userId) {
       const { error } = await supabase.from('expert_applications').insert({
         id,
         user_id: userId,
-        category: action.category,
-        custom_category: action.customCategory || null,
+        category: action.expertCircleId,
+        custom_category: action.expertBadgeTitle,
         status: action.status,
       });
       if (error) throw error;
       if (action.status === 'approved') {
         const { error: profileErr } = await supabase.from('profiles').update({
           verified: true,
-          verified_category: action.category,
-          profession: action.customCategory || 'Verified Expert',
+          verified_category: verifiedCategoryFromCircle(action.expertCircleId),
+          profession: action.expertBadgeTitle,
+          expert_badge_title: action.expertBadgeTitle,
+          expert_circle_id: action.expertCircleId,
         }).eq('id', userId);
         if (profileErr) throw profileErr;
       }
+      return action;
+    }
+
+    case 'SET_EXPERT_PROFESSIONAL_PROFILE': {
+      const { error } = await supabase.from('profiles').update({
+        expert_badge_title: action.expertBadgeTitle?.trim(),
+        expert_circle_id: action.expertCircleId,
+        profession: action.expertBadgeTitle?.trim(),
+        verified_category: verifiedCategoryFromCircle(action.expertCircleId),
+      }).eq('id', userId);
+      if (error) throw error;
       return action;
     }
 

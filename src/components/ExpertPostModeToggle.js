@@ -38,7 +38,7 @@ export default function ExpertPostModeToggle({
       </View>
       <Text style={styles.hint}>
         {mode === 'professional'
-          ? `Your verified profession (${professionLabel || 'expert'}) appears on this ${compact ? 'reply' : 'post'}.`
+          ? `Your badge title (${professionLabel || 'expert'}) appears on this ${compact ? 'reply' : 'post'}.`
           : `Appears as a normal community ${compact ? 'reply' : 'post'} — no expert badge.`}
       </Text>
     </View>
