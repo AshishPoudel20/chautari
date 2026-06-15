@@ -15,7 +15,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import ExpertProfessionalConfirm from '../components/ExpertProfessionalConfirm';
-import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
+import { useNavigationGuard, runAfterAlert, openAuthorProfile } from '../utils/navigation';
 import { useFocusEffect } from '@react-navigation/native';
 import { showsExpertBadge, displayProfessionLabel, hasExpertProfessionalProfile } from '../utils/expertPost';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
@@ -252,11 +252,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   };
 
   const goToProfile = (authorId, anonymous) => {
-    if (anonymous) return;
-    if (authorId === 'me') { navigate('Main', { screen: 'Profile' }); return; }
-    const u = userById(authorId);
-    const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
-    navigate(screen, { userId: authorId, title: u?.name });
+    openAuthorProfile(navigate, userById, authorId, { anonymous, authUserId: state.authUserId, navigation });
   };
 
   const submitReply = async (answerId) => {

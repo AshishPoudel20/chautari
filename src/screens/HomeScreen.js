@@ -13,7 +13,7 @@ import { PulseDot } from '../components/Motion';
 import { QuestionCardSkeleton } from '../components/Skeleton';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openExpertProfile } from '../utils/navigation';
 import { useForYouFeed } from '../hooks/useForYouFeed';
 import { useTheme } from '../theme/ThemeContext';
 import { professionLabel } from '../data/categories';
@@ -193,7 +193,7 @@ export default function HomeScreen({ navigation }) {
           hasMore={tab === 'foryou' ? forYou.hasMore : false}
           ListEmptyComponent={
             tab === 'following' ? (
-              <FollowingEmpty experts={suggestedExperts(3)} navigate={navigate} userById={userById} />
+              <FollowingEmpty experts={suggestedExperts(3)} navigate={navigate} userById={userById} navigation={navigation} authUserId={state.authUserId} />
             ) : (
               <EmptyState
                 icon="🌱"
@@ -232,7 +232,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-function FollowingEmpty({ experts, navigate, userById }) {
+function FollowingEmpty({ experts, navigate, userById, navigation, authUserId }) {
   const { colors, shadow, spacing, font, radius } = useTheme();
   const styles = useMemo(() => createStyles(colors, shadow, spacing, font, radius), [colors, shadow, spacing, font, radius]);
   return (
@@ -249,7 +249,7 @@ function FollowingEmpty({ experts, navigate, userById }) {
             <View key={u.id} style={styles.suggestRow}>
               <Pressable
                 style={styles.suggestInfo}
-                onPress={() => navigate('ExpertProfile', { userId: u.id, title: u.name })}
+                onPress={() => openExpertProfile(navigation, { userId: u.id, title: u.name, authUserId, navigate })}
               >
                 <Avatar name={u.name} photo={u.photo} size={42} />
                 <View style={{ marginLeft: spacing.sm, flex: 1 }}>

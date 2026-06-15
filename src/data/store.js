@@ -6,6 +6,7 @@ import {
   seedCircles, seedJoinedCircles,
 } from './seed';
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
+import { resolveUserId } from '../utils/navigation';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
 import { verifiedCategoryFromCircle } from '../utils/expertPost';
@@ -332,7 +333,13 @@ function reducer(state, action) {
       ]);
       const usersById = new Map(state.users.map((u) => [u.id, u]));
       for (const u of p.users || []) {
-        if (u.id !== 'me' && !usersById.has(u.id)) usersById.set(u.id, u);
+        if (u.id === 'me') continue;
+        if (state.authUserId && u.id === state.authUserId) {
+          const meUser = usersById.get('me');
+          if (meUser) usersById.set('me', { ...meUser, ...u, id: 'me' });
+          continue;
+        }
+        if (!usersById.has(u.id)) usersById.set(u.id, u);
       }
       const uniq = (a, b) => [...new Set([...(a || []), ...(b || [])])];
       return {
@@ -507,14 +514,16 @@ function reducer(state, action) {
     }
 
     case 'TOGGLE_FOLLOW': {
-      const has = state.following.includes(action.userId);
+      const userId = resolveUserId(action.userId, state.authUserId);
+      if (userId === 'me') return state;
+      const has = state.following.some((id) => resolveUserId(id, state.authUserId) === userId);
       return {
         ...state,
         following: has
-          ? state.following.filter((id) => id !== action.userId)
-          : [...state.following, action.userId],
+          ? state.following.filter((id) => resolveUserId(id, state.authUserId) !== userId)
+          : [...state.following.filter((id) => resolveUserId(id, state.authUserId) !== userId), userId],
         users: state.users.map((u) =>
-          u.id === action.userId
+          u.id === userId
             ? { ...u, followers: Math.max(0, (u.followers || 0) + (has ? -1 : 1)) }
             : u
         ),
@@ -798,9 +807,16 @@ export function useData() {
 // ---- Selectors / helpers (hook form) -----------------------------------
 export function useSelectors() {
   const { state } = useData();
-  const userById = (id) => state.users.find((u) => u.id === id) || null;
+  const resolveId = (id) => resolveUserId(id, state.authUserId);
+  const userById = (id) => {
+    const resolved = resolveId(id);
+    return state.users.find((u) => u.id === resolved) || null;
+  };
   const me = () => userById('me');
-  const isFollowing = (id) => state.following.includes(id);
+  const isFollowing = (id) => {
+    const resolved = resolveId(id);
+    return state.following.includes(resolved) || state.following.includes(id);
+  };
   const hasUpvotedQuestion = (id) => state.myUpvotes.questions.includes(id);
   const hasUpvotedAnswer = (id) => state.myUpvotes.answers.includes(id);
   const hasUpvotedReply = (id) => state.myUpvotes.replies.includes(id);
@@ -946,9 +962,20 @@ export function useSelectors() {
 
   const karmaFor = (userId) => computeKarmaForUser(state, userId);
 
-  const experts = () => state.users.filter((u) => u.verified);
+  const experts = () => {
+    const authId = state.authUserId;
+    const hasMe = state.users.some((u) => u.id === 'me');
+    return state.users.filter((u) => {
+      if (!u.verified) return false;
+      if (hasMe && u.id === authId) return false;
+      return true;
+    });
+  };
   const myQuestions = () => sortQuestions(state.questions.filter((q) => q.authorId === 'me'));
-  const questionsByAuthor = (id) => sortQuestions(state.questions.filter((q) => q.authorId === id));
+  const questionsByAuthor = (id) => {
+    const resolved = resolveId(id);
+    return sortQuestions(state.questions.filter((q) => resolveId(q.authorId) === resolved));
+  };
   const expertAuthoredQuestions = () =>
     sortQuestions(
       state.questions.filter((q) => !q.anonymous && userById(q.authorId)?.verified),

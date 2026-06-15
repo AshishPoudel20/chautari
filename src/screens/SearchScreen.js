@@ -77,7 +77,7 @@ export default function SearchScreen({ navigation, route }) {
         circle={circleById(item.circleId)}
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
-        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
+        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous, authUserId: state.authUserId, navigation })}
         expert={expertAnswerOn(item)?.expert || null}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
       />

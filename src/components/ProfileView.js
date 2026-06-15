@@ -8,7 +8,7 @@ import Button from './Button';
 import QuestionCard from './QuestionCard';
 import { EmptyState } from './ui';
 import { useSelectors } from '../data/store';
-import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile, resolveUserId } from '../utils/navigation';
 import { categoryName } from '../data/categories';
 import { compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,11 +20,12 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
   const { navigate } = useNavigationGuard(navigation);
   const { colors, spacing, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
-  const user = userById(userId);
+  const resolvedUserId = resolveUserId(userId, state.authUserId);
+  const user = userById(resolvedUserId);
   if (!user) return <EmptyState icon="👻" title="User not found" />;
 
-  const posts = questionsByAuthor(userId);
-  const followingCount = userId === 'me' ? state.following.length : Math.round((user.followers || 0) * 0.4);
+  const posts = questionsByAuthor(resolvedUserId);
+  const followingCount = resolvedUserId === 'me' ? state.following.length : Math.round((user.followers || 0) * 0.4);
 
   const header = (
     <View>
@@ -34,7 +35,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
           <Text style={styles.name}>{user.name}</Text>
           {user.verified ? <VerifiedBadge /> : null}
           {user.isFoundingMember ? <FoundingMemberBadge /> : null}
-          <KarmaBadge karma={karmaFor(userId)} />
+          <KarmaBadge karma={karmaFor(resolvedUserId)} />
         </View>
         {user.profession ? <Text style={styles.profession}>{user.profession}{user.verifiedCategory ? ` · ${categoryName(user.verifiedCategory)}` : ''}</Text> : null}
         {user.suburb ? <Text style={styles.suburb}>📍 {user.suburb}</Text> : null}
@@ -69,7 +70,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
 
         {actions}
       </View>
-      <Text style={styles.postsHeading}>{userId === 'me' ? 'Your posts' : 'Posts'}</Text>
+      <Text style={styles.postsHeading}>{resolvedUserId === 'me' ? 'Your posts' : 'Posts'}</Text>
     </View>
   );
 
@@ -81,7 +82,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
         circle={circleById(item.circleId)}
         answerCount={answerCount(item)}
         onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
-        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
+        onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous, authUserId: state.authUserId, navigation })}
         expert={expertAnswerOn(item)?.expert || null}
         onPress={() => navigate('QuestionDetail', { questionId: item.id })}
       />
@@ -96,7 +97,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
       keyExtractor={(q) => q.id}
       ListHeaderComponent={header}
       renderItem={renderItem}
-      ListEmptyComponent={<EmptyState icon="📝" title="No posts yet" subtitle={userId === 'me' ? 'Questions you post will show up here.' : 'This person has not posted publicly yet.'} />}
+      ListEmptyComponent={<EmptyState icon="📝" title="No posts yet" subtitle={resolvedUserId === 'me' ? 'Questions you post will show up here.' : 'This person has not posted publicly yet.'} />}
       contentContainerStyle={{ paddingBottom: 40 }}
       initialNumToRender={6}
       windowSize={7}

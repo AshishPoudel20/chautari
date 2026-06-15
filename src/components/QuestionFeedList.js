@@ -28,7 +28,7 @@ export default function QuestionFeedList({
   onEndReached,
   hasMore = false,
 }) {
-  const { userById, circleById, answerCount, expertAnswerOn } = useSelectors();
+  const { userById, circleById, answerCount, expertAnswerOn, state } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const { spacing } = useTheme();
 
@@ -50,7 +50,7 @@ export default function QuestionFeedList({
             expert={ei?.expert || null}
             onPress={() => openQuestion(item.id)}
             onCirclePress={() => navigate('CircleDetail', { circleId: item.circleId })}
-            onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
+            onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous, authUserId: state.authUserId, navigation })}
           />
           {renderCardFooter ? renderCardFooter(item.id) : null}
         </FadeRise>

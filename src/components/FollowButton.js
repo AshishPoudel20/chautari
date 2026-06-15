@@ -3,16 +3,20 @@ import { Pressable, Text, StyleSheet } from 'react-native';
 import { useData, useSelectors } from '../data/store';
 import { useToast } from './Toast';
 import { useTheme } from '../theme/ThemeContext';
+import { isSelfUserId } from '../utils/navigation';
 
 // One-tap, optimistic follow / unfollow. State lives in the reducer and updates
 // synchronously, so the toggle reflects instantly (Build Brief v2). Confirms
 // with a toast.
 export default function FollowButton({ userId, size = 'md', onChange }) {
   const { dispatch } = useData();
-  const { isFollowing, userById } = useSelectors();
+  const { isFollowing, userById, state } = useSelectors();
   const showToast = useToast();
   const { colors, radius, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, radius, font), [colors, radius, font]);
+
+  if (isSelfUserId(userId, state.authUserId)) return null;
+
   const following = isFollowing(userId);
 
   const toggle = () => {

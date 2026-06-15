@@ -13,7 +13,7 @@ import CircleIcon from '../components/CircleIcon';
 import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard, openAuthorProfile, runAfterAlert } from '../utils/navigation';
+import { useNavigationGuard, openAuthorProfile, openExpertProfile, runAfterAlert } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
 import { photoUrl, displayPhotoUrl } from '../utils/photos';
@@ -39,7 +39,7 @@ export default function CircleDetailScreen({ navigation, route }) {
   const {
     circleById, isJoinedCircle, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, joinedCirclesList,
-    userById, answerCount, expertAnswerOn,
+    userById, answerCount, expertAnswerOn, state,
   } = useSelectors();
   const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
@@ -111,14 +111,18 @@ export default function CircleDetailScreen({ navigation, route }) {
   }, [navigate, circleId]);
 
   const goToProfile = useCallback((userId) => {
-    if (userId === 'me') {
-      navigate('Main', { screen: 'Profile' });
+    const u = userById(userId);
+    if (u?.verified) {
+      openExpertProfile(navigation, {
+        userId,
+        title: u.name,
+        authUserId: state.authUserId,
+        navigate,
+      });
       return;
     }
-    const u = userById(userId);
-    const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
-    navigate(screen, { userId, title: u?.name });
-  }, [navigate, userById]);
+    openAuthorProfile(navigate, userById, userId, { authUserId: state.authUserId, navigation });
+  }, [navigate, navigation, userById, state.authUserId]);
 
   const openQuestion = useCallback(
     (questionId) => navigate('QuestionDetail', { questionId }),
@@ -137,7 +141,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={ei?.expert || null}
           onPress={() => openQuestion(item.id)}
           onCirclePress={() => {}}
-          onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous })}
+          onAuthorPress={() => openAuthorProfile(navigate, userById, item.authorId, { anonymous: item.anonymous, authUserId: state.authUserId, navigation })}
           hideCircleChip
         />
       </FadeRise>
@@ -203,7 +207,7 @@ export default function CircleDetailScreen({ navigation, route }) {
           expert={expertAnswerOn(pinned)?.expert || null}
           onPress={() => openQuestion(pinned.id)}
           onCirclePress={() => {}}
-          onAuthorPress={() => openAuthorProfile(navigate, userById, pinned.authorId, { anonymous: pinned.anonymous })}
+          onAuthorPress={() => openAuthorProfile(navigate, userById, pinned.authorId, { anonymous: pinned.anonymous, authUserId: state.authUserId, navigation })}
           hideCircleChip
         />
       ) : null}

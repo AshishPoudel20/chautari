@@ -9,14 +9,14 @@ import { useSelectors } from '../data/store';
 import { CATEGORIES, SUBURBS, professionLabel } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
 import { compactNumber } from '../utils/format';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openExpertProfile, isSelfUserId } from '../utils/navigation';
 
 // Expert Directory: browse all verified experts, filter by category + suburb.
 export default function ExpertDirectoryScreen({ navigation }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
-  const { experts } = useSelectors();
+  const { experts, state } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const [category, setCategory] = useState(null);
   const [suburb, setSuburb] = useState(null);
@@ -56,22 +56,34 @@ export default function ExpertDirectoryScreen({ navigation }) {
         keyExtractor={(e) => e.id}
         contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.sm }}
         ListEmptyComponent={<EmptyState icon="🔍" title="No experts match" subtitle="Try clearing a filter." />}
-        renderItem={({ item }) => (
+        renderItem={({ item }) => {
+          const isSelf = isSelfUserId(item.id, state.authUserId);
+          return (
           <View style={styles.card}>
-            <Pressable style={styles.cardInfo} onPress={() => navigate('ExpertProfile', { userId: item.id, title: item.name })}>
+            <Pressable
+              style={styles.cardInfo}
+              onPress={() => openExpertProfile(navigation, {
+                userId: item.id,
+                title: item.name,
+                authUserId: state.authUserId,
+                navigate,
+              })}
+            >
               <Avatar name={item.name} photo={item.photo} size={52} />
               <View style={{ flex: 1, marginLeft: spacing.md }}>
                 <View style={styles.nameRow}>
                   <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                   <VerifiedBadge compact />
+                  {isSelf ? <Text style={styles.youPill}>You</Text> : null}
                 </View>
                 <Text style={styles.profession} numberOfLines={1}>{professionLabel(item)}</Text>
                 <Text style={styles.meta}>{item.suburb} · {compactNumber(item.followers)} followers</Text>
               </View>
             </Pressable>
-            <FollowButton userId={item.id} size="sm" />
+            {isSelf ? null : <FollowButton userId={item.id} size="sm" />}
           </View>
-        )}
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -85,7 +97,17 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   rowChips: { paddingHorizontal: spacing.lg, paddingVertical: 6 },
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: colors.border, ...shadow.card },
   cardInfo: { flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.sm },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  youPill: {
+    fontSize: font.tiny,
+    fontWeight: '800',
+    color: colors.primary,
+    backgroundColor: colors.primaryTint,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
   name: { fontWeight: '800', fontSize: font.body, color: colors.text, flexShrink: 1 },
   profession: { color: colors.primary, fontWeight: '700', fontSize: font.caption, marginTop: 2 },
   meta: { color: colors.textMuted, fontSize: font.tiny, marginTop: 2 },
