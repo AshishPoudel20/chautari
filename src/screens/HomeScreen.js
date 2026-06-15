@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ShinyWordmark from '../components/ShinyWordmark';
 import QuestionFeedList from '../components/QuestionFeedList';
 import CirclesRecommendRow from '../components/CirclesRecommendRow';
 import ChecklistFeedCard from '../components/ChecklistFeedCard';
@@ -40,6 +42,11 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [replayKey, setReplayKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [sheenKey, setSheenKey] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    setSheenKey((k) => k + 1);
+  }, []));
 
   const forYou = useForYouFeed({
     questions: state.questions,
@@ -152,7 +159,7 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.topbar}>
         <View style={styles.brandWrap}>
-          <Text style={styles.brand}>Chautari</Text>
+          <ShinyWordmark style={styles.brand} variant="header" replayKey={sheenKey} />
           <View style={styles.brandDot} />
         </View>
         <View style={styles.topActions}>

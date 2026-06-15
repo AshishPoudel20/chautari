@@ -1,6 +1,7 @@
 import React, { useMemo,  useEffect, useRef  } from 'react';
 import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
 import { MotifBand } from '../components/Motif';
+import ShinyWordmark from '../components/ShinyWordmark';
 import { useTheme } from '../theme/ThemeContext';
 
 // Animated logo splash (~1.5s). The actual hold/route is governed by RootNavigator.
@@ -26,7 +27,7 @@ export default function SplashScreen() {
         <View style={styles.logo}>
           <Text style={styles.logoEmoji}>🌳</Text>
         </View>
-        <Text style={styles.wordmark}>Chautari</Text>
+        <ShinyWordmark style={styles.wordmark} variant="splash" />
         <Text style={styles.tag}>Post. Answer. Belong.</Text>
       </Animated.View>
       <Animated.View style={{ opacity: motif, marginTop: 28 }}>
