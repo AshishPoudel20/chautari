@@ -8,7 +8,7 @@ import {
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
-import { verifiedCategoryFromCircle, resolveExpertCircleId, resolveExpertBadgeTitle, canPostAsProfessional, snapshotProfessionLabel } from '../utils/expertPost';
+import { verifiedCategoryFromCircle } from '../utils/expertPost';
 import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -19,6 +19,16 @@ import { fetchLiveBundle, persistAction, shouldSyncAction } from '../services/li
 const SEED_QUESTION_IDS = new Set(seedQuestions.map((q) => q.id));
 
 export const EXPERT_DAILY_POST_LIMIT = 2;
+export const MEMBER_DAILY_POST_LIMIT = 5;
+
+const countPostsToday = (questions, userId, bucket) => {
+  const dayStart = startOfLocalDay();
+  return questions.filter((q) => {
+    if (q.authorId !== userId || q.createdAt < dayStart) return false;
+    if (bucket === 'professional') return q.postedAsExpert === true;
+    return q.postedAsExpert !== true;
+  }).length;
+};
 
 const STORAGE_KEY = 'chautari.state.v2';
 const DataContext = createContext(null);
@@ -281,17 +291,17 @@ function reducer(state, action) {
 
     case 'ASK_QUESTION': {
       const author = state.users.find((u) => u.id === 'me');
-      if (author?.verified) {
-        const dayStart = startOfLocalDay();
-        const todayCount = state.questions.filter(
-          (q) => q.authorId === 'me' && q.createdAt >= dayStart,
-        ).length;
-        if (todayCount >= EXPERT_DAILY_POST_LIMIT) return state;
-      }
       const postedAsExpert = !!(author?.verified && action.postedAsExpert);
+      if (postedAsExpert) {
+        const proCount = countPostsToday(state.questions, 'me', 'professional');
+        if (proCount >= EXPERT_DAILY_POST_LIMIT) return state;
+      } else {
+        const memberCount = countPostsToday(state.questions, 'me', 'member');
+        if (memberCount >= MEMBER_DAILY_POST_LIMIT) return state;
+      }
       const anonymous = postedAsExpert ? false : !!action.anonymous;
-      const circleId = postedAsExpert && author
-        ? (resolveExpertCircleId(author) || action.circleId)
+      const circleId = postedAsExpert && author?.expertCircleId
+        ? author.expertCircleId
         : action.circleId;
       const q = {
         id: action.id || uid('q'),
@@ -307,7 +317,7 @@ function reducer(state, action) {
         answers: [],
         ...(author?.verified ? {
           postedAsExpert,
-          professionLabel: postedAsExpert ? (action.professionLabel || resolveExpertBadgeTitle(author) || null) : null,
+          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
         } : {}),
       };
       return { ...state, questions: [q, ...state.questions] };
@@ -375,7 +385,7 @@ function reducer(state, action) {
         upvotes: 0,
         ...(author?.verified ? {
           postedAsExpert,
-          professionLabel: postedAsExpert ? (action.professionLabel || resolveExpertBadgeTitle(author) || null) : null,
+          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
         } : {}),
       };
       return {
@@ -944,17 +954,32 @@ export function useSelectors() {
       state.questions.filter((q) => !q.anonymous && userById(q.authorId)?.verified),
     );
 
-  const expertPostsToday = (userId = 'me') => {
-    const dayStart = startOfLocalDay();
-    return state.questions.filter((q) => q.authorId === userId && q.createdAt >= dayStart).length;
-  };
-  const expertPostsRemaining = (userId = 'me') =>
-    Math.max(0, EXPERT_DAILY_POST_LIMIT - expertPostsToday(userId));
-  const canExpertPostToday = () => {
+  const expertProfessionalPostsToday = (userId = 'me') =>
+    countPostsToday(state.questions, userId, 'professional');
+  const expertProfessionalPostsRemaining = (userId = 'me') =>
+    Math.max(0, EXPERT_DAILY_POST_LIMIT - expertProfessionalPostsToday(userId));
+  const canExpertPostProfessionalToday = () => {
     const user = me();
     if (!user?.verified) return true;
-    return expertPostsToday() < EXPERT_DAILY_POST_LIMIT;
+    return expertProfessionalPostsToday() < EXPERT_DAILY_POST_LIMIT;
   };
+
+  const memberPostsToday = (userId = 'me') =>
+    countPostsToday(state.questions, userId, 'member');
+  const memberPostsRemaining = (userId = 'me') =>
+    Math.max(0, MEMBER_DAILY_POST_LIMIT - memberPostsToday(userId));
+  const canPostMemberToday = () => memberPostsToday() < MEMBER_DAILY_POST_LIMIT;
+
+  const canOpenComposerToday = () => {
+    const user = me();
+    if (!user?.verified) return canPostMemberToday();
+    return canExpertPostProfessionalToday() || canPostMemberToday();
+  };
+
+  // Legacy aliases — professional bucket only
+  const expertPostsToday = expertProfessionalPostsToday;
+  const expertPostsRemaining = expertProfessionalPostsRemaining;
+  const canExpertPostToday = canExpertPostProfessionalToday;
   const unreadNotifs = () => state.notifications.filter((n) => !n.read).length;
 
   const isChecklistItemDone = (itemId) => state.checklistDone.includes(itemId);
@@ -973,6 +998,9 @@ export function useSelectors() {
     myQuestions, questionsByAuthor, expertAuthoredQuestions, savedQuestionsList, unreadNotifs,
     expertAnswerOn, hasExpertAnswer, newTodayCount, suggestedExperts,
     expertPostsToday, expertPostsRemaining, canExpertPostToday, expertDailyPostLimit: EXPERT_DAILY_POST_LIMIT,
+    expertProfessionalPostsToday, expertProfessionalPostsRemaining, canExpertPostProfessionalToday,
+    memberPostsToday, memberPostsRemaining, canPostMemberToday, memberDailyPostLimit: MEMBER_DAILY_POST_LIMIT,
+    canOpenComposerToday,
     circleById, isJoinedCircle, effectiveJoinedCircleIds, joinedCirclesList, joinedUserCirclesList, officialCircles, userCircles,
     circleQuestionCount, circleActivitySince, questionsInCircle, pinnedQuestionInCircle,
     expertsInCircle, isCircleCreator, recommendedCircles, karmaFor,

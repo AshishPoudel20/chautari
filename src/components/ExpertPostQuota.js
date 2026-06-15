@@ -3,49 +3,54 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
 
-// Surfaces the verified-expert daily post cap (2/day) wherever experts compose or review posts.
+function QuotaLine({ text, atLimit, styles }) {
+  return (
+    <Text style={[styles.line, atLimit && styles.lineLimit]}>{text}</Text>
+  );
+}
+
+// Surfaces verified-expert daily caps: 2 professional + 5 member posts per day.
 export default function ExpertPostQuota({ variant = 'banner' }) {
-  const { me, expertPostsToday, expertPostsRemaining, expertDailyPostLimit } = useSelectors();
+  const {
+    me,
+    expertProfessionalPostsToday,
+    expertDailyPostLimit,
+    memberPostsToday,
+    memberDailyPostLimit,
+  } = useSelectors();
   const { colors, spacing, font, radius } = useTheme();
   const user = me();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
   if (!user?.verified) return null;
 
-  const used = expertPostsToday();
-  const limit = expertDailyPostLimit;
-  const remaining = expertPostsRemaining();
-  const atLimit = remaining === 0;
+  const proUsed = expertProfessionalPostsToday();
+  const memberUsed = memberPostsToday();
+  const proLimit = expertDailyPostLimit;
+  const memberLimit = memberDailyPostLimit;
+  const proAtLimit = proUsed >= proLimit;
+  const memberAtLimit = memberUsed >= memberLimit;
+  const bothAtLimit = proAtLimit && memberAtLimit;
+
+  const proLine = `${proUsed}/${proLimit} professional posts today`;
+  const memberLine = `${memberUsed}/${memberLimit} posts today`;
 
   if (variant === 'inline') {
     return (
-      <Text style={[styles.inline, atLimit && styles.inlineLimit]}>
-        {used}/{limit} posts used today{atLimit ? ' · resets tomorrow' : ` · ${remaining} left`}
+      <Text style={[styles.inline, bothAtLimit && styles.inlineLimit]}>
+        {proLine} · {memberLine}{bothAtLimit ? ' · resets tomorrow' : ''}
       </Text>
     );
   }
 
   return (
-    <View style={[styles.banner, atLimit && styles.bannerLimit]}>
-      <View style={styles.bannerTop}>
-        <Text style={styles.bannerTitle}>Expert daily posting</Text>
-        <Text style={[styles.bannerCount, atLimit && styles.bannerCountLimit]}>
-          {used}/{limit}
-        </Text>
-      </View>
-      <View style={styles.track}>
-        {Array.from({ length: limit }, (_, i) => (
-          <View
-            key={i}
-            style={[styles.slot, i < used ? (atLimit ? styles.slotUsedLimit : styles.slotUsed) : styles.slotEmpty]}
-          />
-        ))}
-      </View>
-      <Text style={[styles.bannerSub, atLimit && styles.bannerSubLimit]}>
-        {atLimit
-          ? 'Daily limit reached — you can post again tomorrow.'
-          : `${remaining} post${remaining === 1 ? '' : 's'} remaining today`}
-      </Text>
+    <View style={[styles.banner, bothAtLimit && styles.bannerLimit]}>
+      <Text style={styles.bannerHeading}>Daily posting limits</Text>
+      <QuotaLine text={proLine} atLimit={proAtLimit} styles={styles} />
+      <QuotaLine text={memberLine} atLimit={memberAtLimit} styles={styles} />
+      {bothAtLimit ? (
+        <Text style={styles.bannerSubLimit}>Both limits reached — you can post again tomorrow.</Text>
+      ) : null}
     </View>
   );
 }
@@ -58,22 +63,16 @@ const createStyles = (colors, spacing, font, radius) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.expertCardBorder,
     marginBottom: spacing.lg,
+    gap: spacing.xs,
   },
   bannerLimit: {
     backgroundColor: colors.dangerTint,
     borderColor: colors.danger,
   },
-  bannerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bannerTitle: { fontWeight: '800', color: colors.verified, fontSize: font.small },
-  bannerCount: { fontWeight: '900', color: colors.verified, fontSize: font.body },
-  bannerCountLimit: { color: colors.danger },
-  track: { flexDirection: 'row', gap: 6, marginTop: spacing.sm },
-  slot: { flex: 1, height: 6, borderRadius: 3 },
-  slotUsed: { backgroundColor: colors.verified },
-  slotUsedLimit: { backgroundColor: colors.danger },
-  slotEmpty: { backgroundColor: colors.borderStrong, opacity: 0.45 },
-  bannerSub: { marginTop: spacing.sm, fontSize: font.caption, color: colors.textSecondary, lineHeight: 18 },
-  bannerSubLimit: { color: colors.danger, fontWeight: '700' },
+  bannerHeading: { fontWeight: '800', color: colors.verified, fontSize: font.small, marginBottom: spacing.xs },
+  line: { fontWeight: '700', color: colors.textSecondary, fontSize: font.caption, lineHeight: 20 },
+  lineLimit: { color: colors.danger },
+  bannerSubLimit: { marginTop: spacing.xs, fontSize: font.caption, color: colors.danger, fontWeight: '700', lineHeight: 18 },
   inline: { color: colors.verified, fontWeight: '600' },
   inlineLimit: { color: colors.danger },
 });

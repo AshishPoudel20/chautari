@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, Animated, Easing, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
@@ -31,7 +31,19 @@ export default function AskComposerScreen({ navigation, route }) {
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
   const { dispatch } = useData();
-  const { me, canExpertPostToday, joinedCirclesList, state, circleById, isJoinedCircle } = useSelectors();
+  const {
+    me,
+    canExpertPostProfessionalToday,
+    canPostMemberToday,
+    expertProfessionalPostsToday,
+    expertDailyPostLimit,
+    memberPostsToday,
+    memberDailyPostLimit,
+    joinedCirclesList,
+    state,
+    circleById,
+    isJoinedCircle,
+  } = useSelectors();
   const { online } = useNetwork();
   const { replace, navigate } = useNavigationGuard(navigation);
   const { pickFromLibrary } = useImagePicker();
@@ -58,9 +70,17 @@ export default function AskComposerScreen({ navigation, route }) {
 
   const titleOk = title.trim().length >= TITLE_MIN && title.trim().length <= TITLE_MAX;
   const bodyOk = body.trim().length >= BODY_MIN && body.trim().length <= BODY_MAX;
-  const atDailyLimit = user?.verified && !canExpertPostToday();
+  const atProfessionalLimit = user?.verified && !canExpertPostProfessionalToday();
+  const atMemberLimit = !canPostMemberToday();
+  const atCurrentModeLimit = postedAsExpert ? atProfessionalLimit : atMemberLimit;
   const circleOk = postedAsExpert ? hasExpertProfessionalProfile(user) : !!circleId;
-  const valid = titleOk && bodyOk && circleOk && !atDailyLimit;
+  const valid = titleOk && bodyOk && circleOk && !atCurrentModeLimit;
+
+  useEffect(() => {
+    if (atProfessionalLimit && postMode === 'professional') {
+      setPostMode('member');
+    }
+  }, [atProfessionalLimit, postMode]);
 
   const circleOptions = useMemo(() => {
     const joined = joinedCirclesList();
@@ -82,6 +102,13 @@ export default function AskComposerScreen({ navigation, route }) {
 
   const handlePostModeChange = (mode) => {
     if (mode === 'professional') {
+      if (atProfessionalLimit) {
+        Alert.alert(
+          'Professional limit reached',
+          `You've used your ${expertDailyPostLimit} professional posts today. Switch to Member to keep posting.`,
+        );
+        return;
+      }
       if (!hasExpertProfessionalProfile(user)) {
         pendingProfessional.current = true;
         navigate('ExpertProfessionalSetup');
@@ -89,6 +116,13 @@ export default function AskComposerScreen({ navigation, route }) {
       }
       setPostMode('professional');
       setAnonymous(false);
+      return;
+    }
+    if (atMemberLimit) {
+      Alert.alert(
+        'Member limit reached',
+        `You've used your ${memberDailyPostLimit} member posts today. Try again tomorrow.`,
+      );
       return;
     }
     setPostMode('member');
@@ -168,10 +202,12 @@ export default function AskComposerScreen({ navigation, route }) {
 
   const submit = async () => {
     setTouched(true);
-    if (atDailyLimit) {
+    if (atCurrentModeLimit) {
       Alert.alert(
         'Daily limit reached',
-        'Verified experts can post up to 2 questions per day. Your limit resets tomorrow.',
+        postedAsExpert
+          ? `You've used your ${expertDailyPostLimit} professional posts today. Your limit resets tomorrow.`
+          : `You've used your ${memberDailyPostLimit} member posts today. Your limit resets tomorrow.`,
       );
       return;
     }
@@ -224,10 +260,10 @@ export default function AskComposerScreen({ navigation, route }) {
         footer={(
           <View style={styles.footer}>
             <Button
-              title={atDailyLimit ? 'Daily limit reached' : posting ? 'Posting…' : 'Post question'}
+              title={atCurrentModeLimit ? 'Daily limit reached' : posting ? 'Posting…' : 'Post question'}
               icon="✍️"
               onPress={submit}
-              disabled={atDailyLimit || posting || (touched && !valid)}
+              disabled={atCurrentModeLimit || posting || (touched && !valid)}
             />
           </View>
         )}
@@ -251,7 +287,22 @@ export default function AskComposerScreen({ navigation, route }) {
         </Field>
 
         {user?.verified ? (
-          <ExpertPostModeToggle mode={postMode} onChange={handlePostModeChange} />
+          <ExpertPostModeToggle
+            mode={postMode}
+            onChange={handlePostModeChange}
+            professionalDisabled={atProfessionalLimit}
+            memberDisabled={atMemberLimit}
+            professionalDisabledMessage={
+              atProfessionalLimit
+                ? `You've used your ${expertDailyPostLimit} professional posts today`
+                : null
+            }
+            memberDisabledMessage={
+              atMemberLimit
+                ? `You've used your ${memberPostsToday()}/${memberDailyPostLimit} member posts today`
+                : null
+            }
+          />
         ) : null}
 
         {showProConfirm ? (

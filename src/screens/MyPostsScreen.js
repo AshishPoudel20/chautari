@@ -9,19 +9,35 @@ import { useTheme } from '../theme/ThemeContext';
 export default function MyPostsScreen({ navigation }) {
   const { dispatch } = useData();
   const {
-    myQuestions, me, canExpertPostToday, expertPostsToday, expertDailyPostLimit,
+    myQuestions, me, canOpenComposerToday,
+    canExpertPostProfessionalToday, canPostMemberToday,
+    expertProfessionalPostsToday, expertDailyPostLimit,
+    memberPostsToday, memberDailyPostLimit,
   } = useSelectors();
   const { colors, spacing } = useTheme();
   const data = myQuestions();
   const user = me();
-  const expertAtLimit = user?.verified && !canExpertPostToday();
+  const composerBlocked = !canOpenComposerToday();
+  const expertProAtLimit = user?.verified && !canExpertPostProfessionalToday();
+  const memberAtLimit = !canPostMemberToday();
 
   const openAsk = () => {
-    if (expertAtLimit) {
-      Alert.alert(
-        'Daily limit reached',
-        `You've used ${expertPostsToday()}/${expertDailyPostLimit} expert posts today. Try again tomorrow.`,
-      );
+    if (composerBlocked) {
+      if (user?.verified) {
+        Alert.alert(
+          'Daily limit reached',
+          expertProAtLimit && memberAtLimit
+            ? `You've used ${expertProfessionalPostsToday()}/${expertDailyPostLimit} professional and ${memberPostsToday()}/${memberDailyPostLimit} member posts today. Try again tomorrow.`
+            : memberAtLimit
+              ? `You've used your ${memberDailyPostLimit} member posts today. Try again tomorrow.`
+              : `You've used your ${expertDailyPostLimit} professional posts today. Try again tomorrow.`,
+        );
+      } else {
+        Alert.alert(
+          'Daily limit reached',
+          `You've used your ${memberDailyPostLimit} posts today. Try again tomorrow.`,
+        );
+      }
       return;
     }
     navigation.navigate('AskComposer');

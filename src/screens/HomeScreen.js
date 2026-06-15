@@ -25,8 +25,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function HomeScreen({ navigation }) {
   const {
     userById, me, followingFeed, hasExpertAnswer, circleById, effectiveJoinedCircleIds,
-    newTodayCount, suggestedExperts, canExpertPostToday,
-    expertPostsToday, expertDailyPostLimit, checklistDoneCount, isNewcomerActive, unreadNotifs, state,
+    newTodayCount, suggestedExperts, canOpenComposerToday,
+    canExpertPostProfessionalToday, canPostMemberToday,
+    expertProfessionalPostsToday, expertDailyPostLimit,
+    memberPostsToday, memberDailyPostLimit,
+    checklistDoneCount, isNewcomerActive, unreadNotifs, state,
   } = useSelectors();
   const { dispatch } = useData();
   const { online } = useNetwork();
@@ -60,20 +63,27 @@ export default function HomeScreen({ navigation }) {
   const user = me();
   const data = tab === 'foryou' ? forYou.data : followingFeed();
   const newToday = newTodayCount();
-  const expertAtLimit = user?.verified && !canExpertPostToday();
-
-  const onSortChange = useCallback((mode) => {
-    LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
-    forYou.setSortMode(mode);
-    setReplayKey((k) => k + 1);
-  }, [forYou]);
+  const composerBlocked = !canOpenComposerToday();
+  const expertProAtLimit = user?.verified && !canExpertPostProfessionalToday();
+  const memberAtLimit = !canPostMemberToday();
 
   const openAsk = () => {
-    if (expertAtLimit) {
-      Alert.alert(
-        'Daily limit reached',
-        `You've used ${expertPostsToday()}/${expertDailyPostLimit} expert posts today. Try again tomorrow.`,
-      );
+    if (composerBlocked) {
+      if (user?.verified) {
+        Alert.alert(
+          'Daily limit reached',
+          expertProAtLimit && memberAtLimit
+            ? `You've used ${expertProfessionalPostsToday()}/${expertDailyPostLimit} professional and ${memberPostsToday()}/${memberDailyPostLimit} member posts today. Try again tomorrow.`
+            : memberAtLimit
+              ? `You've used your ${memberDailyPostLimit} member posts today. Try again tomorrow.`
+              : `You've used your ${expertDailyPostLimit} professional posts today. Try again tomorrow.`,
+        );
+      } else {
+        Alert.alert(
+          'Daily limit reached',
+          `You've used your ${memberDailyPostLimit} posts today. Try again tomorrow.`,
+        );
+      }
       return;
     }
     navigate('AskComposer');
@@ -91,6 +101,12 @@ export default function HomeScreen({ navigation }) {
   const onLoadMore = useCallback(() => {
     if (tab === 'foryou' && forYou.hasMore) forYou.loadMore();
   }, [tab, forYou]);
+
+  const onSortChange = useCallback((mode) => {
+    LayoutAnimation.configureNext(LayoutAnimation.create(220, 'easeInEaseOut', 'opacity'));
+    forYou.setSortMode(mode);
+    setReplayKey((k) => k + 1);
+  }, [forYou]);
 
   const showChecklistCard = tab === 'foryou' && isNewcomerActive() && !state.checklistCardDismissed;
   const unread = unreadNotifs();
@@ -192,21 +208,25 @@ export default function HomeScreen({ navigation }) {
         />
       )}
 
-      {expertAtLimit ? (
+      {composerBlocked ? (
         <View style={styles.fabLimitWrap}>
-          <Text style={styles.fabLimitHint}>2/2 posts today</Text>
+          <Text style={styles.fabLimitHint}>
+            {user?.verified
+              ? `${expertProfessionalPostsToday()}/${expertDailyPostLimit} professional · ${memberPostsToday()}/${memberDailyPostLimit} member today`
+              : `${memberPostsToday()}/${memberDailyPostLimit} posts today`}
+          </Text>
         </View>
       ) : null}
       <Pressable
         style={({ pressed }) => [
           styles.fab,
-          expertAtLimit && styles.fabMuted,
+          composerBlocked && styles.fabMuted,
           pressed && { transform: [{ scale: 0.96 }] },
         ]}
         onPress={openAsk}
       >
-        <Text style={[styles.fabPlus, expertAtLimit && styles.fabTextMuted]}>＋</Text>
-        <Text style={[styles.fabText, expertAtLimit && styles.fabTextMuted]}>Post</Text>
+        <Text style={[styles.fabPlus, composerBlocked && styles.fabTextMuted]}>＋</Text>
+        <Text style={[styles.fabText, composerBlocked && styles.fabTextMuted]}>Post</Text>
       </Pressable>
     </SafeAreaView>
   );
