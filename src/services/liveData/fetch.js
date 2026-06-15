@@ -1,9 +1,41 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { mapQuestion, mapProfileRow } from './mappers';
+import { filterValidUuids, isValidUuid } from './ids';
+
+const EMPTY_BUNDLE = {
+  questions: [],
+  users: [],
+  myUpvotes: { questions: [], answers: [], replies: [] },
+  savedQuestions: [],
+  following: [],
+  joinedCircles: [],
+  checklistDone: [],
+};
+
+function warnFetch(label, error) {
+  console.warn(`[fetchLiveBundle] ${label}:`, error?.message || error);
+}
+
+/** Collect author UUIDs from question rows — skip any non-uuid id. */
+function collectAuthorUuids(rows, into) {
+  for (const q of rows || []) {
+    if (isValidUuid(q.author_id)) into.add(q.author_id);
+    for (const a of q.answers || []) {
+      if (isValidUuid(a.author_id)) into.add(a.author_id);
+      for (const r of a.replies || []) {
+        if (isValidUuid(r.author_id)) into.add(r.author_id);
+      }
+    }
+  }
+}
 
 export async function fetchLiveBundle(currentUserId) {
   if (!isSupabaseConfigured() || !currentUserId) {
-    return { questions: [], users: [], myUpvotes: { questions: [], answers: [], replies: [] }, savedQuestions: [], following: [], joinedCircles: [], checklistDone: [] };
+    return { ...EMPTY_BUNDLE };
+  }
+  if (!isValidUuid(currentUserId)) {
+    warnFetch('auth user id is not a UUID — skipping Supabase refresh', currentUserId);
+    return { ...EMPTY_BUNDLE };
   }
 
   const [
@@ -25,37 +57,36 @@ export async function fetchLiveBundle(currentUserId) {
     supabase.from('checklist_progress').select('item_id').eq('user_id', currentUserId),
   ]);
 
-  if (questionsRes.error) throw questionsRes.error;
-  if (upvotesRes.error) throw upvotesRes.error;
-  if (savedRes.error) throw savedRes.error;
-  if (followsRes.error) throw followsRes.error;
-  if (membersRes.error) throw membersRes.error;
-  if (checklistRes.error) throw checklistRes.error;
+  if (questionsRes.error) {
+    warnFetch('questions', questionsRes.error);
+    throw questionsRes.error;
+  }
+  if (upvotesRes.error) warnFetch('upvotes', upvotesRes.error);
+  if (savedRes.error) warnFetch('saved_questions', savedRes.error);
+  if (followsRes.error) warnFetch('follows', followsRes.error);
+  if (membersRes.error) warnFetch('circle_members', membersRes.error);
+  if (checklistRes.error) warnFetch('checklist_progress', checklistRes.error);
 
   const questions = (questionsRes.data || []).map((row) => mapQuestion(row, currentUserId));
 
-  const profileIds = new Set([currentUserId]);
+  const profileIdSet = new Set([currentUserId]);
   for (const row of followsRes.data || []) {
-    if (row.following_id) profileIds.add(row.following_id);
+    if (isValidUuid(row.following_id)) profileIdSet.add(row.following_id);
   }
-  for (const q of questionsRes.data || []) {
-    if (q.author_id) profileIds.add(q.author_id);
-    for (const a of q.answers || []) {
-      if (a.author_id) profileIds.add(a.author_id);
-      for (const r of a.replies || []) {
-        if (r.author_id) profileIds.add(r.author_id);
-      }
-    }
-  }
+  collectAuthorUuids(questionsRes.data, profileIdSet);
 
   let users = [];
-  if (profileIds.size > 0) {
+  const profileIds = filterValidUuids([...profileIdSet]);
+  if (profileIds.length > 0) {
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
-      .in('id', [...profileIds]);
-    if (error) throw error;
-    users = (profiles || []).map((p) => mapProfileRow(p, currentUserId)).filter(Boolean);
+      .in('id', profileIds);
+    if (error) {
+      warnFetch('profiles', error);
+    } else {
+      users = (profiles || []).map((p) => mapProfileRow(p, currentUserId)).filter(Boolean);
+    }
   }
 
   const myUpvotes = { questions: [], answers: [], replies: [] };
@@ -70,7 +101,10 @@ export async function fetchLiveBundle(currentUserId) {
     users,
     myUpvotes,
     savedQuestions: (savedRes.data || []).map((r) => r.question_id),
-    following: (followsRes.data || []).map((r) => r.following_id),
+    // Mock follows (u_*) may exist in follows.following_id (TEXT) — never merge those into state.
+    following: (followsRes.data || [])
+      .map((r) => r.following_id)
+      .filter(isValidUuid),
     joinedCircles: (membersRes.data || []).map((r) => r.circle_id),
     checklistDone: (checklistRes.data || []).map((r) => r.item_id),
   };

@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
 import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
-import { isLiveQuestionId, makeId } from './ids';
+import { isLiveQuestionId, makeId, isMockUserId } from './ids';
 import { verifiedCategoryFromCircle } from '../../utils/expertPost';
 
 const SYNC_ACTIONS = new Set([
@@ -166,7 +166,7 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'TOGGLE_FOLLOW': {
-      if (action.userId === 'me') return action;
+      if (action.userId === 'me' || isMockUserId(action.userId)) return action;
       const had = state.following.includes(action.userId);
       if (had) {
         const { error } = await supabase.from('follows').delete()

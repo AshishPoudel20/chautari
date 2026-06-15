@@ -15,7 +15,7 @@ import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { getSession, onAuthStateChange } from '../services/auth';
 import { fetchProfile, profileMetaFromRow, profileRowToUser } from '../services/profile';
-import { fetchLiveBundle, persistAction, shouldSyncAction } from '../services/liveData';
+import { fetchLiveBundle, persistAction, shouldSyncAction, isMockUserId, isValidUuid } from '../services/liveData';
 
 const SEED_QUESTION_IDS = new Set(seedQuestions.map((q) => q.id));
 
@@ -368,7 +368,10 @@ function reducer(state, action) {
           replies: uniq(state.myUpvotes.replies, p.myUpvotes?.replies),
         },
         savedQuestions: uniq(state.savedQuestions, p.savedQuestions),
-        following: uniq(state.following, p.following),
+        following: uniq(
+          state.following.filter((id) => isMockUserId(id)),
+          (p.following || []).filter(isValidUuid),
+        ),
         joinedCircles: p.joinedCircles?.length
           ? uniq(state.joinedCircles, p.joinedCircles)
           : state.joinedCircles,

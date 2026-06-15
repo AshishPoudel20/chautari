@@ -1,3 +1,3 @@
 export { fetchLiveBundle } from './fetch';
 export { persistAction, shouldSyncAction } from './persist';
-export { isLiveQuestionId, isMockUserId } from './ids';
+export { isLiveQuestionId, isMockUserId, isValidUuid, filterValidUuids } from './ids';
