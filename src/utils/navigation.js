@@ -3,6 +3,53 @@ import { InteractionManager, Platform } from 'react-native';
 
 const GUARD_MS = 400;
 
+/** Map auth UUID (and 'me') to the local profile id used in app state. */
+export function resolveUserId(userId, authUserId) {
+  if (!userId) return userId;
+  if (userId === 'me') return 'me';
+  if (authUserId && userId === authUserId) return 'me';
+  return userId;
+}
+
+export function isSelfUserId(userId, authUserId) {
+  return resolveUserId(userId, authUserId) === 'me';
+}
+
+/**
+ * Navigate to a MainTabs screen (Home, Circles, Experts, Profile).
+ * Walks up the tree so it works from tab children, nested stacks, and root-stack screens.
+ */
+export function navigateToMainTab(navigation, tabName) {
+  if (!navigation) return;
+
+  let nav = navigation;
+  for (let depth = 0; depth < 6 && nav; depth += 1) {
+    const routeNames = nav.getState?.()?.routeNames ?? [];
+    if (routeNames.includes(tabName)) {
+      nav.navigate(tabName);
+      return;
+    }
+    if (routeNames.includes('Main')) {
+      nav.navigate('Main', { screen: tabName });
+      return;
+    }
+    nav = nav.getParent?.();
+  }
+}
+
+/** Switch to the Profile tab (MyProfileScreen inside MainTabs). */
+export function openSelfProfile(navigation) {
+  navigateToMainTab(navigation, 'Profile');
+}
+
+export function openExpertProfile(navigation, { userId, title, authUserId, navigate }) {
+  if (isSelfUserId(userId, authUserId)) {
+    openSelfProfile(navigation);
+    return;
+  }
+  (navigate || navigation.navigate.bind(navigation))('ExpertProfile', { userId, title });
+}
+
 // Prevents double-tap from pushing duplicate screens onto the stack.
 export function useNavigationGuard(navigation) {
   const locked = useRef(false);
@@ -47,14 +94,19 @@ export function runAfterAlert(action) {
   });
 }
 
-export function openAuthorProfile(navigate, userById, authorId, { anonymous = false } = {}) {
+export function openAuthorProfile(navigate, userById, authorId, { anonymous = false, authUserId = null, navigation = null } = {}) {
   if (anonymous || !authorId) return;
-  if (authorId === 'me') {
-    navigate('Main', { screen: 'Profile' });
+  if (isSelfUserId(authorId, authUserId)) {
+    if (navigation) {
+      openSelfProfile(navigation);
+    } else {
+      navigate('Main', { screen: 'Profile' });
+    }
     return;
   }
-  const u = userById(authorId);
+  const resolvedId = resolveUserId(authorId, authUserId);
+  const u = userById(resolvedId) || userById(authorId);
   if (!u) return;
   const screen = u.verified ? 'ExpertProfile' : 'UserProfile';
-  navigate(screen, { userId: authorId, title: u.name });
+  navigate(screen, { userId: resolvedId, title: u.name });
 }

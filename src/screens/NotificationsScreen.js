@@ -5,7 +5,7 @@ import VerifiedBadge from '../components/VerifiedBadge';
 import { EmptyState } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
+import { useNavigationGuard, openExpertProfile, navigateToMainTab } from '../utils/navigation';
 import { timeAgo } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -49,12 +49,20 @@ export default function NotificationsScreen({ navigation }) {
       navigate('QuestionDetail', { questionId: n.questionId });
     } else if (n.actorId) {
       const u = userById(n.actorId);
-      const screen = u?.verified ? 'ExpertProfile' : 'UserProfile';
-      navigate(screen, { userId: n.actorId, title: u?.name });
+      if (u?.verified) {
+        openExpertProfile(navigation, {
+          userId: n.actorId,
+          title: u.name,
+          authUserId: state.authUserId,
+          navigate,
+        });
+      } else {
+        navigate('UserProfile', { userId: n.actorId, title: u?.name });
+      }
     } else if (n.type === 'expert') {
-      navigate('Main', { screen: 'Experts' });
+      navigateToMainTab(navigation, 'Experts');
     } else if (n.type === 'digest') {
-      navigate('Main', { screen: 'Circles' });
+      navigateToMainTab(navigation, 'Circles');
     } else {
       showToast('Nothing more to see on this one');
     }

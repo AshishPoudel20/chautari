@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { useData, useSelectors } from '../data/store';
 import { composeDigestSummary, scheduleDigest } from '../services/digest';
+import { navigateToMainTab } from '../utils/navigation';
 
 // Reschedules local digest notifications when preference or circle data changes.
 export default function DigestManager({ navigationRef }) {
@@ -19,7 +20,7 @@ export default function DigestManager({ navigationRef }) {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       if (data?.screen === 'Circles' && navigationRef?.current) {
-        navigationRef.current.navigate('Main', { screen: 'Circles' });
+        navigateToMainTab(navigationRef.current, 'Circles');
       }
     });
     return () => sub.remove();
