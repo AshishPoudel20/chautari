@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
-import { photoUrl, displayPhotoUrl } from '../utils/photos';
+import { viewerPhotoUrls } from '../utils/photos';
 
 const DISMISS_DRAG = 100;
 const DISMISS_VELOCITY = 0.75;
@@ -27,7 +27,11 @@ export default function ImageViewerScreen({ navigation, route }) {
   );
 
   const { photos = [], index = 0 } = route.params || {};
-  const items = normalizePhotoUrls(photos).map((uri) => displayPhotoUrl(uri, { allowLocal: true })).filter(Boolean);
+  const items = viewerPhotoUrls(photos);
+  if (__DEV__) {
+    console.log('[ImageViewer] input photos:', photos);
+    console.log('[ImageViewer] resolved viewer URLs:', items);
+  }
 
   const translateY = useRef(new Animated.Value(0)).current;
   const backdropOpacity = translateY.interpolate({

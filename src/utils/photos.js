@@ -45,6 +45,15 @@ export function normalizeDisplayPhotoUrls(photos) {
   return (photos || []).map((p) => displayPhotoUrl(p)).filter(Boolean);
 }
 
+/** Full-screen viewer — public HTTPS first; local only when nothing remote (same-device optimistic). */
+export function viewerPhotoUrls(photos) {
+  const remote = normalizeDisplayPhotoUrls(photos);
+  if (remote.length) return remote;
+  return normalizePhotoUrls(photos)
+    .map((uri) => displayPhotoUrl(uri, { allowLocal: true }))
+    .filter(Boolean);
+}
+
 /** Persist only remote URLs — strip ephemeral blob:/file: from storage. */
 export function sanitizePhotoUrlsForStorage(photos) {
   return normalizePhotoUrls(photos).filter(isRemotePhotoUri);

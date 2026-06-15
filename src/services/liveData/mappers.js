@@ -1,3 +1,5 @@
+import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
+
 export function authorToApp(authorId, currentUserId) {
   if (!authorId) return null;
   return authorId === currentUserId ? 'me' : authorId;
@@ -49,7 +51,7 @@ export function mapQuestion(row, currentUserId) {
     circleId: row.circle_id,
     title: row.title,
     body: row.body,
-    photos: row.photos || [],
+    photos: sanitizePhotoUrlsForStorage(row.photos || []),
     createdAt: new Date(row.created_at).getTime(),
     upvotes: row.upvotes ?? 0,
     views: row.views ?? 0,
