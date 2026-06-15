@@ -5,7 +5,7 @@ import KeyboardScreen from '../components/KeyboardScreen';
 import ExpertProfessionalFields from '../components/ExpertProfessionalFields';
 import { useData, useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
-import { hasExpertProfessionalProfile, validateExpertBadgeTitle } from '../utils/expertPost';
+import { canPostAsProfessional, validateExpertBadgeTitle } from '../utils/expertPost';
 
 /** One-time setup for experts verified before badge title + circle were required. */
 export default function ExpertProfessionalSetupScreen({ navigation }) {
@@ -23,7 +23,7 @@ export default function ExpertProfessionalSetupScreen({ navigation }) {
   const valid = !validateExpertBadgeTitle(badgeTitle) && !!circleId;
 
   useEffect(() => {
-    if (user && hasExpertProfessionalProfile(user)) {
+    if (user && canPostAsProfessional(user)) {
       navigation.goBack();
     }
   }, [user, navigation]);

@@ -8,7 +8,7 @@ import {
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
-import { verifiedCategoryFromCircle } from '../utils/expertPost';
+import { verifiedCategoryFromCircle, resolveExpertCircleId, resolveExpertBadgeTitle, canPostAsProfessional, snapshotProfessionLabel } from '../utils/expertPost';
 import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -290,8 +290,8 @@ function reducer(state, action) {
       }
       const postedAsExpert = !!(author?.verified && action.postedAsExpert);
       const anonymous = postedAsExpert ? false : !!action.anonymous;
-      const circleId = postedAsExpert && author?.expertCircleId
-        ? author.expertCircleId
+      const circleId = postedAsExpert && author
+        ? (resolveExpertCircleId(author) || action.circleId)
         : action.circleId;
       const q = {
         id: action.id || uid('q'),
@@ -307,7 +307,7 @@ function reducer(state, action) {
         answers: [],
         ...(author?.verified ? {
           postedAsExpert,
-          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
+          professionLabel: postedAsExpert ? (action.professionLabel || resolveExpertBadgeTitle(author) || null) : null,
         } : {}),
       };
       return { ...state, questions: [q, ...state.questions] };
@@ -375,7 +375,7 @@ function reducer(state, action) {
         upvotes: 0,
         ...(author?.verified ? {
           postedAsExpert,
-          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
+          professionLabel: postedAsExpert ? (action.professionLabel || resolveExpertBadgeTitle(author) || null) : null,
         } : {}),
       };
       return {

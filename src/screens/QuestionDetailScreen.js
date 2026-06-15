@@ -15,8 +15,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
-import { useFocusEffect } from '@react-navigation/native';
-import { showsExpertBadge, displayProfessionLabel, snapshotProfessionLabel, hasExpertProfessionalProfile } from '../utils/expertPost';
+import { showsExpertBadge, displayProfessionLabel, snapshotProfessionLabel, canPostAsProfessional } from '../utils/expertPost';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
@@ -72,7 +71,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const answerOffsets = useRef({});
   const answersSectionY = useRef(0);
   const headerHeight = useHeaderHeight();
-  const pendingProfessionalReply = useRef(false);
 
   const scrollToAnswer = useCallback((answerId) => {
     const y = answerOffsets.current[answerId];
@@ -129,14 +127,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
     setActiveBottomComposer(ANSWER_COMPOSER);
     requestAnimationFrame(scrollToAnswersSection);
   }, [activeBottomComposer, cancelBottomComposer, scrollToAnswersSection]);
-
-  useFocusEffect(useCallback(() => {
-    const u = me();
-    if (pendingProfessionalReply.current && hasExpertProfessionalProfile(u)) {
-      pendingProfessionalReply.current = false;
-      setReplyPostMode('professional');
-    }
-  }, [state.users]));
 
   useEffect(() => {
     if (!activeBottomComposer) return undefined;
@@ -237,11 +227,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   const handleReplyPostModeChange = (mode) => {
     if (mode === 'professional') {
-      if (!hasExpertProfessionalProfile(currentUser)) {
-        pendingProfessionalReply.current = true;
-        navigate('ExpertProfessionalSetup');
-        return;
-      }
+      if (!canPostAsProfessional(currentUser)) return;
       setReplyPostMode('professional');
       return;
     }
@@ -259,11 +245,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const submitReply = async (answerId) => {
     const len = replyText.trim().length;
     if (len < 5 || len > 1000 || replySubmitting) return;
-    if (replyPostedAsExpert && !hasExpertProfessionalProfile(currentUser)) {
-      pendingProfessionalReply.current = true;
-      navigate('ExpertProfessionalSetup');
-      return;
-    }
     if (replyPhoto?.uri && !online) {
       Alert.alert('No connection', 'Reconnect to upload your reply photo.');
       return;
@@ -518,6 +499,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
               mode={replyPostMode}
               onChange={handleReplyPostModeChange}
               professionLabel={snapshotProfessionLabel(currentUser)}
+              canProfessional={canPostAsProfessional(currentUser)}
             />
           ) : null}
           <View style={styles.replyComposer}>
