@@ -1,7 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
 import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
-import { resolveQuestionPosting, resolveReplyPosting } from '../../utils/expertPosting';
 import { isLiveQuestionId, makeId } from './ids';
 
 const SYNC_ACTIONS = new Set([
@@ -53,30 +52,24 @@ export async function persistAction(action, state, userId) {
 
   switch (action.type) {
     case 'ASK_QUESTION': {
-      const author = state.users.find((u) => u.id === 'me');
-      const resolved = resolveQuestionPosting({
-        author,
-        circleId: action.circleId,
-        anonymous: action.anonymous,
-        postedAsExpert: action.postedAsExpert,
-      });
-      const { error } = await supabase.from('questions').insert({
+      const postedAsExpert = !!action.postedAsExpert;
+      const anonymous = postedAsExpert ? false : !!action.anonymous;
+      const questionRow = {
         id: action.id,
-        circle_id: resolved.circleId,
+        circle_id: action.circleId,
         author_id: userId,
-        anonymous: resolved.anonymous,
-        posted_as_expert: resolved.postedAsExpert,
+        anonymous,
         title: action.title.trim(),
         body: action.body.trim(),
         photos: sanitizePhotoUrlsForStorage(action.photos || []),
-      });
-      if (error) throw error;
-      return {
-        ...action,
-        circleId: resolved.circleId,
-        anonymous: resolved.anonymous,
-        postedAsExpert: resolved.postedAsExpert,
       };
+      if (action.postedAsExpert != null) {
+        questionRow.posted_as_expert = !!action.postedAsExpert;
+        questionRow.profession_label = action.professionLabel || null;
+      }
+      const { error } = await supabase.from('questions').insert(questionRow);
+      if (error) throw error;
+      return action;
     }
 
     case 'ADD_ANSWER': {
@@ -96,31 +89,22 @@ export async function persistAction(action, state, userId) {
 
     case 'ADD_REPLY': {
       if (!isLiveQuestionId(action.questionId)) return action;
-      const author = state.users.find((u) => u.id === 'me');
-      const parentQ = state.questions.find((q) => q.id === action.questionId);
-      const resolved = resolveReplyPosting({
-        author,
-        questionCircleId: parentQ?.circleId,
-        anonymous: action.anonymous,
-        postedAsExpert: action.postedAsExpert,
-      });
       const id = action.id || makeId('r');
-      const { error } = await supabase.from('replies').insert({
+      const replyRow = {
         id,
         answer_id: action.answerId,
         author_id: userId,
-        anonymous: resolved.anonymous,
-        posted_as_expert: resolved.postedAsExpert,
+        anonymous: !!action.anonymous,
         body: action.body.trim(),
         photo_url: action.photoUrl || null,
-      });
-      if (error) throw error;
-      return {
-        ...action,
-        id,
-        anonymous: resolved.anonymous,
-        postedAsExpert: resolved.postedAsExpert,
       };
+      if (action.postedAsExpert != null) {
+        replyRow.posted_as_expert = !!action.postedAsExpert;
+        replyRow.profession_label = action.professionLabel || null;
+      }
+      const { error } = await supabase.from('replies').insert(replyRow);
+      if (error) throw error;
+      return { ...action, id };
     }
 
     case 'DELETE_QUESTION': {

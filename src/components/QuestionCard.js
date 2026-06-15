@@ -7,8 +7,7 @@ import ExpertMarker from './ExpertMarker';
 import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
-import { professionLabel } from '../data/categories';
-import { isPostedAsExpert } from '../utils/expertPosting';
+import { showsExpertBadge, displayProfessionLabel } from '../utils/expertPost';
 import { normalizeDisplayPhotoUrls } from '../utils/photos';
 
 function QuestionCard({
@@ -21,7 +20,8 @@ function QuestionCard({
   const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font), [colors, shadow, spacing, radius, font]);
 
   const a = displayAuthor(author, question.anonymous);
-  const isExpertPost = isPostedAsExpert(question);
+  const isExpertPost = showsExpertBadge(question, author);
+  const profession = displayProfessionLabel(question, author);
   const hasExpertAnswer = !!expert;
   const rawAnswers = question.answers?.length || 0;
   const canOpenProfile = !!onAuthorPress && !question.anonymous && !a.anon;
@@ -60,7 +60,7 @@ function QuestionCard({
       {isExpertPost ? (
         <View style={styles.expertHeader}>
           <ExpertMarker compact mode="posted" />
-          <Text style={styles.expertRole} numberOfLines={1}>{professionLabel(author)}</Text>
+          <Text style={styles.expertRole} numberOfLines={1}>{profession}</Text>
         </View>
       ) : null}
 

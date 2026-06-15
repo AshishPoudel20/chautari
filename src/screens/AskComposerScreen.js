@@ -7,7 +7,7 @@ import PhotoStrip from '../components/PhotoStrip';
 import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Field, Input, CharCount } from '../components/ui';
 import ExpertPostQuota from '../components/ExpertPostQuota';
-import ExpertPostingToggle from '../components/ExpertPostingToggle';
+import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useNavigationGuard } from '../utils/navigation';
@@ -18,10 +18,8 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadQuestionPhotos } from '../services/mediaStorage';
 import { isLocalPhotoUri, needsPhotoUpload, photoUrl } from '../utils/photos';
 import { MAX_QUESTION_PHOTOS } from '../constants/media';
-import {
-  verifiedCategoryCircleId,
-  professionalPostingLabel,
-} from '../utils/expertPosting';
+import { professionLabel } from '../data/categories';
+import { snapshotProfessionLabel } from '../utils/expertPost';
 
 const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000;
 
@@ -42,7 +40,7 @@ export default function AskComposerScreen({ navigation, route }) {
   const [photos, setPhotos] = useState([]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
-  const [postedAsExpert, setPostedAsExpert] = useState(false);
+  const [postMode, setPostMode] = useState('member');
   const [touched, setTouched] = useState(false);
   const [posting, setPosting] = useState(false);
   const success = useRef(new Animated.Value(0)).current;
@@ -50,28 +48,8 @@ export default function AskComposerScreen({ navigation, route }) {
   const titleOk = title.trim().length >= TITLE_MIN && title.trim().length <= TITLE_MAX;
   const bodyOk = body.trim().length >= BODY_MIN && body.trim().length <= BODY_MAX;
   const atDailyLimit = user?.verified && !canExpertPostToday();
-  const professionalCircleId = verifiedCategoryCircleId(user?.verifiedCategory);
-  const canOfferProfessional = !!user?.verified && !!professionalCircleId;
-  const isProfessionalMode = canOfferProfessional && postedAsExpert;
-  const lockedCircle = isProfessionalMode ? circleById(professionalCircleId) : null;
-  const effectiveCircleId = isProfessionalMode ? professionalCircleId : circleId;
-  const valid = titleOk && bodyOk && !!effectiveCircleId && !atDailyLimit;
-  const selectedCircle = circleById(effectiveCircleId);
-
-  const handlePostedAsExpertChange = (next) => {
-    if (next && canOfferProfessional) {
-      setPostedAsExpert(true);
-      setCircleId(professionalCircleId);
-      setAnonymous(false);
-      return;
-    }
-    setPostedAsExpert(false);
-  };
-
-  const handleAnonymousChange = (next) => {
-    if (next) setPostedAsExpert(false);
-    setAnonymous(next);
-  };
+  const valid = titleOk && bodyOk && !!circleId && !atDailyLimit;
+  const selectedCircle = circleById(circleId);
 
   const circleOptions = useMemo(() => {
     const joined = joinedCirclesList();
@@ -81,6 +59,19 @@ export default function AskComposerScreen({ navigation, route }) {
     const filter = (list) => (q ? list.filter((c) => c.name.toLowerCase().includes(q)) : list);
     return [...filter(joined), ...filter(rest)];
   }, [joinedCirclesList, state.circles, circleQuery]);
+
+  const postedAsExpert = postMode === 'professional';
+  const verifiedProfession = professionLabel(user);
+
+  const handlePostModeChange = (mode) => {
+    setPostMode(mode);
+    if (mode === 'professional') setAnonymous(false);
+  };
+
+  const handleAnonymousChange = (val) => {
+    setAnonymous(val);
+    if (val) setPostMode('member');
+  };
 
   const addPickedPhoto = async (picked) => {
     if (!picked) return;
@@ -177,10 +168,11 @@ export default function AskComposerScreen({ navigation, route }) {
         id,
         title,
         body,
-        circleId: effectiveCircleId,
+        circleId,
         anonymous,
-        postedAsExpert: isProfessionalMode,
         photos: photoUrls,
+        postedAsExpert: user?.verified ? postedAsExpert : undefined,
+        professionLabel: user?.verified && postedAsExpert ? snapshotProfessionLabel(user) : undefined,
       });
       Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
@@ -211,21 +203,6 @@ export default function AskComposerScreen({ navigation, route }) {
       >
         <ExpertPostQuota variant="banner" />
 
-        {user?.verified ? (
-          <View style={styles.identityCard}>
-            <ExpertPostingToggle
-              value={isProfessionalMode}
-              onChange={handlePostedAsExpertChange}
-              disabledProfessional={!canOfferProfessional}
-              disabledProfessionalHint={
-                !professionalCircleId
-                  ? 'Professional posting requires a verified category with a matching official circle.'
-                  : undefined
-              }
-            />
-          </View>
-        ) : null}
-
         <Field
           label="Your question"
           error={touched && !titleOk ? `Keep the title between ${TITLE_MIN} and ${TITLE_MAX} characters.` : null}
@@ -242,40 +219,29 @@ export default function AskComposerScreen({ navigation, route }) {
           <View style={styles.counterRow}><CharCount value={body} min={BODY_MIN} max={BODY_MAX} /></View>
         </Field>
 
-        <Field label="Circle" error={touched && !effectiveCircleId ? 'Pick a circle for your question.' : null}>
-          {isProfessionalMode && lockedCircle ? (
-            <View style={styles.lockedCircle}>
-              <CircleChip circle={lockedCircle} compact showOfficial />
-              <Text style={styles.lockedCircleHint}>
-                {professionalPostingLabel(user, lockedCircle.name)}
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Input
-                placeholder="Search circles…"
-                value={circleQuery}
-                onChangeText={setCircleQuery}
-                style={{ marginBottom: spacing.sm }}
-              />
-              <View style={styles.chips}>
-                {circleOptions.map((c) => (
-                  <Pressable key={c.id} onPress={() => setCircleId(c.id)} style={{ marginBottom: spacing.sm }}>
-                    <CircleChip
-                      circle={c}
-                      compact
-                      showOfficial
-                      onPress={() => setCircleId(c.id)}
-                    />
-                    {circleId === c.id ? <Text style={styles.selectedMark}>✓ selected</Text> : null}
-                    {!isJoinedCircle(c.id) ? (
-                      <Text style={styles.joinHint}>Not joined — you can still post here</Text>
-                    ) : null}
-                  </Pressable>
-                ))}
-              </View>
-            </>
-          )}
+        <Field label="Circle" error={touched && !circleId ? 'Pick a circle for your question.' : null}>
+          <Input
+            placeholder="Search circles…"
+            value={circleQuery}
+            onChangeText={setCircleQuery}
+            style={{ marginBottom: spacing.sm }}
+          />
+          <View style={styles.chips}>
+            {circleOptions.map((c) => (
+              <Pressable key={c.id} onPress={() => setCircleId(c.id)} style={{ marginBottom: spacing.sm }}>
+                <CircleChip
+                  circle={c}
+                  compact
+                  showOfficial
+                  onPress={() => setCircleId(c.id)}
+                />
+                {circleId === c.id ? <Text style={styles.selectedMark}>✓ selected</Text> : null}
+                {!isJoinedCircle(c.id) ? (
+                  <Text style={styles.joinHint}>Not joined — you can still post here</Text>
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
         </Field>
 
         <Field label={`Photos · optional · up to ${MAX_QUESTION_PHOTOS}`}>
@@ -288,20 +254,28 @@ export default function AskComposerScreen({ navigation, route }) {
           />
         </Field>
 
-        <View style={styles.anonCard}>
+        {user?.verified ? (
+          <ExpertPostModeToggle
+            mode={postMode}
+            onChange={handlePostModeChange}
+            professionLabel={verifiedProfession}
+          />
+        ) : null}
+
+        <View style={[styles.anonCard, postedAsExpert && styles.anonCardDisabled]}>
           <View style={styles.anonHeader}>
             <View style={{ flex: 1 }}>
               <Text style={styles.anonTitle}>Ask anonymously</Text>
               <Text style={styles.anonSub}>
-                {isProfessionalMode
-                  ? 'Anonymous posting is off while posting as a professional — your expert claim is public.'
+                {postedAsExpert
+                  ? 'Not available when posting as a professional — your verified identity is shown.'
                   : 'Your name, photo and suburb stay hidden on this question.'}
               </Text>
             </View>
             <Switch
               value={anonymous}
               onValueChange={handleAnonymousChange}
-              disabled={isProfessionalMode}
+              disabled={postedAsExpert}
               trackColor={{ true: colors.primary, false: colors.borderStrong }}
               thumbColor={colors.onPrimary}
             />
@@ -310,14 +284,18 @@ export default function AskComposerScreen({ navigation, route }) {
           <View style={styles.previewLabelRow}>
             <Text style={styles.previewLabel}>HOW IT WILL APPEAR</Text>
           </View>
-          <View style={styles.previewRow}>
+          <View style={[styles.previewRow, postedAsExpert && styles.previewRowExpert]}>
             <Avatar name={previewName} anon={anonymous} size={34} />
-            <View style={{ marginLeft: spacing.sm }}>
+            <View style={{ marginLeft: spacing.sm, flex: 1 }}>
               <Text style={styles.previewName}>{previewName}</Text>
+              {postedAsExpert ? (
+                <Text style={styles.previewProfession}>{verifiedProfession}</Text>
+              ) : null}
               <Text style={styles.previewMeta}>
                 {previewSuburb ? `${previewSuburb} · ` : ''}just now{selectedCircle ? ` · ${selectedCircle.name}` : ''}
               </Text>
             </View>
+            {postedAsExpert ? <Text style={styles.previewBadge}>✓</Text> : null}
           </View>
         </View>
       </KeyboardScreen>
@@ -346,38 +324,20 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   body: { padding: spacing.lg, paddingBottom: spacing.xl },
   counterRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 6 },
   chips: { gap: spacing.xs },
-  identityCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
-    ...shadow.card,
-  },
-  lockedCircle: {
-    backgroundColor: colors.bgSunken,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.expertCardBorder,
-  },
-  lockedCircleHint: {
-    marginTop: spacing.sm,
-    fontSize: font.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
   selectedMark: { fontSize: font.tiny, color: colors.primary, fontWeight: '800', marginTop: 4, marginLeft: 4 },
   joinHint: { fontSize: font.tiny, color: colors.textFaint, marginTop: 2, marginLeft: 4 },
   anonCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card },
+  anonCardDisabled: { opacity: 0.92 },
   anonHeader: { flexDirection: 'row', alignItems: 'center' },
   anonTitle: { fontWeight: '800', color: colors.text, fontSize: font.bodyLg },
   anonSub: { color: colors.textMuted, fontSize: font.caption, marginTop: 3, lineHeight: 18, paddingRight: spacing.md },
   previewLabelRow: { marginTop: spacing.lg, marginBottom: spacing.sm },
   previewLabel: { fontSize: font.tiny, fontWeight: '800', color: colors.textFaint, letterSpacing: 0.8 },
   previewRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSunken, borderRadius: radius.md, padding: spacing.md },
+  previewRowExpert: { backgroundColor: colors.secondaryTint, borderWidth: 1, borderColor: colors.expertMarkerBorder },
   previewName: { fontWeight: '800', color: colors.text, fontSize: font.caption },
+  previewProfession: { fontWeight: '700', color: colors.secondaryDark, fontSize: font.tiny, marginTop: 2 },
+  previewBadge: { fontSize: font.body, color: colors.secondaryDark, fontWeight: '900' },
   previewMeta: { color: colors.textMuted, fontSize: font.tiny, marginTop: 2 },
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.overlay },

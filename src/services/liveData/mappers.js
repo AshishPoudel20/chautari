@@ -13,11 +13,12 @@ export function mapReply(row, currentUserId) {
     id: row.id,
     authorId: authorToApp(row.author_id, currentUserId),
     anonymous: row.anonymous,
-    postedAsExpert: !!row.posted_as_expert,
     body: row.body,
     photo: row.photo_url || null,
     createdAt: new Date(row.created_at).getTime(),
     upvotes: row.upvotes ?? 0,
+    ...(row.posted_as_expert != null ? { postedAsExpert: row.posted_as_expert } : {}),
+    ...(row.profession_label ? { professionLabel: row.profession_label } : {}),
   };
 }
 
@@ -45,7 +46,6 @@ export function mapQuestion(row, currentUserId) {
     id: row.id,
     authorId: authorToApp(row.author_id, currentUserId),
     anonymous: row.anonymous,
-    postedAsExpert: !!row.posted_as_expert,
     circleId: row.circle_id,
     title: row.title,
     body: row.body,
@@ -54,6 +54,8 @@ export function mapQuestion(row, currentUserId) {
     upvotes: row.upvotes ?? 0,
     views: row.views ?? 0,
     answers,
+    ...(row.posted_as_expert != null ? { postedAsExpert: row.posted_as_expert } : {}),
+    ...(row.profession_label ? { professionLabel: row.profession_label } : {}),
   };
 }
 

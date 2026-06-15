@@ -13,10 +13,9 @@ import { CharCount } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
+import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
-import { professionLabel } from '../data/categories';
-import { isPostedAsExpert, showExpertReplyToggle } from '../utils/expertPosting';
-import ExpertPostingToggle from '../components/ExpertPostingToggle';
+import { showsExpertBadge, displayProfessionLabel, snapshotProfessionLabel } from '../utils/expertPost';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
@@ -60,7 +59,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const [replyPhoto, setReplyPhoto] = useState(null);
   const [replyPickerOpen, setReplyPickerOpen] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
-  const [replyPostedAsExpert, setReplyPostedAsExpert] = useState(false);
+  const [replyPostMode, setReplyPostMode] = useState('member');
   const [answerText, setAnswerText] = useState('');
   const [answerPhoto, setAnswerPhoto] = useState(null);
   const [answerAnonymous, setAnswerAnonymous] = useState(false);
@@ -93,7 +92,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     setActiveBottomComposer(null);
     setReplyText('');
     setReplyPhoto(null);
-    setReplyPostedAsExpert(false);
+    setReplyPostMode('member');
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -106,7 +105,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     setReplyText('');
     setReplyPhoto(null);
-    setReplyPostedAsExpert(false);
+    setReplyPostMode('member');
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -121,7 +120,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     setReplyText('');
     setReplyPhoto(null);
-    setReplyPostedAsExpert(false);
+    setReplyPostMode('member');
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -220,8 +219,10 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const qAuthor = displayAuthor(userById(question.authorId), question.anonymous);
   const qAuthorUser = userById(question.authorId);
   const circle = circleById(question.circleId);
-  const isExpertPost = isPostedAsExpert(question);
-  const canReplyAsProfessional = showExpertReplyToggle(me(), question.circleId);
+  const isExpertPost = showsExpertBadge(question, qAuthorUser);
+  const questionProfession = displayProfessionLabel(question, qAuthorUser);
+  const currentUser = me();
+  const replyPostedAsExpert = replyPostMode === 'professional';
   const totalAnswers = question.answers.length;
 
   const goToProfile = (authorId, anonymous) => {
@@ -255,12 +256,15 @@ export default function QuestionDetailScreen({ navigation, route }) {
         id: replyId,
         body: replyText,
         anonymous: false,
-        postedAsExpert: canReplyAsProfessional && replyPostedAsExpert,
         photoUrl: photoUrlValue,
+        postedAsExpert: currentUser?.verified ? replyPostedAsExpert : undefined,
+        professionLabel: currentUser?.verified && replyPostedAsExpert
+          ? snapshotProfessionLabel(currentUser)
+          : undefined,
       });
       setReplyText('');
       setReplyPhoto(null);
-      setReplyPostedAsExpert(false);
+      setReplyPostMode('member');
       setActiveBottomComposer(null);
       Keyboard.dismiss();
     } catch (e) {
@@ -378,13 +382,21 @@ export default function QuestionDetailScreen({ navigation, route }) {
         </View>
 
         {(ans.replies || []).map((r) => {
-          const rAuthor = displayAuthor(userById(r.authorId), r.anonymous);
+          const rAuthorUser = userById(r.authorId);
+          const rAuthor = displayAuthor(rAuthorUser, r.anonymous);
+          const showReplyBadge = showsExpertBadge(r, rAuthorUser);
+          const replyProfession = displayProfessionLabel(r, rAuthorUser);
           return (
-            <View key={r.id} style={[styles.reply, isPostedAsExpert(r) && styles.replyExpert]}>
+            <View key={r.id} style={styles.reply}>
               <Pressable style={styles.replyHead} onPress={() => goToProfile(r.authorId, r.anonymous)}>
                 <Avatar name={rAuthor.name} photo={rAuthor.photo} anon={rAuthor.anon} size={24} />
                 <Text style={styles.replyAuthor}>{rAuthor.name}</Text>
-                {isPostedAsExpert(r) ? <VerifiedBadge compact /> : null}
+                {showReplyBadge ? (
+                  <>
+                    <VerifiedBadge compact />
+                    <Text style={styles.replyProfession} numberOfLines={1}>{replyProfession}</Text>
+                  </>
+                ) : null}
                 <Text style={styles.metaTiny}>· {timeAgo(r.createdAt)}</Text>
               </Pressable>
               <BodyText style={styles.replyBody} linkStyle={styles.link}>{r.body}</BodyText>
@@ -472,13 +484,13 @@ export default function QuestionDetailScreen({ navigation, route }) {
     if (activeBottomComposer) {
       return (
         <View style={styles.stickyBottom}>
-          {canReplyAsProfessional ? (
-            <View style={styles.replyIdentity}>
-              <ExpertPostingToggle
-                value={replyPostedAsExpert}
-                onChange={setReplyPostedAsExpert}
-              />
-            </View>
+          {currentUser?.verified ? (
+            <ExpertPostModeToggle
+              compact
+              mode={replyPostMode}
+              onChange={setReplyPostMode}
+              professionLabel={snapshotProfessionLabel(currentUser)}
+            />
           ) : null}
           <View style={styles.replyComposer}>
             <TextInput
@@ -550,7 +562,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
           {isExpertPost && (
             <View style={styles.expertPostBanner}>
               <Text style={styles.expertPostBannerText}>✓ VERIFIED EXPERT POST</Text>
-              <Text style={styles.expertPostBannerSub}>{professionLabel(qAuthorUser)}</Text>
+              <Text style={styles.expertPostBannerSub}>{questionProfession}</Text>
             </View>
           )}
           {circle ? (
@@ -707,13 +719,9 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   reportBtn: { color: colors.textFaint, fontSize: font.caption, fontWeight: '600' },
 
   reply: { marginTop: spacing.md, marginLeft: spacing.md, paddingLeft: spacing.md, borderLeftWidth: 2, borderLeftColor: colors.border },
-  replyExpert: { borderLeftColor: colors.secondaryDark, backgroundColor: colors.secondaryTint, borderRadius: radius.sm, paddingVertical: spacing.xs },
-  replyIdentity: {
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
   replyHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   replyAuthor: { fontWeight: '800', color: colors.text, fontSize: font.tiny },
+  replyProfession: { fontWeight: '700', color: colors.secondaryDark, fontSize: font.tiny, flexShrink: 1, maxWidth: 120 },
   replyBody: { fontSize: font.caption, color: colors.text, lineHeight: 20, marginTop: 4 },
 
   replyComposer: {

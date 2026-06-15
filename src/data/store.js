@@ -9,7 +9,6 @@ import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
 import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
-import { resolveQuestionPosting, resolveReplyPosting } from '../utils/expertPosting';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { getSession, onAuthStateChange } from '../services/auth';
@@ -33,15 +32,7 @@ function normalizeQuestion(q) {
   const base = circleId ? { ...q, circleId } : { ...q };
   return {
     ...base,
-    postedAsExpert: !!base.postedAsExpert,
     photos: sanitizePhotoUrlsForStorage(base.photos),
-    answers: (base.answers || []).map((a) => ({
-      ...a,
-      replies: (a.replies || []).map((r) => ({
-        ...r,
-        postedAsExpert: !!r.postedAsExpert,
-      })),
-    })),
   };
 }
 
@@ -258,18 +249,13 @@ function reducer(state, action) {
         ).length;
         if (todayCount >= EXPERT_DAILY_POST_LIMIT) return state;
       }
-      const resolved = resolveQuestionPosting({
-        author,
-        circleId: action.circleId,
-        anonymous: action.anonymous,
-        postedAsExpert: action.postedAsExpert,
-      });
+      const postedAsExpert = !!(author?.verified && action.postedAsExpert);
+      const anonymous = postedAsExpert ? false : !!action.anonymous;
       const q = {
         id: action.id || uid('q'),
         authorId: 'me',
-        anonymous: resolved.anonymous,
-        postedAsExpert: resolved.postedAsExpert,
-        circleId: resolved.circleId,
+        anonymous,
+        circleId: action.circleId,
         title: action.title.trim(),
         body: action.body.trim(),
         photos: sanitizePhotoUrlsForStorage(action.photos || []),
@@ -277,6 +263,10 @@ function reducer(state, action) {
         upvotes: 0,
         views: 0,
         answers: [],
+        ...(author?.verified ? {
+          postedAsExpert,
+          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
+        } : {}),
       };
       return { ...state, questions: [q, ...state.questions] };
     }
@@ -332,22 +322,19 @@ function reducer(state, action) {
 
     case 'ADD_REPLY': {
       const author = state.users.find((u) => u.id === 'me');
-      const parentQ = state.questions.find((q) => q.id === action.questionId);
-      const resolved = resolveReplyPosting({
-        author,
-        questionCircleId: parentQ?.circleId,
-        anonymous: action.anonymous,
-        postedAsExpert: action.postedAsExpert,
-      });
+      const postedAsExpert = !!(author?.verified && action.postedAsExpert);
       const reply = {
         id: action.id || uid('r'),
         authorId: 'me',
-        anonymous: resolved.anonymous,
-        postedAsExpert: resolved.postedAsExpert,
+        anonymous: action.anonymous,
         body: action.body.trim(),
         photo: action.photoUrl || null,
         createdAt: Date.now(),
         upvotes: 0,
+        ...(author?.verified ? {
+          postedAsExpert,
+          professionLabel: postedAsExpert ? (action.professionLabel || null) : null,
+        } : {}),
       };
       return {
         ...state,

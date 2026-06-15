@@ -95,7 +95,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q1b', authorId: 'u_raj', anonymous: false, category: 'tax_super', postedAsExpert: true,
+    id: 'q1b', authorId: 'u_raj', anonymous: false, category: 'tax_super',
     title: 'Tax time PSA: lodge even if you earned under the threshold',
     body: 'Every June I see the same confusion. If your employer withheld tax (check the PAYG line on your payslip), you almost certainly want to lodge a return to get it back — even below $18,200. Non-lodgement advice is only when no tax was withheld. Happy to clarify in the comments.',
     photos: [], createdAt: ago(8 * MIN), upvotes: 15, views: 142,
@@ -111,7 +111,7 @@ export const seedQuestions = [
     answers: [
       { id: 'a1', authorId: 'u_sunita', anonymous: false, body: 'You apply once you have your completion letter (or the official "course completed" status), not just results. You have 6 months from course completion to lodge. Make sure your OSHC and English test are valid on the lodgement date. Current 485 processing is roughly 4–6 months but it varies.', createdAt: ago(11 * MIN), upvotes: 14, replies: [
         { id: 'r1', authorId: 'u_dipesh', anonymous: false, body: 'Thank you! Does the 6 months start from the completion date or the date printed on the letter?', createdAt: ago(7 * MIN), upvotes: 2 },
-        { id: 'r2', authorId: 'u_sunita', anonymous: false, postedAsExpert: true, body: 'From the date you completed the course requirements — usually stated on the completion letter itself.', createdAt: ago(4 * MIN), upvotes: 4 },
+        { id: 'r2', authorId: 'u_sunita', anonymous: false, body: 'From the date you completed the course requirements — usually stated on the completion letter itself.', createdAt: ago(4 * MIN), upvotes: 4 },
       ] },
     ],
   },
@@ -166,7 +166,7 @@ export const seedQuestions = [
     answers: [
       { id: 'a10', authorId: 'u_anil', anonymous: false, body: 'As someone who hires: "Australian experience" is usually code for "can you communicate clearly and work in our team". Three things move the needle most — (1) one local reference, even from volunteering, (2) a resume tailored to each role with metrics, not duties, and (3) showing up at meetups. I have hired two people I first met at a Python meetup. Your overseas experience counts; package it for an Australian reader.', createdAt: ago(10 * H), upvotes: 38, replies: [
         { id: 'r5', authorId: 'u_sabina', anonymous: false, body: 'This is so encouraging, thank you. Which meetups would you suggest for backend devs?', createdAt: ago(9.4 * H), upvotes: 5 },
-        { id: 'r6', authorId: 'u_anil', anonymous: false, postedAsExpert: true, body: 'MelbJS, Melbourne Python, and the AWS user group are all welcoming. Go three times before you decide it is not working.', createdAt: ago(9 * H), upvotes: 9 },
+        { id: 'r6', authorId: 'u_anil', anonymous: false, body: 'MelbJS, Melbourne Python, and the AWS user group are all welcoming. Go three times before you decide it is not working.', createdAt: ago(9 * H), upvotes: 9 },
       ] },
       { id: 'a11', authorId: 'u_dipesh', anonymous: true, body: 'Honestly a lot of it is referrals. Get your LinkedIn active and message alumni from your uni. Posting anonymously because my current employer follows me here.', createdAt: ago(8.5 * H), upvotes: 12, replies: [] },
     ],
@@ -263,13 +263,13 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q16', authorId: 'u_bishal', anonymous: false, category: 'loans', postedAsExpert: true,
+    id: 'q16', authorId: 'u_bishal', anonymous: false, category: 'loans',
     title: 'PSA: how much deposit do you really need as a temp resident?',
     body: 'I get this question daily so posting it here. Short version: many lenders cap temp residents at 80% (so ~20% deposit), some go higher with LMI, and FIRB approval may be required for certain properties. Ask me anything below.',
     photos: [], createdAt: ago(34 * MIN), upvotes: 22, views: 415,
     answers: [
       { id: 'a27', authorId: 'u_dipesh', anonymous: false, body: 'Does the FIRB fee apply if I am buying an established home to live in on a 482?', createdAt: ago(3.3 * D), upvotes: 4, replies: [
-        { id: 'r9', authorId: 'u_bishal', anonymous: false, postedAsExpert: true, body: 'Generally temp residents can buy one established dwelling to live in, but you must apply for FIRB approval and pay the fee first. Budget for it early — it is not small.', createdAt: ago(3.2 * D), upvotes: 8 },
+        { id: 'r9', authorId: 'u_bishal', anonymous: false, body: 'Generally temp residents can buy one established dwelling to live in, but you must apply for FIRB approval and pay the fee first. Budget for it early — it is not small.', createdAt: ago(3.2 * D), upvotes: 8 },
       ] },
     ],
   },
@@ -283,7 +283,7 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q18', authorId: 'u_sunita', anonymous: false, category: 'migration', postedAsExpert: true,
+    id: 'q18', authorId: 'u_sunita', anonymous: false, category: 'migration',
     title: 'Reminder: keep certified copies of EVERYTHING you submit',
     body: 'A pattern I see constantly: people lodge a visa, then cannot find what they submitted months later when asked for more info. Keep a dated folder (digital + a backup) of every form, payslip and letter. It will save you weeks. What else trips people up?',
     photos: [], createdAt: ago(50 * MIN), upvotes: 37, views: 690,
@@ -313,25 +313,25 @@ export const seedQuestions = [
     ],
   },
   {
-    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers', postedAsExpert: true,
+    id: 'q21', authorId: 'u_anil', anonymous: false, category: 'it_careers',
     title: 'Resume tip that doubled my callbacks (and might help you)',
     body: 'Reviewing community resumes, the #1 fix: replace duty lists with outcomes. "Responsible for backend APIs" → "Built and shipped 6 REST APIs serving 40k daily users, cut latency 30%". Same job, completely different read. Share yours and I will give quick feedback.',
     photos: [], createdAt: ago(66 * MIN), upvotes: 44, views: 905,
     answers: [
       { id: 'a33', authorId: 'u_dipesh', anonymous: false, body: 'This reframed how I think about my whole CV. Posting mine — any feedback appreciated.', createdAt: ago(5.9 * D), upvotes: 8, replies: [
-        { id: 'r11', authorId: 'u_anil', anonymous: false, postedAsExpert: true, body: 'Good start — quantify the impact of your final-year project and move it above your part-time retail job. Recruiters scan the top third.', createdAt: ago(5.8 * D), upvotes: 12 },
+        { id: 'r11', authorId: 'u_anil', anonymous: false, body: 'Good start — quantify the impact of your final-year project and move it above your part-time retail job. Recruiters scan the top third.', createdAt: ago(5.8 * D), upvotes: 12 },
       ] },
       { id: 'a34', authorId: 'u_sabina', anonymous: false, body: 'Did this for my aged-care resume too — outcomes work even outside tech. More callbacks already.', createdAt: ago(5.7 * D), upvotes: 9, replies: [] },
     ],
   },
   {
-    id: 'q22', authorId: 'u_sangita', anonymous: false, category: 'real_estate', postedAsExpert: true,
+    id: 'q22', authorId: 'u_sangita', anonymous: false, category: 'real_estate',
     title: 'Breaking a lease in Victoria — what does it actually cost?',
     body: 'Tenants ask me this constantly. You are generally liable for reasonable re-letting costs and rent until a new tenant is found, not an arbitrary "X weeks penalty". Landlords must try to re-let promptly. Know your rights before you sign anything. Questions welcome.',
     photos: [], createdAt: ago(82 * MIN), upvotes: 21, views: 377,
     answers: [
       { id: 'a35', authorId: 'u_manish', anonymous: false, body: 'Wish I had known this last year — an agent tried to charge me a flat 6 weeks. Is that allowed?', createdAt: ago(6.5 * D), upvotes: 5, replies: [
-        { id: 'r12', authorId: 'u_sangita', anonymous: false, postedAsExpert: true, body: 'A fixed penalty like that is generally not enforceable for leases under the current rules — costs must be reasonable and itemised. Ask for the breakdown in writing and contact Consumer Affairs Victoria if they refuse.', createdAt: ago(6.4 * D), upvotes: 14 },
+        { id: 'r12', authorId: 'u_sangita', anonymous: false, body: 'A fixed penalty like that is generally not enforceable for leases under the current rules — costs must be reasonable and itemised. Ask for the breakdown in writing and contact Consumer Affairs Victoria if they refuse.', createdAt: ago(6.4 * D), upvotes: 14 },
       ] },
     ],
   },
