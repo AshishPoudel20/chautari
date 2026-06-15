@@ -96,7 +96,7 @@ export default function ProfileView({ userId, navigation, actions, showFollowers
       keyExtractor={(q) => q.id}
       ListHeaderComponent={header}
       renderItem={renderItem}
-      ListEmptyComponent={<EmptyState icon="📝" title="No posts yet" subtitle={userId === 'me' ? 'Questions you ask will show up here.' : 'This person has not posted publicly yet.'} />}
+      ListEmptyComponent={<EmptyState icon="📝" title="No posts yet" subtitle={userId === 'me' ? 'Questions you post will show up here.' : 'This person has not posted publicly yet.'} />}
       contentContainerStyle={{ paddingBottom: 40 }}
       initialNumToRender={6}
       windowSize={7}

@@ -41,8 +41,8 @@ export default function MyPostsScreen({ navigation }) {
           <EmptyState
             icon="✍️"
             title="No posts yet"
-            subtitle="Questions you ask will show up here."
-            action={{ label: 'Ask a question', onPress: openAsk }}
+            subtitle="Questions you post will show up here."
+            action={{ label: 'Post a question', onPress: openAsk }}
           />
         )}
       />

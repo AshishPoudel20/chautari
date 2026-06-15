@@ -30,7 +30,7 @@ const OFFICIAL_META = {
   loans: { name: 'Loans & Mortgages', handle: 'loans-mortgages', description: 'Home loans, refinancing and first-home buyer schemes.' },
   it_careers: { name: 'IT & Careers', handle: 'it-careers', description: 'Jobs, resumes, interviews and breaking into the local market.' },
   general: { name: 'Life in Australia', handle: 'life-australia', description: 'Settling in, culture, community and everyday life.' },
-  others: { name: 'Others', handle: 'others', description: 'Everything else — ask away.' },
+  others: { name: 'Others', handle: 'others', description: 'Everything else — post away.' },
 };
 
 const OFFICIAL_ACCENTS = ['crimson', 'saffron', 'teal', 'ocean', 'forest', 'plum', 'clay', 'slate'];

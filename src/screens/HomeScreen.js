@@ -182,8 +182,8 @@ export default function HomeScreen({ navigation }) {
               <EmptyState
                 icon="🌱"
                 title="The chautari is quiet"
-                subtitle="Be the first to ask. Someone in the community will know the answer."
-                action={{ label: 'Ask a question', onPress: openAsk }}
+                subtitle="Be the first to post. Someone in the community will know the answer."
+                action={{ label: 'Post a question', onPress: openAsk }}
               />
             )
           }
@@ -206,7 +206,7 @@ export default function HomeScreen({ navigation }) {
         onPress={openAsk}
       >
         <Text style={[styles.fabPlus, expertAtLimit && styles.fabTextMuted]}>＋</Text>
-        <Text style={[styles.fabText, expertAtLimit && styles.fabTextMuted]}>Ask</Text>
+        <Text style={[styles.fabText, expertAtLimit && styles.fabTextMuted]}>Post</Text>
       </Pressable>
     </SafeAreaView>
   );

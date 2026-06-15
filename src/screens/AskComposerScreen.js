@@ -298,7 +298,7 @@ export default function AskComposerScreen({ navigation, route }) {
         <View style={[styles.anonCard, postedAsExpert && styles.anonCardDisabled]}>
           <View style={styles.anonHeader}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.anonTitle}>Ask anonymously</Text>
+              <Text style={styles.anonTitle}>Post anonymously</Text>
               <Text style={styles.anonSub}>
                 {postedAsExpert
                   ? 'Not available when posting as a professional — your verified identity is shown.'

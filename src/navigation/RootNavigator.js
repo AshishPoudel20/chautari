@@ -151,7 +151,7 @@ function AppNavigator() {
             <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: 'Delete account' }} />
 
             <Stack.Group screenOptions={modalOptions}>
-              <Stack.Screen name="AskComposer" component={AskComposerScreen} options={{ title: 'Ask a question' }} />
+              <Stack.Screen name="AskComposer" component={AskComposerScreen} options={{ title: 'Post a question' }} />
               <Stack.Screen name="Report" component={ReportScreen} options={{ title: 'Report' }} />
               <Stack.Screen name="ImageViewer" component={ImageViewerScreen} options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }} />
               <Stack.Screen name="ProfilePhotoPreview" component={ProfilePhotoPreviewScreen} options={profilePhotoPreviewOptions} />

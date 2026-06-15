@@ -27,7 +27,7 @@ export default function SplashScreen() {
           <Text style={styles.logoEmoji}>🌳</Text>
         </View>
         <Text style={styles.wordmark}>Chautari</Text>
-        <Text style={styles.tag}>Ask. Answer. Belong.</Text>
+        <Text style={styles.tag}>Post. Answer. Belong.</Text>
       </Animated.View>
       <Animated.View style={{ opacity: motif, marginTop: 28 }}>
         <MotifBand count={9} color={colors.splashMotif} size={6} style={{ opacity: 0.35 }} />

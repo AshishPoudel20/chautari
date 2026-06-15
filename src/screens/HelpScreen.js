@@ -6,7 +6,7 @@ import { useTheme } from '../theme/ThemeContext';
 const FAQ = [
   {
     q: 'Is Chautari free to use?',
-    a: 'Yes. Asking questions, answering, following and browsing experts are all free. Verified experts may offer paid services off-platform, but the community Q&A is free.',
+    a: 'Yes. Posting questions, answering, following and browsing experts are all free. Verified experts may offer paid services off-platform, but the community Q&A is free.',
   },
   {
     q: 'How does anonymous posting work?',

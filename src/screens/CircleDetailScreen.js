@@ -263,10 +263,10 @@ export default function CircleDetailScreen({ navigation, route }) {
         ListEmptyComponent={(
           <EmptyState
             icon={circle.icon}
-            title="Be the first to ask"
+            title="Be the first to post"
             subtitle={`Start the conversation in ${circle.name}.`}
             action={{
-              label: `Ask in ${circle.name.split(' ')[0]}`,
+              label: `Post in ${circle.name.split(' ')[0]}`,
               onPress: () => navigate('AskComposer', { circleId }),
             }}
           />
@@ -282,7 +282,7 @@ export default function CircleDetailScreen({ navigation, route }) {
         style={({ pressed }) => [styles.fab, { backgroundColor: accent.color }, pressed && { opacity: 0.9 }]}
         onPress={() => navigate('AskComposer', { circleId })}
       >
-        <Text style={[styles.fabText, { color: accent.onAccent }]}>＋ Ask</Text>
+        <Text style={[styles.fabText, { color: accent.onAccent }]}>＋ Post</Text>
       </Pressable>
     </View>
   );

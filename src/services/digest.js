@@ -43,7 +43,7 @@ export function composeDigestSummary(state, circleById) {
   }
   if (expertAnswers > 0) parts.push(`${expertAnswers} expert answer${expertAnswers === 1 ? '' : 's'} in your circles`);
 
-  if (parts.length === 0) return 'Your circles are quiet today — perfect time to ask something new.';
+  if (parts.length === 0) return 'Your circles are quiet today — perfect time to post something new.';
   return `Your circles today: ${parts.join(', ')}.`;
 }
 
