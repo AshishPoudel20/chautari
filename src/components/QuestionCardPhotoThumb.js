@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { normalizePhotoUrls } from '../utils/photos';
+import { normalizeDisplayPhotoUrls } from '../utils/photos';
 
 /** Fixed square size for question card feed thumbnails (72–96px range). */
 export const QUESTION_CARD_THUMB_SIZE = 84;
@@ -9,7 +9,7 @@ export const QUESTION_CARD_THUMB_SIZE = 84;
 /** Decorative first-photo thumbnail for question cards — not a separate tap target. */
 export default function QuestionCardPhotoThumb({ photos, size = QUESTION_CARD_THUMB_SIZE }) {
   const { colors, radius, font } = useTheme();
-  const urls = normalizePhotoUrls(photos);
+  const urls = normalizeDisplayPhotoUrls(photos);
   const uri = urls[0];
   const extra = urls.length - 1;
   const [loaded, setLoaded] = useState(false);

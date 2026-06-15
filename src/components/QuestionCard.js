@@ -8,7 +8,7 @@ import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
 import { professionLabel } from '../data/categories';
-import { normalizePhotoUrls } from '../utils/photos';
+import { normalizeDisplayPhotoUrls } from '../utils/photos';
 
 function QuestionCard({
   question, author, circle, expert,
@@ -25,7 +25,7 @@ function QuestionCard({
   const rawAnswers = question.answers?.length || 0;
   const canOpenProfile = !!onAuthorPress && !question.anonymous && !a.anon;
   const skipCardPress = useRef(false);
-  const hasPhotos = normalizePhotoUrls(question.photos).length > 0;
+  const hasPhotos = normalizeDisplayPhotoUrls(question.photos).length > 0;
 
   const handleCardPress = () => {
     if (skipCardPress.current) {

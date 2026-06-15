@@ -11,7 +11,7 @@ import { useNetwork } from '../data/network';
 import { useImagePicker } from '../hooks/useImagePicker';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadExpertCredential } from '../services/mediaStorage';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import { isLocalPhotoUri, photoUrl, displayPhotoUrl } from '../utils/photos';
 
 export default function VerifiedApplicationScreen({ navigation }) {
   const { colors, spacing, font, radius } = useTheme();
@@ -87,7 +87,7 @@ export default function VerifiedApplicationScreen({ navigation }) {
     }
   };
 
-  const previewUri = photoUrl(credential);
+  const previewUri = displayPhotoUrl(credential, { allowLocal: true });
 
   return (
     <>

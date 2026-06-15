@@ -8,6 +8,7 @@ import {
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { computeKarmaForUser } from '../utils/karma';
 import { slugify, isCircleNameTaken } from './circles';
+import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { getSession, onAuthStateChange } from '../services/auth';
@@ -28,7 +29,11 @@ const sortQuestions = (list) => [...list].sort((a, b) => b.createdAt - a.created
 
 function normalizeQuestion(q) {
   const circleId = q.circleId || q.category;
-  return circleId ? { ...q, circleId } : q;
+  const base = circleId ? { ...q, circleId } : { ...q };
+  return {
+    ...base,
+    photos: sanitizePhotoUrlsForStorage(base.photos),
+  };
 }
 
 // Pull in new seed questions and refresh relative timestamps on every launch.
@@ -132,9 +137,10 @@ function reducer(state, action) {
         ...state,
         ...p,
         booted: true,
-        users: mergeUsers(p.users || []).map((u) =>
-          u.id === 'me' ? { ...u, isFoundingMember: u.isFoundingMember ?? true } : u
-        ),
+        users: mergeUsers(p.users || []).map((u) => {
+          const user = u.id === 'me' ? { ...u, isFoundingMember: u.isFoundingMember ?? true } : u;
+          return { ...user, photo: sanitizeProfilePhoto(user.photo) };
+        }),
         questions: mergeQuestions(p.questions || []),
         myUpvotes: {
           questions: [],
@@ -218,7 +224,12 @@ function reducer(state, action) {
     case 'UPDATE_PROFILE':
       return {
         ...state,
-        users: state.users.map((u) => (u.id === 'me' ? { ...u, ...action.patch } : u)),
+        users: state.users.map((u) => {
+          if (u.id !== 'me') return u;
+          const next = { ...u, ...action.patch };
+          if ('photo' in action.patch) next.photo = sanitizeProfilePhoto(action.patch.photo);
+          return next;
+        }),
       };
 
     case 'LOGOUT':
@@ -245,7 +256,7 @@ function reducer(state, action) {
         circleId: action.circleId,
         title: action.title.trim(),
         body: action.body.trim(),
-        photos: action.photos || [],
+        photos: sanitizePhotoUrlsForStorage(action.photos || []),
         createdAt: Date.now(),
         upvotes: 0,
         views: 0,

@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { Pressable, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { photoUrl } from '../utils/photos';
+import { displayPhotoUrl } from '../utils/photos';
 
 export default function ContentPhoto({ photo, onPress, size = 72 }) {
   const { colors, radius } = useTheme();
-  const uri = photoUrl(photo);
+  const uri = displayPhotoUrl(photo, { allowLocal: true });
   const styles = useMemo(() => createStyles(colors, radius, size), [colors, radius, size]);
   if (!uri) return null;
 

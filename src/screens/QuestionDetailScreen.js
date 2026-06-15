@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, Switch } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -9,6 +9,7 @@ import KarmaBadge from '../components/KarmaBadge';
 import ContentPhoto from '../components/ContentPhoto';
 import PhotoStrip from '../components/PhotoStrip';
 import PhotoSourceSheet from '../components/PhotoSourceSheet';
+import { CharCount } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
@@ -18,9 +19,13 @@ import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { uploadReplyPhoto } from '../services/mediaStorage';
-import { normalizePhotoUrls } from '../utils/photos';
+import { uploadAnswerPhoto, uploadReplyPhoto } from '../services/mediaStorage';
+import { normalizeDisplayPhotoUrls } from '../utils/photos';
 import { ENABLE_REPLY_PHOTOS } from '../constants/media';
+
+const ANSWER_BODY_MIN = 20;
+const ANSWER_BODY_MAX = 4000;
+const ANSWER_COMPOSER = '__answer__';
 
 // Renders text with visually distinct links (links allowed in answers/replies).
 function BodyText({ children, style, linkStyle }) {
@@ -40,7 +45,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state } = useSelectors();
   const showToast = useToast();
   const { online } = useNetwork();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
+  const { pickFromLibrary } = useImagePicker();
   const { navigate, goBack } = useNavigationGuard(navigation);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, line, shadow), [colors, spacing, font, radius, line, shadow]);
@@ -48,14 +53,21 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const isMine = question && isQuestionOwner(question);
   const saved = isSaved(questionId);
   const qUpvoted = hasUpvotedQuestion(questionId);
-  const [activeReplyCommentId, setActiveReplyCommentId] = useState(null);
+  const [activeBottomComposer, setActiveBottomComposer] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [replyPhoto, setReplyPhoto] = useState(null);
   const [replyPickerOpen, setReplyPickerOpen] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
+  const [answerText, setAnswerText] = useState('');
+  const [answerPhoto, setAnswerPhoto] = useState(null);
+  const [answerAnonymous, setAnswerAnonymous] = useState(false);
+  const [answerPickerOpen, setAnswerPickerOpen] = useState(false);
+  const [answerSubmitting, setAnswerSubmitting] = useState(false);
+  const answerSelection = useRef({ start: 0, end: 0 });
   const [sort, setSort] = useState('top'); // 'top' | 'new' — for community answers
   const scrollRef = useRef(null);
   const answerOffsets = useRef({});
+  const answersSectionY = useRef(0);
   const headerHeight = useHeaderHeight();
 
   const scrollToAnswer = useCallback((answerId) => {
@@ -66,30 +78,60 @@ export default function QuestionDetailScreen({ navigation, route }) {
     });
   }, []);
 
-  const cancelReply = useCallback(() => {
+  const scrollToAnswersSection = useCallback(() => {
+    if (!scrollRef.current) return;
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, answersSectionY.current - 12), animated: true });
+    });
+  }, []);
+
+  const cancelBottomComposer = useCallback(() => {
     Keyboard.dismiss();
-    setActiveReplyCommentId(null);
+    setActiveBottomComposer(null);
     setReplyText('');
     setReplyPhoto(null);
+    setAnswerText('');
+    setAnswerPhoto(null);
+    setAnswerAnonymous(false);
   }, []);
 
   const openReply = useCallback((answerId) => {
-    if (activeReplyCommentId === answerId) {
-      cancelReply();
+    if (activeBottomComposer === answerId) {
+      cancelBottomComposer();
       return;
     }
     setReplyText('');
     setReplyPhoto(null);
-    setActiveReplyCommentId(answerId);
+    setAnswerText('');
+    setAnswerPhoto(null);
+    setAnswerAnonymous(false);
+    setActiveBottomComposer(answerId);
     requestAnimationFrame(() => scrollToAnswer(answerId));
-  }, [activeReplyCommentId, cancelReply, scrollToAnswer]);
+  }, [activeBottomComposer, cancelBottomComposer, scrollToAnswer]);
+
+  const openAnswer = useCallback(() => {
+    if (activeBottomComposer === ANSWER_COMPOSER) {
+      cancelBottomComposer();
+      return;
+    }
+    setReplyText('');
+    setReplyPhoto(null);
+    setAnswerText('');
+    setAnswerPhoto(null);
+    setAnswerAnonymous(false);
+    setActiveBottomComposer(ANSWER_COMPOSER);
+    requestAnimationFrame(scrollToAnswersSection);
+  }, [activeBottomComposer, cancelBottomComposer, scrollToAnswersSection]);
 
   useEffect(() => {
-    if (!activeReplyCommentId) return undefined;
+    if (!activeBottomComposer) return undefined;
     const event = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(event, () => scrollToAnswer(activeReplyCommentId));
+    const sub = Keyboard.addListener(event, () => {
+      if (activeBottomComposer === ANSWER_COMPOSER) scrollToAnswersSection();
+      else scrollToAnswer(activeBottomComposer);
+    });
     return () => sub.remove();
-  }, [activeReplyCommentId, scrollToAnswer]);
+  }, [activeBottomComposer, scrollToAnswer, scrollToAnswersSection]);
 
   const openMenu = useCallback(() => {
     if (!question) return;
@@ -210,7 +252,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
       });
       setReplyText('');
       setReplyPhoto(null);
-      setActiveReplyCommentId(null);
+      setActiveBottomComposer(null);
       Keyboard.dismiss();
     } catch (e) {
       Alert.alert('Could not post reply', e?.message || 'Try again.');
@@ -224,8 +266,56 @@ export default function QuestionDetailScreen({ navigation, route }) {
     if (picked) setReplyPhoto({ uri: picked.uri });
   };
 
+  const pickAnswerPhoto = async (pickerFn) => {
+    const picked = await pickerFn();
+    if (picked) setAnswerPhoto({ uri: picked.uri });
+  };
+
+  const insertAnswerLink = () => {
+    const url = 'https://';
+    const pos = answerSelection.current.start;
+    setAnswerText((b) => b.slice(0, pos) + url + b.slice(pos));
+  };
+
+  const submitAnswer = async () => {
+    const len = answerText.trim().length;
+    if (len < ANSWER_BODY_MIN || len > ANSWER_BODY_MAX || answerSubmitting) return;
+    if (!online) {
+      Alert.alert('No connection', 'You’re offline. Reconnect to post your answer — your draft stays here.');
+      return;
+    }
+
+    const answerId = `a_${Date.now().toString(36)}`;
+    setAnswerSubmitting(true);
+    try {
+      let photoUrlValue = null;
+      if (ENABLE_REPLY_PHOTOS && answerPhoto?.uri) {
+        if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
+        photoUrlValue = await uploadAnswerPhoto(answerId, { uri: answerPhoto.uri });
+      }
+      await dispatch({
+        type: 'ADD_ANSWER',
+        questionId,
+        id: answerId,
+        body: answerText,
+        anonymous: answerAnonymous,
+        photoUrl: photoUrlValue,
+      });
+      setAnswerText('');
+      setAnswerPhoto(null);
+      setAnswerAnonymous(false);
+      setActiveBottomComposer(null);
+      Keyboard.dismiss();
+      showToast('Answer posted', { tone: 'success' });
+    } catch (e) {
+      Alert.alert('Could not post answer', e?.message || 'Try again.');
+    } finally {
+      setAnswerSubmitting(false);
+    }
+  };
+
   const openPhotoViewer = (photos, index = 0) => {
-    navigate('ImageViewer', { photos: normalizePhotoUrls(photos), index });
+    navigate('ImageViewer', { photos: normalizeDisplayPhotoUrls(photos), index });
   };
 
   const renderAnswer = (ans, isPinned) => {
@@ -305,7 +395,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
           );
         })}
 
-        {activeReplyCommentId === ans.id ? (
+        {activeBottomComposer === ans.id ? (
           <Text style={styles.replyingHint}>Replying below…</Text>
         ) : null}
       </View>
@@ -313,7 +403,64 @@ export default function QuestionDetailScreen({ navigation, route }) {
   };
 
   const renderBottomBar = () => {
-    if (activeReplyCommentId) {
+    if (activeBottomComposer === ANSWER_COMPOSER) {
+      const len = answerText.trim().length;
+      const valid = len >= ANSWER_BODY_MIN && len <= ANSWER_BODY_MAX;
+      return (
+        <View style={styles.stickyBottom}>
+          <View style={styles.composerToolbar}>
+            <Pressable style={styles.toolBtn} onPress={insertAnswerLink}>
+              <Text style={styles.toolBtnText}>🔗 Link</Text>
+            </Pressable>
+            <CharCount value={answerText} min={ANSWER_BODY_MIN} max={ANSWER_BODY_MAX} />
+          </View>
+          <TextInput
+            style={styles.answerInput}
+            placeholder="Share what you know from experience. Be kind and specific — links are welcome."
+            placeholderTextColor={colors.textFaint}
+            value={answerText}
+            onChangeText={setAnswerText}
+            onSelectionChange={(e) => { answerSelection.current = e.nativeEvent.selection; }}
+            multiline
+            autoFocus
+            maxLength={ANSWER_BODY_MAX + 50}
+            onFocus={scrollToAnswersSection}
+          />
+          <View style={styles.anonRowCompact}>
+            <Text style={styles.anonLabelCompact}>Answer anonymously</Text>
+            <Switch
+              value={answerAnonymous}
+              onValueChange={setAnswerAnonymous}
+              trackColor={{ true: colors.primary, false: colors.borderStrong }}
+              thumbColor={colors.onPrimary}
+            />
+          </View>
+          <View style={styles.replyComposer}>
+            {ENABLE_REPLY_PHOTOS ? (
+              <PhotoStrip
+                photos={answerPhoto ? [answerPhoto] : []}
+                maxCount={1}
+                onAdd={() => setAnswerPickerOpen(true)}
+                onRemove={() => setAnswerPhoto(null)}
+                tileSize={44}
+              />
+            ) : null}
+            <Pressable
+              onPress={submitAnswer}
+              disabled={!valid || answerSubmitting}
+              style={[styles.replySend, (!valid || answerSubmitting) && styles.replySendDisabled]}
+            >
+              <Text style={styles.replySendText}>{answerSubmitting ? '…' : 'Post'}</Text>
+            </Pressable>
+          </View>
+          <Pressable onPress={cancelBottomComposer} style={styles.replyCancelBtn} hitSlop={8}>
+            <Text style={styles.replyCancelText}>Cancel</Text>
+          </Pressable>
+        </View>
+      );
+    }
+
+    if (activeBottomComposer) {
       return (
         <View style={styles.stickyBottom}>
           <View style={styles.replyComposer}>
@@ -326,7 +473,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
               multiline
               autoFocus
               maxLength={1000}
-              onFocus={() => scrollToAnswer(activeReplyCommentId)}
+              onFocus={() => scrollToAnswer(activeBottomComposer)}
             />
             {ENABLE_REPLY_PHOTOS ? (
               <PhotoStrip
@@ -338,14 +485,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
               />
             ) : null}
             <Pressable
-              onPress={() => submitReply(activeReplyCommentId)}
+              onPress={() => submitReply(activeBottomComposer)}
               disabled={replyText.trim().length < 5 || replySubmitting}
               style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && styles.replySendDisabled]}
             >
               <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>
             </Pressable>
           </View>
-          <Pressable onPress={cancelReply} style={styles.replyCancelBtn} hitSlop={8}>
+          <Pressable onPress={cancelBottomComposer} style={styles.replyCancelBtn} hitSlop={8}>
             <Text style={styles.replyCancelText}>Cancel reply</Text>
           </Pressable>
         </View>
@@ -354,7 +501,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
     return (
       <View style={styles.footer}>
-        <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={() => navigate('AnswerComposer', { questionId })}>
+        <Pressable style={({ pressed }) => [styles.answerCta, pressed && { opacity: 0.9 }]} onPress={openAnswer}>
           <Text style={styles.answerCtaText}>✍️  Write an answer</Text>
         </Pressable>
       </View>
@@ -413,7 +560,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
           {question.photos?.length > 0 && (
             <View style={styles.photoRow}>
-              {normalizePhotoUrls(question.photos).map((uri, i) => (
+              {normalizeDisplayPhotoUrls(question.photos).map((uri, i) => (
                 <ContentPhoto
                   key={`${uri}-${i}`}
                   photo={uri}
@@ -435,8 +582,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
         </View>
 
         {/* Answers header + community sort */}
-        <View style={styles.answersHeader}>
+        <View
+          style={styles.answersHeader}
+          onLayout={(e) => { answersSectionY.current = e.nativeEvent.layout.y; }}
+        >
           <Text style={styles.answersTitle}>{totalAnswers} {totalAnswers === 1 ? 'Answer' : 'Answers'}</Text>
+          {activeBottomComposer === ANSWER_COMPOSER ? (
+            <Text style={styles.replyingHint}>Writing below…</Text>
+          ) : null}
           {community.length > 1 && (
             <View style={styles.sortToggle}>
               {[['top', 'Top'], ['new', 'Newest']].map(([k, lbl]) => (
@@ -467,9 +620,18 @@ export default function QuestionDetailScreen({ navigation, route }) {
           onClose={() => setReplyPickerOpen(false)}
           title="Add reply photo"
           showRemove={!!replyPhoto}
-          onCamera={() => pickReplyPhoto(takePhoto)}
           onLibrary={() => pickReplyPhoto(pickFromLibrary)}
           onRemove={() => setReplyPhoto(null)}
+        />
+      ) : null}
+      {ENABLE_REPLY_PHOTOS ? (
+        <PhotoSourceSheet
+          visible={answerPickerOpen}
+          onClose={() => setAnswerPickerOpen(false)}
+          title="Add answer photo"
+          showRemove={!!answerPhoto}
+          onLibrary={() => pickAnswerPhoto(pickFromLibrary)}
+          onRemove={() => setAnswerPhoto(null)}
         />
       ) : null}
     </>
@@ -506,7 +668,7 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   photoTile: { width: 72, height: 72, borderRadius: radius.md, backgroundColor: colors.primaryTint, alignItems: 'center', justifyContent: 'center' },
   qActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.lg },
   viewCount: { color: colors.textMuted, fontSize: font.caption, fontWeight: '600' },
-  answersHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
+  answersHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm },
   answersTitle: { fontSize: font.subtitle, fontWeight: '800', color: colors.text },
   sortToggle: { flexDirection: 'row', backgroundColor: colors.bgSunken, borderRadius: radius.pill, padding: 3 },
   sortBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: radius.pill },
@@ -574,6 +736,29 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   },
   replySendDisabled: { opacity: 0.4 },
   replySendText: { color: colors.onPrimary, fontWeight: '800', fontSize: font.caption },
+
+  composerToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
+  toolBtn: { backgroundColor: colors.primaryTint, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
+  toolBtnText: { color: colors.primary, fontWeight: '800', fontSize: font.tiny },
+  answerInput: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    minHeight: 72,
+    maxHeight: 140,
+    color: colors.text,
+    backgroundColor: colors.bg,
+    fontSize: font.body,
+    marginBottom: spacing.sm,
+  },
+  anonRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  anonLabelCompact: { fontSize: font.caption, fontWeight: '700', color: colors.text },
 
   footer: { padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface },
   answerCta: { backgroundColor: colors.primary, paddingVertical: 15, borderRadius: radius.md, alignItems: 'center', ...shadow.card },

@@ -16,7 +16,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, runAfterAlert } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
-import { photoUrl } from '../utils/photos';
+import { photoUrl, displayPhotoUrl } from '../utils/photos';
 
 const BANNER_EXPANDED = 196;
 const COLLAPSE_RANGE = 130;
@@ -145,7 +145,7 @@ export default function CircleDetailScreen({ navigation, route }) {
   }, [userById, circle, answerCount, expertAnswerOn, openQuestion, navigate]);
 
   const listHeader = useMemo(() => {
-    const bannerImage = photoUrl(circle?.imageUrl);
+    const bannerImage = displayPhotoUrl(circle?.imageUrl);
     return (
     <View>
       <Animated.View style={[styles.bannerShell, bannerStyle]}>

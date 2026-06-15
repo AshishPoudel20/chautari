@@ -1,13 +1,15 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { displayPhotoUrl } from '../utils/photos';
 
 // First-letter avatar fallback when there's no photo (per brief).
 // `anon` renders a neutral placeholder.
-export default function Avatar({ name, photo, anon, size = 44 }) {
+export default function Avatar({ name, photo, anon, size = 44, allowLocalPhoto = true }) {
   const { colors, colorForString } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const dim = { width: size, height: size, borderRadius: size / 2 };
+  const src = displayPhotoUrl(photo, { allowLocal: allowLocalPhoto });
   if (anon) {
     return (
       <View style={[styles.base, dim, { backgroundColor: colors.avatarPlaceholder }]}>
@@ -15,8 +17,8 @@ export default function Avatar({ name, photo, anon, size = 44 }) {
       </View>
     );
   }
-  if (photo) {
-    return <Image source={{ uri: photo }} style={[styles.base, dim]} />;
+  if (src) {
+    return <Image source={{ uri: src }} style={[styles.base, dim]} />;
   }
   const letter = (name || '?').trim().charAt(0).toUpperCase();
   return (

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { photoUrl } from '../utils/photos';
+import { displayPhotoUrl } from '../utils/photos';
 
 /**
  * Photo picker strip — local preview, upload spinner, remove, add tile.
@@ -25,7 +25,7 @@ export default function PhotoStrip({
   return (
     <View style={styles.row}>
       {photos.map((p, index) => {
-        const src = photoUrl(p) || p.uri;
+        const src = displayPhotoUrl(p, { allowLocal: true });
         const key = p.id || (src ? `${src}-${index}` : `photo-${index}`);
         return (
           <View key={key} style={styles.tileWrap}>

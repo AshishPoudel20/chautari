@@ -1,23 +1,72 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Pressable, useWindowDimensions } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  ScrollView,
+  Pressable,
+  useWindowDimensions,
+  Animated,
+  PanResponder,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
-import { normalizePhotoUrls, photoUrl } from '../utils/photos';
+import { photoUrl, displayPhotoUrl } from '../utils/photos';
+
+const DISMISS_DRAG = 100;
+const DISMISS_VELOCITY = 0.75;
 
 export default function ImageViewerScreen({ navigation, route }) {
   const { colors, spacing, font } = useTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const styles = useMemo(
     () => createStyles(colors, spacing, font, insets, width),
     [colors, spacing, font, insets, width],
   );
 
   const { photos = [], index = 0 } = route.params || {};
-  const items = normalizePhotoUrls(photos);
+  const items = normalizePhotoUrls(photos).map((uri) => displayPhotoUrl(uri, { allowLocal: true })).filter(Boolean);
+
+  const translateY = useRef(new Animated.Value(0)).current;
+  const backdropOpacity = translateY.interpolate({
+    inputRange: [0, height * 0.35],
+    outputRange: [1, 0.25],
+    extrapolate: 'clamp',
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => (
+        gesture.dy > 6 && Math.abs(gesture.dy) > Math.abs(gesture.dx)
+      ),
+      onPanResponderMove: (_, gesture) => {
+        if (gesture.dy > 0) translateY.setValue(gesture.dy);
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy > DISMISS_DRAG || gesture.vy > DISMISS_VELOCITY) {
+          Animated.timing(translateY, {
+            toValue: height,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => navigation.goBack());
+          return;
+        }
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 5,
+        }).start();
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateY, { toValue: 0, useNativeDriver: true }).start();
+      },
+    }),
+  ).current;
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: backdropOpacity }]}>
       <Pressable style={styles.close} onPress={() => navigation.goBack()} hitSlop={12}>
         <Text style={styles.closeText}>✕</Text>
       </Pressable>
@@ -26,27 +75,35 @@ export default function ImageViewerScreen({ navigation, route }) {
           <Text style={styles.emptyText}>No photos to show.</Text>
         </View>
       ) : (
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          contentOffset={{ x: index * width, y: 0 }}
-          style={{ flex: 1 }}
+        <Animated.View
+          style={[styles.viewer, { transform: [{ translateY }] }]}
+          {...panResponder.panHandlers}
         >
-          {items.map((uri, i) => (
-            <View key={`${uri}-${i}`} style={styles.page}>
-              <Image source={{ uri: photoUrl(uri) || uri }} style={styles.image} resizeMode="contain" />
-              <Text style={styles.caption}>Photo {i + 1} of {items.length}</Text>
-            </View>
-          ))}
-        </ScrollView>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: index * width, y: 0 }}
+            style={styles.pager}
+            scrollEventThrottle={16}
+          >
+            {items.map((uri, i) => (
+              <View key={`${uri}-${i}`} style={styles.page}>
+                <Image source={{ uri }} style={styles.image} resizeMode="contain" />
+                <Text style={styles.caption}>Photo {i + 1} of {items.length}</Text>
+              </View>
+            ))}
+          </ScrollView>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
 const createStyles = (colors, spacing, font, insets, width) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.imageViewerBg },
+  viewer: { flex: 1 },
+  pager: { flex: 1 },
   close: {
     position: 'absolute',
     top: insets.top + 8,

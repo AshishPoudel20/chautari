@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
-import { photoUrl } from '../utils/photos';
+import { displayPhotoUrl } from '../utils/photos';
 
 /** Single-image picker with preview, upload state, and remove. */
 export default function SinglePhotoPicker({
@@ -18,7 +18,7 @@ export default function SinglePhotoPicker({
     () => createStyles(colors, spacing, font, radius, aspectRatio),
     [colors, spacing, font, radius, aspectRatio],
   );
-  const src = photoUrl(photo) || photo?.uri;
+  const src = displayPhotoUrl(photo, { allowLocal: true });
 
   if (!src) {
     return (

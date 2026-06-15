@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { circleIconPresentation } from '../data/circles';
-import { photoUrl } from '../utils/photos';
+import { displayPhotoUrl } from '../utils/photos';
 
 const SIZES = {
   chip: { box: 22, font: 11, radius: 6 },
@@ -22,7 +22,7 @@ export default function CircleIcon({ circle, size = 'md', style }) {
     () => createStyles(dim, radius),
     [dim, radius],
   );
-  const imageSrc = photoUrl(circle?.imageUrl);
+  const imageSrc = displayPhotoUrl(circle?.imageUrl);
 
   if (!circle?.icon && !imageSrc) return null;
 

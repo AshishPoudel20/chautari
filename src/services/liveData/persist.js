@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
+import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
 import { isLiveQuestionId, makeId } from './ids';
 
 const SYNC_ACTIONS = new Set([
@@ -58,7 +59,7 @@ export async function persistAction(action, state, userId) {
         anonymous: !!action.anonymous,
         title: action.title.trim(),
         body: action.body.trim(),
-        photos: action.photos || [],
+        photos: sanitizePhotoUrlsForStorage(action.photos || []),
       });
       if (error) throw error;
       return action;
