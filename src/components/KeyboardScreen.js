@@ -12,9 +12,11 @@ export default function KeyboardScreen({
   edges = ['bottom'],
   style,
   contentStyle,
+  scrollStyle,
   scroll = true,
   keyboardOffset,
   safe = true,
+  scrollRef,
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -23,7 +25,8 @@ export default function KeyboardScreen({
 
   const body = scroll ? (
     <ScrollView
-      style={footer ? styles.scroll : undefined}
+      ref={scrollRef}
+      style={[footer ? styles.scroll : undefined, scrollStyle]}
       contentContainerStyle={[styles.content, contentStyle]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
@@ -37,7 +40,7 @@ export default function KeyboardScreen({
 
   const inner = (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       style={styles.fill}
       keyboardVerticalOffset={offset}
     >

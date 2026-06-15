@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, Switch } from 'react-native';
-import { useHeaderHeight } from '@react-navigation/elements';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, Keyboard, Switch } from 'react-native';
+import KeyboardScreen from '../components/KeyboardScreen';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import UpvoteButton from '../components/UpvoteButton';
@@ -72,7 +72,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const scrollRef = useRef(null);
   const answerOffsets = useRef({});
   const answersSectionY = useRef(0);
-  const headerHeight = useHeaderHeight();
   const pendingProfessionalReply = useRef(false);
 
   const scrollToAnswer = useCallback((answerId) => {
@@ -460,18 +459,28 @@ export default function QuestionDetailScreen({ navigation, route }) {
             </Pressable>
             <CharCount value={answerText} min={ANSWER_BODY_MIN} max={ANSWER_BODY_MAX} />
           </View>
-          <TextInput
-            style={styles.answerInput}
-            placeholder="Share what you know from experience. Be kind and specific — links are welcome."
-            placeholderTextColor={colors.textFaint}
-            value={answerText}
-            onChangeText={setAnswerText}
-            onSelectionChange={(e) => { answerSelection.current = e.nativeEvent.selection; }}
-            multiline
-            autoFocus
-            maxLength={ANSWER_BODY_MAX + 50}
-            onFocus={scrollToAnswersSection}
-          />
+          <View style={styles.replyComposer}>
+            <TextInput
+              style={styles.answerInputInline}
+              placeholder="Share what you know from experience. Be kind and specific — links are welcome."
+              placeholderTextColor={colors.textFaint}
+              value={answerText}
+              onChangeText={setAnswerText}
+              onSelectionChange={(e) => { answerSelection.current = e.nativeEvent.selection; }}
+              multiline
+              autoFocus
+              maxLength={ANSWER_BODY_MAX + 50}
+              onFocus={scrollToAnswersSection}
+            />
+            <Pressable
+              onPress={submitAnswer}
+              disabled={!valid || answerSubmitting}
+              style={[styles.replySend, (!valid || answerSubmitting) && styles.replySendDisabled]}
+              accessibilityLabel="Send answer"
+            >
+              <Text style={styles.replySendText}>{answerSubmitting ? '…' : 'Send'}</Text>
+            </Pressable>
+          </View>
           <View style={styles.anonRowCompact}>
             <Text style={styles.anonLabelCompact}>Answer anonymously</Text>
             <Switch
@@ -481,24 +490,15 @@ export default function QuestionDetailScreen({ navigation, route }) {
               thumbColor={colors.onPrimary}
             />
           </View>
-          <View style={styles.replyComposer}>
-            {ENABLE_REPLY_PHOTOS ? (
-              <PhotoStrip
-                photos={answerPhoto ? [answerPhoto] : []}
-                maxCount={1}
-                onAdd={() => setAnswerPickerOpen(true)}
-                onRemove={() => setAnswerPhoto(null)}
-                tileSize={44}
-              />
-            ) : null}
-            <Pressable
-              onPress={submitAnswer}
-              disabled={!valid || answerSubmitting}
-              style={[styles.replySend, (!valid || answerSubmitting) && styles.replySendDisabled]}
-            >
-              <Text style={styles.replySendText}>{answerSubmitting ? '…' : 'Post'}</Text>
-            </Pressable>
-          </View>
+          {ENABLE_REPLY_PHOTOS ? (
+            <PhotoStrip
+              photos={answerPhoto ? [answerPhoto] : []}
+              maxCount={1}
+              onAdd={() => setAnswerPickerOpen(true)}
+              onRemove={() => setAnswerPhoto(null)}
+              tileSize={44}
+            />
+          ) : null}
           <Pressable onPress={cancelBottomComposer} style={styles.replyCancelBtn} hitSlop={8}>
             <Text style={styles.replyCancelText}>Cancel</Text>
           </Pressable>
@@ -544,6 +544,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
               onPress={() => submitReply(activeBottomComposer)}
               disabled={replyText.trim().length < 5 || replySubmitting}
               style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && styles.replySendDisabled]}
+              accessibilityLabel="Send reply"
             >
               <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>
             </Pressable>
@@ -566,18 +567,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   return (
     <>
-    <KeyboardAvoidingView
+    <KeyboardScreen
+      safe={false}
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
+      scrollStyle={styles.scroll}
+      contentStyle={styles.scrollContent}
+      scrollRef={scrollRef}
+      footer={renderBottomBar()}
     >
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="interactive"
-      >
         {justPosted && (
           <View style={styles.postedBanner}>
             <Text style={styles.postedText}>🌿 Your question is live — the community can answer it now.</Text>
@@ -665,10 +662,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
         {pinned.map((a) => renderAnswer(a, true))}
         {community.map((a) => renderAnswer(a, false))}
-      </ScrollView>
-
-      {renderBottomBar()}
-    </KeyboardAvoidingView>
+    </KeyboardScreen>
 
       {ENABLE_REPLY_PHOTOS ? (
         <PhotoSourceSheet
@@ -797,17 +791,18 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   composerToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
   toolBtn: { backgroundColor: colors.primaryTint, paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill },
   toolBtnText: { color: colors.primary, fontWeight: '800', fontSize: font.tiny },
-  answerInput: {
+  answerInputInline: {
+    flex: 1,
+    minWidth: 0,
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: radius.md,
     padding: spacing.sm,
-    minHeight: 72,
-    maxHeight: 140,
+    minHeight: 42,
+    maxHeight: 120,
     color: colors.text,
     backgroundColor: colors.bg,
     fontSize: font.body,
-    marginBottom: spacing.sm,
   },
   anonRowCompact: {
     flexDirection: 'row',
