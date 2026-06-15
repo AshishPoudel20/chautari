@@ -1,5 +1,6 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, Animated, Easing, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
 import KeyboardScreen from '../components/KeyboardScreen';
 import Button from '../components/Button';
@@ -8,6 +9,7 @@ import PhotoSourceSheet from '../components/PhotoSourceSheet';
 import { Field, Input, CharCount } from '../components/ui';
 import ExpertPostQuota from '../components/ExpertPostQuota';
 import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
+import ExpertProfessionalConfirm from '../components/ExpertProfessionalConfirm';
 import CircleChip from '../components/CircleChip';
 import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
@@ -19,9 +21,7 @@ import { uploadQuestionPhotos } from '../services/mediaStorage';
 import { needsPhotoUpload, photoUrl } from '../utils/photos';
 import { MAX_QUESTION_PHOTOS } from '../constants/media';
 import {
-  canPostAsProfessional,
-  resolveExpertCircleId,
-  snapshotProfessionLabel,
+  hasExpertProfessionalProfile,
 } from '../utils/expertPost';
 
 const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000;
@@ -33,7 +33,7 @@ export default function AskComposerScreen({ navigation, route }) {
   const { dispatch } = useData();
   const { me, canExpertPostToday, joinedCirclesList, state, circleById, isJoinedCircle } = useSelectors();
   const { online } = useNetwork();
-  const { replace } = useNavigationGuard(navigation);
+  const { replace, navigate } = useNavigationGuard(navigation);
   const { pickFromLibrary } = useImagePicker();
   const user = me();
   const [title, setTitle] = useState('');
@@ -47,19 +47,19 @@ export default function AskComposerScreen({ navigation, route }) {
   const [touched, setTouched] = useState(false);
   const [posting, setPosting] = useState(false);
   const success = useRef(new Animated.Value(0)).current;
+  const pendingProfessional = useRef(false);
 
   const postedAsExpert = postMode === 'professional';
-  const badgeTitle = snapshotProfessionLabel(user);
-  const professionalCircleId = resolveExpertCircleId(user);
-  const professionalCircle = circleById(professionalCircleId);
-  const effectiveCircleId = postedAsExpert ? professionalCircleId : circleId;
+  const expertCircle = postedAsExpert ? circleById(user?.expertCircleId) : null;
+  const badgeTitle = user?.expertBadgeTitle?.trim() || null;
+  const effectiveCircleId = postedAsExpert ? user?.expertCircleId : circleId;
   const selectedCircle = circleById(effectiveCircleId);
-  const canProfessional = canPostAsProfessional(user);
+  const showProConfirm = postedAsExpert && hasExpertProfessionalProfile(user);
 
   const titleOk = title.trim().length >= TITLE_MIN && title.trim().length <= TITLE_MAX;
   const bodyOk = body.trim().length >= BODY_MIN && body.trim().length <= BODY_MAX;
   const atDailyLimit = user?.verified && !canExpertPostToday();
-  const circleOk = postedAsExpert ? canProfessional : !!circleId;
+  const circleOk = postedAsExpert ? hasExpertProfessionalProfile(user) : !!circleId;
   const valid = titleOk && bodyOk && circleOk && !atDailyLimit;
 
   const circleOptions = useMemo(() => {
@@ -71,9 +71,22 @@ export default function AskComposerScreen({ navigation, route }) {
     return [...filter(joined), ...filter(rest)];
   }, [joinedCirclesList, state.circles, circleQuery]);
 
+  useFocusEffect(useCallback(() => {
+    const u = me();
+    if (pendingProfessional.current && hasExpertProfessionalProfile(u)) {
+      pendingProfessional.current = false;
+      setPostMode('professional');
+      setAnonymous(false);
+    }
+  }, [state.users]));
+
   const handlePostModeChange = (mode) => {
     if (mode === 'professional') {
-      if (!canProfessional) return;
+      if (!hasExpertProfessionalProfile(user)) {
+        pendingProfessional.current = true;
+        navigate('ExpertProfessionalSetup');
+        return;
+      }
       setPostMode('professional');
       setAnonymous(false);
       return;
@@ -162,6 +175,11 @@ export default function AskComposerScreen({ navigation, route }) {
       );
       return;
     }
+    if (postedAsExpert && !hasExpertProfessionalProfile(user)) {
+      pendingProfessional.current = true;
+      navigate('ExpertProfessionalSetup');
+      return;
+    }
     if (!valid || posting) return;
     if (!online) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your question — your draft stays here.');
@@ -185,7 +203,7 @@ export default function AskComposerScreen({ navigation, route }) {
         anonymous,
         photos: photoUrls,
         postedAsExpert: user?.verified ? postedAsExpert : undefined,
-        professionLabel: user?.verified && postedAsExpert ? snapshotProfessionLabel(user) : undefined,
+        professionLabel: user?.verified && postedAsExpert ? badgeTitle : undefined,
       });
       Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
@@ -233,13 +251,11 @@ export default function AskComposerScreen({ navigation, route }) {
         </Field>
 
         {user?.verified ? (
-          <ExpertPostModeToggle
-            mode={postMode}
-            onChange={handlePostModeChange}
-            professionLabel={badgeTitle}
-            professionalCircleName={professionalCircle?.name}
-            canProfessional={canProfessional}
-          />
+          <ExpertPostModeToggle mode={postMode} onChange={handlePostModeChange} />
+        ) : null}
+
+        {showProConfirm ? (
+          <ExpertProfessionalConfirm circleName={expertCircle?.name} badgeTitle={badgeTitle} />
         ) : null}
 
         {!postedAsExpert ? (
@@ -267,11 +283,6 @@ export default function AskComposerScreen({ navigation, route }) {
               ))}
             </View>
           </Field>
-        ) : postedAsExpert && professionalCircle ? (
-          <View style={styles.proAutoFill}>
-            <CircleChip circle={professionalCircle} compact showOfficial />
-            <Text style={styles.proAutoFillText}>Circle from your verification — not editable here.</Text>
-          </View>
         ) : null}
 
         <Field label={`Photos · optional · up to ${MAX_QUESTION_PHOTOS}`}>
@@ -310,7 +321,7 @@ export default function AskComposerScreen({ navigation, route }) {
             <Avatar name={previewName} anon={anonymous} size={34} />
             <View style={{ marginLeft: spacing.sm, flex: 1 }}>
               <Text style={styles.previewName}>{previewName}</Text>
-              {postedAsExpert ? (
+              {postedAsExpert && badgeTitle ? (
                 <Text style={styles.previewProfession}>{badgeTitle}</Text>
               ) : null}
               <Text style={styles.previewMeta}>
@@ -348,19 +359,6 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   chips: { gap: spacing.xs },
   selectedMark: { fontSize: font.tiny, color: colors.primary, fontWeight: '800', marginTop: 4, marginLeft: 4 },
   joinHint: { fontSize: font.tiny, color: colors.textFaint, marginTop: 2, marginLeft: 4 },
-  proAutoFill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-    padding: spacing.md,
-    backgroundColor: colors.bgSunken,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  proAutoFillText: { flex: 1, fontSize: font.caption, color: colors.textMuted, lineHeight: 18 },
   anonCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border, ...shadow.card },
   anonCardDisabled: { opacity: 0.92 },
   anonHeader: { flexDirection: 'row', alignItems: 'center' },
