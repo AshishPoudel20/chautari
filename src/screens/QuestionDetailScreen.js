@@ -15,6 +15,8 @@ import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useNavigationGuard, runAfterAlert } from '../utils/navigation';
 import { professionLabel } from '../data/categories';
+import { isPostedAsExpert, showExpertReplyToggle } from '../utils/expertPosting';
+import ExpertPostingToggle from '../components/ExpertPostingToggle';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
@@ -42,7 +44,7 @@ function BodyText({ children, style, linkStyle }) {
 export default function QuestionDetailScreen({ navigation, route }) {
   const { questionId, justPosted } = route.params;
   const { dispatch } = useData();
-  const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state } = useSelectors();
+  const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state, me } = useSelectors();
   const showToast = useToast();
   const { online } = useNetwork();
   const { pickFromLibrary } = useImagePicker();
@@ -58,6 +60,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const [replyPhoto, setReplyPhoto] = useState(null);
   const [replyPickerOpen, setReplyPickerOpen] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
+  const [replyPostedAsExpert, setReplyPostedAsExpert] = useState(false);
   const [answerText, setAnswerText] = useState('');
   const [answerPhoto, setAnswerPhoto] = useState(null);
   const [answerAnonymous, setAnswerAnonymous] = useState(false);
@@ -90,6 +93,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     setActiveBottomComposer(null);
     setReplyText('');
     setReplyPhoto(null);
+    setReplyPostedAsExpert(false);
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -102,6 +106,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     setReplyText('');
     setReplyPhoto(null);
+    setReplyPostedAsExpert(false);
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -116,6 +121,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
     }
     setReplyText('');
     setReplyPhoto(null);
+    setReplyPostedAsExpert(false);
     setAnswerText('');
     setAnswerPhoto(null);
     setAnswerAnonymous(false);
@@ -214,7 +220,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const qAuthor = displayAuthor(userById(question.authorId), question.anonymous);
   const qAuthorUser = userById(question.authorId);
   const circle = circleById(question.circleId);
-  const isExpertPost = qAuthor.verified && !question.anonymous;
+  const isExpertPost = isPostedAsExpert(question);
+  const canReplyAsProfessional = showExpertReplyToggle(me(), question.circleId);
   const totalAnswers = question.answers.length;
 
   const goToProfile = (authorId, anonymous) => {
@@ -248,10 +255,12 @@ export default function QuestionDetailScreen({ navigation, route }) {
         id: replyId,
         body: replyText,
         anonymous: false,
+        postedAsExpert: canReplyAsProfessional && replyPostedAsExpert,
         photoUrl: photoUrlValue,
       });
       setReplyText('');
       setReplyPhoto(null);
+      setReplyPostedAsExpert(false);
       setActiveBottomComposer(null);
       Keyboard.dismiss();
     } catch (e) {
@@ -371,11 +380,11 @@ export default function QuestionDetailScreen({ navigation, route }) {
         {(ans.replies || []).map((r) => {
           const rAuthor = displayAuthor(userById(r.authorId), r.anonymous);
           return (
-            <View key={r.id} style={styles.reply}>
+            <View key={r.id} style={[styles.reply, isPostedAsExpert(r) && styles.replyExpert]}>
               <Pressable style={styles.replyHead} onPress={() => goToProfile(r.authorId, r.anonymous)}>
                 <Avatar name={rAuthor.name} photo={rAuthor.photo} anon={rAuthor.anon} size={24} />
                 <Text style={styles.replyAuthor}>{rAuthor.name}</Text>
-                {rAuthor.verified ? <VerifiedBadge compact /> : null}
+                {isPostedAsExpert(r) ? <VerifiedBadge compact /> : null}
                 <Text style={styles.metaTiny}>· {timeAgo(r.createdAt)}</Text>
               </Pressable>
               <BodyText style={styles.replyBody} linkStyle={styles.link}>{r.body}</BodyText>
@@ -463,6 +472,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
     if (activeBottomComposer) {
       return (
         <View style={styles.stickyBottom}>
+          {canReplyAsProfessional ? (
+            <View style={styles.replyIdentity}>
+              <ExpertPostingToggle
+                value={replyPostedAsExpert}
+                onChange={setReplyPostedAsExpert}
+              />
+            </View>
+          ) : null}
           <View style={styles.replyComposer}>
             <TextInput
               style={styles.replyInput}
@@ -550,7 +567,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
             <View style={{ marginLeft: spacing.sm, flex: 1 }}>
               <View style={styles.nameRow}>
                 <Text style={styles.authorName}>{qAuthor.name}</Text>
-                {qAuthor.verified ? <VerifiedBadge compact /> : null}
+                {isExpertPost ? <VerifiedBadge compact /> : null}
               </View>
               <Text style={styles.metaText}>{qAuthor.suburb ? `${qAuthor.suburb} · ` : ''}{timeAgo(question.createdAt)}</Text>
             </View>
@@ -690,6 +707,11 @@ const createStyles = (colors, spacing, font, radius, line, shadow) => StyleSheet
   reportBtn: { color: colors.textFaint, fontSize: font.caption, fontWeight: '600' },
 
   reply: { marginTop: spacing.md, marginLeft: spacing.md, paddingLeft: spacing.md, borderLeftWidth: 2, borderLeftColor: colors.border },
+  replyExpert: { borderLeftColor: colors.secondaryDark, backgroundColor: colors.secondaryTint, borderRadius: radius.sm, paddingVertical: spacing.xs },
+  replyIdentity: {
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
   replyHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   replyAuthor: { fontWeight: '800', color: colors.text, fontSize: font.tiny },
   replyBody: { fontSize: font.caption, color: colors.text, lineHeight: 20, marginTop: 4 },

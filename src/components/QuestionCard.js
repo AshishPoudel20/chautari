@@ -8,6 +8,7 @@ import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';
 import { useTheme } from '../theme/ThemeContext';
 import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
 import { professionLabel } from '../data/categories';
+import { isPostedAsExpert } from '../utils/expertPosting';
 import { normalizeDisplayPhotoUrls } from '../utils/photos';
 
 function QuestionCard({
@@ -20,7 +21,7 @@ function QuestionCard({
   const styles = useMemo(() => createStyles(colors, shadow, spacing, radius, font), [colors, shadow, spacing, radius, font]);
 
   const a = displayAuthor(author, question.anonymous);
-  const isExpertPost = !!author?.verified && !question.anonymous;
+  const isExpertPost = isPostedAsExpert(question);
   const hasExpertAnswer = !!expert;
   const rawAnswers = question.answers?.length || 0;
   const canOpenProfile = !!onAuthorPress && !question.anonymous && !a.anon;
