@@ -51,8 +51,8 @@ async function ensureCameraPermission() {
 }
 
 async function prepareAsset(asset) {
-  const prepared = await prepareImageForUpload(asset);
-  return { asset, ...prepared };
+  const prepared = await prepareImageForUpload(assetPayload(asset) || asset);
+  return { ...assetPayload(asset), ...prepared };
 }
 
 const PROFILE_PICKER_OPTIONS = {
@@ -61,11 +61,23 @@ const PROFILE_PICKER_OPTIONS = {
   aspect: [1, 1],
   quality: 1,
   exif: false,
+  base64: true,
 };
 
+function assetPayload(asset) {
+  if (!asset?.uri) return null;
+  return {
+    uri: asset.uri,
+    base64: asset.base64,
+    width: asset.width,
+    height: asset.height,
+    mimeType: asset.mimeType,
+  };
+}
+
 function profilePickResult(result) {
-  if (result.canceled || !result.assets?.[0]?.uri) return null;
-  return { uri: result.assets[0].uri };
+  if (result.canceled || !result.assets?.[0]) return null;
+  return assetPayload(result.assets[0]);
 }
 
 export function useImagePicker() {
@@ -82,6 +94,7 @@ export function useImagePicker() {
         allowsEditing: false,
         quality: 1,
         exif: false,
+        base64: true,
         allowsMultipleSelection: multi,
         selectionLimit: multi ? selectionLimit : 1,
       });
@@ -111,30 +124,6 @@ export function useImagePicker() {
     }
   }, []);
 
-  const takePhoto = useCallback(async () => {
-    if (!(await ensureCameraPermission())) return null;
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 1,
-        exif: false,
-        cameraType: ImagePicker.CameraType.back,
-      });
-      if (result.canceled || !result.assets?.[0]) return null;
-      try {
-        return await prepareAsset(result.assets[0]);
-      } catch (e) {
-        Alert.alert('Photo not added', e?.message || 'Could not use that image.');
-        return null;
-      }
-    } catch (e) {
-      Alert.alert('Could not open camera', e?.message || 'Try again.');
-      return null;
-    }
-  }, []);
-
   /** Profile photo only — native square crop, no compression until upload confirm. */
   const pickProfileFromLibrary = useCallback(async () => {
     if (!(await ensureMediaLibraryPermission())) return null;
@@ -147,6 +136,7 @@ export function useImagePicker() {
     }
   }, []);
 
+  /** Profile photo only — native square crop via front camera. */
   const takeProfilePhoto = useCallback(async () => {
     if (!(await ensureCameraPermission())) return null;
     try {
@@ -161,5 +151,5 @@ export function useImagePicker() {
     }
   }, []);
 
-  return { pickFromLibrary, takePhoto, pickProfileFromLibrary, takeProfilePhoto };
+  return { pickFromLibrary, pickProfileFromLibrary, takeProfilePhoto };
 }

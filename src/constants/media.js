@@ -18,6 +18,7 @@ export const MEDIA_PATH_PREFIX = {
   CIRCLE: 'circles',
   ANSWER: 'answers',
   REPLY: 'replies',
+  CREDENTIAL: 'credentials',
 };
 
 /** Diameter used on My Profile, Edit Profile, and the photo preview confirm screen. */

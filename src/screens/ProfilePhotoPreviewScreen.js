@@ -1,33 +1,55 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { StackActions } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import { useTheme } from '../theme/ThemeContext';
 import { PROFILE_AVATAR_SIZE } from '../constants/media';
+import { prepareImageForUpload } from '../services/mediaStorage';
 
-/** Crop confirm only — returns the local cropped URI; upload happens on Edit Profile Save (or onboarding Finish). */
+/** Crop confirm only — stages to file:// JPEG; upload happens on Edit Profile Save (or onboarding Finish). */
 export default function ProfilePhotoPreviewScreen({ navigation, route }) {
-  const { localUri, displayName, returnScreen } = route.params || {};
+  const {
+    localUri,
+    base64,
+    mimeType,
+    width,
+    height,
+    displayName,
+    returnScreen,
+  } = route.params || {};
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(
     () => createStyles(colors, spacing, font, radius, shadow),
     [colors, spacing, font, radius, shadow],
   );
+  const [staging, setStaging] = useState(false);
 
   const returnWithParams = (params) => {
     if (!returnScreen) {
       navigation.goBack();
       return;
     }
-    // navigate() from a modal can push a duplicate return screen, leaving preview in the stack
-    // so Save's goBack() lands on preview again — popTo dismisses the modal and merges params.
     navigation.dispatch(StackActions.popTo(returnScreen, params, { merge: true }));
   };
 
-  const usePhoto = () => {
-    if (!localUri) return;
-    returnWithParams({ confirmedLocalUri: localUri });
+  const usePhoto = async () => {
+    if (!localUri || staging) return;
+    setStaging(true);
+    try {
+      const prepared = await prepareImageForUpload({
+        uri: localUri,
+        base64,
+        mimeType,
+        width,
+        height,
+      });
+      returnWithParams({ confirmedLocalUri: prepared.uri });
+    } catch (e) {
+      Alert.alert('Could not use photo', e?.message || 'Try again.');
+    } finally {
+      setStaging(false);
+    }
   };
 
   const retake = () => {
@@ -44,7 +66,7 @@ export default function ProfilePhotoPreviewScreen({ navigation, route }) {
       </View>
 
       <View style={styles.actions}>
-        <Button title="Use photo" onPress={usePhoto} />
+        <Button title={staging ? 'Preparing…' : 'Use photo'} onPress={usePhoto} disabled={staging} />
         <Button
           title="Retake / Choose another"
           variant="secondary"

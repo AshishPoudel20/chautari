@@ -31,7 +31,7 @@ Real image pick → compress (HEIC→JPEG) → upload → public URL → render 
 
 **Bucket:** public `media` — see [`supabase/migrations/006_storage_media.sql`](supabase/migrations/006_storage_media.sql) and [`supabase/README.md`](supabase/README.md).
 
-**Client:** `expo-image-picker` + `expo-image-manipulator`; uploads via `fetch(uri).arrayBuffer()` in `src/services/mediaStorage.js` (React Native–safe). Requires signed-in Supabase user.
+**Client:** `expo-image-picker` + `expo-image-manipulator`; all uploads go through `uploadImageAsset()` in `src/services/mediaStorage.js` (stage blob/crop URIs → `file://` JPEG → expo-file-system base64 → ArrayBuffer → Supabase Storage). Never `fetch(blob:)`. Requires signed-in Supabase user.
 
 **Profile photo flow:** chooser → native square crop (`allowsEditing` + `aspect: [1, 1]`) → `ProfilePhotoPreview` screen (circular `Avatar` at 88pt) → upload on confirm. Question/circle/answer flows skip preview/crop.
 

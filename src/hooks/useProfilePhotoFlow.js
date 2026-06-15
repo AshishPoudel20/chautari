@@ -21,9 +21,13 @@ export function useProfilePhotoFlow(navigation, route, { displayName, onPhotoCon
     }, [navigation, route.params?.confirmedLocalUri, route.params?.retakePhoto, onPhotoConfirmed]),
   );
 
-  const openPreview = useCallback((localUri) => {
+  const openPreview = useCallback((picked) => {
     navigation.navigate('ProfilePhotoPreview', {
-      localUri,
+      localUri: picked.uri,
+      base64: picked.base64,
+      mimeType: picked.mimeType,
+      width: picked.width,
+      height: picked.height,
       displayName,
       returnScreen: route.name,
     });
@@ -31,7 +35,7 @@ export function useProfilePhotoFlow(navigation, route, { displayName, onPhotoCon
 
   const pickPhoto = useCallback(async (pickerFn) => {
     const picked = await pickerFn();
-    if (picked?.uri) openPreview(picked.uri);
+    if (picked?.uri) openPreview(picked);
   }, [openPreview]);
 
   return {

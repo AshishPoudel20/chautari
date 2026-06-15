@@ -15,7 +15,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadQuestionPhotos } from '../services/mediaStorage';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import { isLocalPhotoUri, needsPhotoUpload, photoUrl } from '../utils/photos';
 import { MAX_QUESTION_PHOTOS } from '../constants/media';
 
 const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000;
@@ -28,7 +28,7 @@ export default function AskComposerScreen({ navigation, route }) {
   const { me, canExpertPostToday, joinedCirclesList, state, circleById, isJoinedCircle } = useSelectors();
   const { online } = useNetwork();
   const { replace } = useNavigationGuard(navigation);
-  const { pickFromLibrary, takePhoto } = useImagePicker();
+  const { pickFromLibrary } = useImagePicker();
   const user = me();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -64,6 +64,10 @@ export default function AskComposerScreen({ navigation, route }) {
     const toAdd = items.slice(0, room).map((item, i) => ({
       id: `ph_${Date.now()}_${i}`,
       uri: item.uri,
+      base64: item.base64,
+      mimeType: item.mimeType,
+      width: item.width,
+      height: item.height,
     }));
     if (toAdd.length) setPhotos((p) => [...p, ...toAdd]);
   };
@@ -80,7 +84,7 @@ export default function AskComposerScreen({ navigation, route }) {
   const removePhoto = (id) => setPhotos((arr) => arr.filter((x) => x.id !== id));
 
   const uploadAllPhotos = async (questionId) => {
-    const pending = photos.filter((p) => isLocalPhotoUri(p.uri) && !photoUrl(p));
+    const pending = photos.filter((p) => needsPhotoUpload(p));
     if (!pending.length) return photos.map(photoUrl).filter(Boolean);
 
     if (!isSupabaseConfigured()) {
@@ -92,7 +96,13 @@ export default function AskComposerScreen({ navigation, route }) {
     )));
 
     try {
-      const assets = pending.map((p) => ({ uri: p.uri }));
+      const assets = pending.map((p) => ({
+        uri: p.uri,
+        base64: p.base64,
+        mimeType: p.mimeType,
+        width: p.width,
+        height: p.height,
+      }));
       const urls = await uploadQuestionPhotos(questionId, assets);
       let urlIdx = 0;
       const merged = photos.map((p) => {
@@ -133,7 +143,7 @@ export default function AskComposerScreen({ navigation, route }) {
     setPosting(true);
     try {
       let photoUrls = photos.map(photoUrl).filter(Boolean);
-      if (photos.some((p) => isLocalPhotoUri(p.uri) && !photoUrl(p))) {
+      if (photos.some((p) => needsPhotoUpload(p))) {
         photoUrls = await uploadAllPhotos(id);
       }
       await dispatch({ type: 'ASK_QUESTION', id, title, body, circleId, anonymous, photos: photoUrls });
@@ -250,7 +260,6 @@ export default function AskComposerScreen({ navigation, route }) {
         visible={pickerOpen}
         onClose={() => setPickerOpen(false)}
         title="Add question photo"
-        onCamera={async () => { addPickedPhoto(await takePhoto()); }}
         onLibrary={pickQuestionPhotos}
       />
 

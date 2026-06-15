@@ -1,9 +1,11 @@
+import { Platform } from 'react-native';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
   MEDIA_BUCKET,
+  MEDIA_PATH_PREFIX,
   MAX_IMAGE_BYTES,
   MAX_IMAGE_DIMENSION,
   JPEG_QUALITY,
@@ -36,6 +38,72 @@ async function fileByteSize(fileUri) {
   return (await readFileAsArrayBuffer(fileUri)).byteLength;
 }
 
+/** Read a blob: URI to base64 without fetch() — web uses XHR + FileReader. */
+async function readBlobUriAsBase64(blobUri) {
+  if (Platform.OS === 'web' && typeof XMLHttpRequest !== 'undefined') {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = () => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result;
+          if (typeof dataUrl !== 'string' || !dataUrl.includes(',')) {
+            reject(new Error('Could not read photo data.'));
+            return;
+          }
+          resolve(dataUrl.split(',')[1]);
+        };
+        reader.onerror = () => reject(new Error('Could not read photo data.'));
+        reader.readAsDataURL(xhr.response);
+      };
+      xhr.onerror = () => reject(new Error('Could not read photo data.'));
+      xhr.open('GET', blobUri);
+      xhr.responseType = 'blob';
+      xhr.send();
+    });
+  }
+
+  throw new Error(
+    'Could not read cropped photo. Try choosing the image again from your library.',
+  );
+}
+
+/**
+ * Stage picker/crop output to file:// before ImageManipulator or upload.
+ * Handles blob: via picker base64 or web XHR — never fetch(blob:).
+ */
+export async function stagePickerAssetToFile(asset) {
+  if (!asset?.uri && !asset?.base64) {
+    throw new Error('Photo is missing — try selecting again.');
+  }
+
+  const cacheFile = `${FileSystem.cacheDirectory}chautari_stage_${Date.now()}.jpg`;
+
+  if (asset.base64) {
+    await FileSystem.writeAsStringAsync(cacheFile, asset.base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const bytes = await readFileAsArrayBuffer(cacheFile);
+    if (!bytes.byteLength) throw new Error('Photo file is empty.');
+    return cacheFile;
+  }
+
+  const { uri } = asset;
+  if (uri.startsWith('file://')) return uri;
+
+  if (uri.startsWith('blob:')) {
+    const base64 = await readBlobUriAsBase64(uri);
+    await FileSystem.writeAsStringAsync(cacheFile, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const bytes = await readFileAsArrayBuffer(cacheFile);
+    if (!bytes.byteLength) throw new Error('Photo file is empty.');
+    return cacheFile;
+  }
+
+  return uri;
+}
+
 export function getMediaPublicUrl(path) {
   if (!isSupabaseConfigured()) return null;
   const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
@@ -52,6 +120,8 @@ export async function prepareImageForUpload(asset) {
     throw new Error('Use a JPEG, PNG, or HEIC photo.');
   }
 
+  const sourceUri = await stagePickerAssetToFile(asset);
+
   let width = asset.width;
   let height = asset.height;
   const actions = [];
@@ -64,7 +134,7 @@ export async function prepareImageForUpload(asset) {
   }
 
   const manipulated = await ImageManipulator.manipulateAsync(
-    asset.uri,
+    sourceUri,
     actions,
     { compress: JPEG_QUALITY, format: ImageManipulator.SaveFormat.JPEG },
   );
@@ -77,7 +147,7 @@ export async function prepareImageForUpload(asset) {
   if (size > MAX_IMAGE_BYTES) {
     throw new Error('Photo is too large — pick an image under 5 MB.');
   }
-  if (size === 0) {
+  if (!size) {
     throw new Error('Could not read the selected photo. Try another image.');
   }
 
@@ -120,21 +190,36 @@ export async function uploadMediaFile({
   return url;
 }
 
-export async function uploadPreparedImage(options) {
-  const prepared = await prepareImageForUpload(options.asset || options);
-  const url = await uploadMediaFile({
-    ...options,
+/**
+ * Single shared upload entry — every image upload in the app must go through here.
+ * Stages blob:/crop URIs → JPEG file:// → base64 → ArrayBuffer → Supabase Storage.
+ */
+export async function uploadImageAsset(asset, {
+  prefix,
+  entityId,
+  fileName = 'photo.jpg',
+  upsert = true,
+} = {}) {
+  if (!prefix || !entityId) throw new Error('Upload path is incomplete.');
+  const prepared = await prepareImageForUpload(asset);
+  return uploadMediaFile({
+    prefix,
+    entityId,
     localUri: prepared.uri,
+    fileName,
+    upsert,
   });
-  return url;
+}
+
+/** @deprecated Use uploadImageAsset — kept for any external callers. */
+export async function uploadPreparedImage(options) {
+  return uploadImageAsset(options.asset || options, options);
 }
 
 export async function uploadAvatar(asset) {
-  const prepared = await prepareImageForUpload(asset);
-  return uploadMediaFile({
-    prefix: 'avatars',
+  return uploadImageAsset(asset, {
+    prefix: MEDIA_PATH_PREFIX.AVATAR,
     entityId: 'profile',
-    localUri: prepared.uri,
     fileName: `avatar-${Date.now()}.jpg`,
     upsert: true,
   });
@@ -143,11 +228,9 @@ export async function uploadAvatar(asset) {
 export async function uploadQuestionPhotos(questionId, assets) {
   const urls = [];
   for (let i = 0; i < assets.length; i += 1) {
-    const prepared = await prepareImageForUpload(assets[i]);
-    const url = await uploadMediaFile({
-      prefix: 'questions',
+    const url = await uploadImageAsset(assets[i], {
+      prefix: MEDIA_PATH_PREFIX.QUESTION,
       entityId: questionId,
-      localUri: prepared.uri,
       fileName: `${i}.jpg`,
     });
     urls.push(url);
@@ -156,32 +239,35 @@ export async function uploadQuestionPhotos(questionId, assets) {
 }
 
 export async function uploadCircleImage(circleId, asset) {
-  const prepared = await prepareImageForUpload(asset);
-  return uploadMediaFile({
-    prefix: 'circles',
+  return uploadImageAsset(asset, {
+    prefix: MEDIA_PATH_PREFIX.CIRCLE,
     entityId: circleId,
-    localUri: prepared.uri,
     fileName: 'banner.jpg',
     upsert: true,
   });
 }
 
 export async function uploadAnswerPhoto(answerId, asset) {
-  const prepared = await prepareImageForUpload(asset);
-  return uploadMediaFile({
-    prefix: 'answers',
+  return uploadImageAsset(asset, {
+    prefix: MEDIA_PATH_PREFIX.ANSWER,
     entityId: answerId,
-    localUri: prepared.uri,
     fileName: 'photo.jpg',
   });
 }
 
 export async function uploadReplyPhoto(replyId, asset) {
-  const prepared = await prepareImageForUpload(asset);
-  return uploadMediaFile({
-    prefix: 'replies',
+  return uploadImageAsset(asset, {
+    prefix: MEDIA_PATH_PREFIX.REPLY,
     entityId: replyId,
-    localUri: prepared.uri,
     fileName: 'photo.jpg',
+  });
+}
+
+export async function uploadExpertCredential(asset) {
+  return uploadImageAsset(asset, {
+    prefix: MEDIA_PATH_PREFIX.CREDENTIAL,
+    entityId: 'application',
+    fileName: `credential-${Date.now()}.jpg`,
+    upsert: true,
   });
 }

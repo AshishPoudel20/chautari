@@ -11,5 +11,16 @@ export function normalizePhotoUrls(photos) {
 
 export function isLocalPhotoUri(uri) {
   if (!uri || typeof uri !== 'string') return false;
-  return uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('ph://');
+  return uri.startsWith('file:')
+    || uri.startsWith('content:')
+    || uri.startsWith('ph://')
+    || uri.startsWith('blob:');
+}
+
+/** True when the value still needs uploading (local uri or unstaged picker asset). */
+export function needsPhotoUpload(photo) {
+  const uri = photoUrl(photo);
+  if (!uri) return false;
+  if (uri.startsWith('http://') || uri.startsWith('https://')) return false;
+  return isLocalPhotoUri(uri);
 }

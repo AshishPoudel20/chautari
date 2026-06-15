@@ -459,6 +459,7 @@ function reducer(state, action) {
           category: action.category,
           customCategory: action.customCategory || null,
           credentialName: action.credentialName || null,
+          credentialUrl: action.credentialUrl || null,
           status: action.status, // 'approved' | 'pending'
           submittedAt: Date.now(),
         },
