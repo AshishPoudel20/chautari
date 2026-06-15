@@ -18,7 +18,7 @@ export default function Avatar({ name, photo, anon, size = 44, allowLocalPhoto =
     );
   }
   if (src) {
-    return <Image source={{ uri: src }} style={[styles.base, dim]} />;
+    return <Image key={src} source={{ uri: src }} style={[styles.base, dim]} />;
   }
   const letter = (name || '?').trim().charAt(0).toUpperCase();
   return (

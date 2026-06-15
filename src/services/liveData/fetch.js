@@ -34,23 +34,26 @@ export async function fetchLiveBundle(currentUserId) {
 
   const questions = (questionsRes.data || []).map((row) => mapQuestion(row, currentUserId));
 
-  const authorIds = new Set();
+  const profileIds = new Set([currentUserId]);
+  for (const row of followsRes.data || []) {
+    if (row.following_id) profileIds.add(row.following_id);
+  }
   for (const q of questionsRes.data || []) {
-    if (q.author_id && q.author_id !== currentUserId) authorIds.add(q.author_id);
+    if (q.author_id) profileIds.add(q.author_id);
     for (const a of q.answers || []) {
-      if (a.author_id && a.author_id !== currentUserId) authorIds.add(a.author_id);
+      if (a.author_id) profileIds.add(a.author_id);
       for (const r of a.replies || []) {
-        if (r.author_id && r.author_id !== currentUserId) authorIds.add(r.author_id);
+        if (r.author_id) profileIds.add(r.author_id);
       }
     }
   }
 
   let users = [];
-  if (authorIds.size > 0) {
+  if (profileIds.size > 0) {
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
-      .in('id', [...authorIds]);
+      .in('id', [...profileIds]);
     if (error) throw error;
     users = (profiles || []).map((p) => mapProfileRow(p, currentUserId)).filter(Boolean);
   }

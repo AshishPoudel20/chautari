@@ -17,6 +17,7 @@ import { useData, useSelectors } from '../data/store';
 import { useNetwork } from '../data/network';
 import { useNavigationGuard, openExpertProfile } from '../utils/navigation';
 import { useForYouFeed } from '../hooks/useForYouFeed';
+import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { useTheme } from '../theme/ThemeContext';
 import { professionLabel } from '../data/categories';
 
@@ -43,6 +44,7 @@ export default function HomeScreen({ navigation }) {
   const [replayKey, setReplayKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sheenKey, setSheenKey] = useState(0);
+  const refreshLiveData = useLiveDataRefresh({ onFocus: true });
 
   useFocusEffect(useCallback(() => {
     setSheenKey((k) => k + 1);
@@ -99,11 +101,11 @@ export default function HomeScreen({ navigation }) {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     if (tab === 'foryou') forYou.refresh();
-    setTimeout(() => {
+    refreshLiveData().finally(() => {
       setRefreshing(false);
       setReplayKey((k) => k + 1);
-    }, 650);
-  }, [tab, forYou]);
+    });
+  }, [tab, forYou, refreshLiveData]);
 
   const onLoadMore = useCallback(() => {
     if (tab === 'foryou' && forYou.hasMore) forYou.loadMore();

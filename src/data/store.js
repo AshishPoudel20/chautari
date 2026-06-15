@@ -333,13 +333,18 @@ function reducer(state, action) {
       ]);
       const usersById = new Map(state.users.map((u) => [u.id, u]));
       for (const u of p.users || []) {
-        if (u.id === 'me') continue;
+        if (u.id === 'me') {
+          const meUser = usersById.get('me');
+          if (meUser) usersById.set('me', { ...meUser, ...u, id: 'me' });
+          continue;
+        }
         if (state.authUserId && u.id === state.authUserId) {
           const meUser = usersById.get('me');
           if (meUser) usersById.set('me', { ...meUser, ...u, id: 'me' });
           continue;
         }
-        if (!usersById.has(u.id)) usersById.set(u.id, u);
+        const existing = usersById.get(u.id);
+        usersById.set(u.id, existing ? { ...existing, ...u } : u);
       }
       const uniq = (a, b) => [...new Set([...(a || []), ...(b || [])])];
       return {

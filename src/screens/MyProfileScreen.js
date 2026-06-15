@@ -5,6 +5,7 @@ import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
 import Button from '../components/Button';
 import { useSelectors } from '../data/store';
+import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { useTheme } from '../theme/ThemeContext';
 import { useNavigationGuard } from '../utils/navigation';
 import ExpertPostQuota from '../components/ExpertPostQuota';
@@ -21,6 +22,7 @@ function formatJoined(ts) {
 
 export default function MyProfileScreen({ navigation }) {
   const { me, state, karmaFor, checklistDoneCount, isNewcomerActive } = useSelectors();
+  useLiveDataRefresh({ onFocus: true });
   const user = me();
   const { colors, shadow, spacing, font, radius } = useTheme();
   const { navigate } = useNavigationGuard(navigation);

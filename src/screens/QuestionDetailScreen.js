@@ -21,6 +21,7 @@ import { showsExpertBadge, displayProfessionLabel, hasExpertProfessionalProfile 
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
 import { useTheme } from '../theme/ThemeContext';
 import { useImagePicker } from '../hooks/useImagePicker';
+import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadAnswerPhoto, uploadReplyPhoto } from '../services/mediaStorage';
 import { normalizeDisplayPhotoUrls } from '../utils/photos';
@@ -73,6 +74,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const answerOffsets = useRef({});
   const answersSectionY = useRef(0);
   const pendingProfessionalReply = useRef(false);
+  useLiveDataRefresh({ onFocus: true });
 
   const scrollToAnswer = useCallback((answerId) => {
     const y = answerOffsets.current[answerId];
