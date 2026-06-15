@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { PAGE_SIZE } from '../feed/rankingConfig';
 import { composeForYouFeed } from '../feed/feedComposition';
 import { hasMoreInSnapshot, sliceSnapshot } from '../feed/feedRanking';
@@ -18,6 +18,18 @@ export function useForYouFeed({
   const [referenceTime, setReferenceTime] = useState(() => Date.now());
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [snapshotGen, setSnapshotGen] = useState(0);
+
+  const questionsFingerprint = useMemo(
+    () => questions.map((q) => `${q.id}:${q.createdAt}:${(q.answers || []).length}`).join('|'),
+    [questions],
+  );
+
+  // After a server refresh, reset pagination and recompute the Hot snapshot.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+    setReferenceTime(Date.now());
+    setSnapshotGen((g) => g + 1);
+  }, [questionsFingerprint]);
 
   const snapshot = useMemo(() => composeForYouFeed(questions, {
     joinedCircleIds,

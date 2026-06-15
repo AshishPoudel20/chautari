@@ -17,6 +17,7 @@ export default function KeyboardScreen({
   keyboardOffset,
   safe = true,
   scrollRef,
+  refreshControl,
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -31,6 +32,7 @@ export default function KeyboardScreen({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="interactive"
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     >
       {children}
     </ScrollView>

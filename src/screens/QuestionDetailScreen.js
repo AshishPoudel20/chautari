@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, Keyboard, Switch } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, Keyboard, Switch, RefreshControl } from 'react-native';
 import KeyboardScreen from '../components/KeyboardScreen';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -74,7 +74,17 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const answerOffsets = useRef({});
   const answersSectionY = useRef(0);
   const pendingProfessionalReply = useRef(false);
-  useLiveDataRefresh({ onFocus: true });
+  const refreshLiveData = useLiveDataRefresh({ onFocus: true });
+  const [detailRefreshing, setDetailRefreshing] = useState(false);
+
+  const onDetailRefresh = useCallback(async () => {
+    setDetailRefreshing(true);
+    try {
+      await refreshLiveData();
+    } finally {
+      setDetailRefreshing(false);
+    }
+  }, [refreshLiveData]);
 
   const scrollToAnswer = useCallback((answerId) => {
     const y = answerOffsets.current[answerId];
@@ -576,6 +586,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
       contentStyle={styles.scrollContent}
       scrollRef={scrollRef}
       footer={renderBottomBar()}
+      refreshControl={(
+        <RefreshControl
+          refreshing={detailRefreshing}
+          onRefresh={onDetailRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      )}
     >
         {justPosted && (
           <View style={styles.postedBanner}>

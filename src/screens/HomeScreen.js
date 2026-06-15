@@ -98,13 +98,15 @@ export default function HomeScreen({ navigation }) {
     navigate('AskComposer');
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (tab === 'foryou') forYou.refresh();
-    refreshLiveData().finally(() => {
-      setRefreshing(false);
+    try {
+      await refreshLiveData();
+      if (tab === 'foryou') forYou.refresh();
       setReplayKey((k) => k + 1);
-    });
+    } finally {
+      setRefreshing(false);
+    }
   }, [tab, forYou, refreshLiveData]);
 
   const onLoadMore = useCallback(() => {

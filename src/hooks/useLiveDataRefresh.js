@@ -1,27 +1,34 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { useData } from '../data/store';
-import { fetchLiveBundle } from '../services/liveData';
-import { isSupabaseConfigured } from '../lib/supabase';
 
-/** Refetch questions + author profiles from Supabase and merge into local state. */
-export function useLiveDataRefresh({ onFocus = false } = {}) {
-  const { state, dispatch } = useData();
-  const authUserId = state.authUserId;
+const DEFAULT_STALE_MS = 45_000;
 
-  const refreshLiveData = useCallback(async () => {
-    if (!authUserId || !isSupabaseConfigured()) return;
+/**
+ * Re-fetch questions + profiles from Supabase and merge into local state.
+ * Manual refresh (pull-to-refresh) always hits the server; focus refetch is debounced.
+ */
+export function useLiveDataRefresh({ onFocus = false, staleMs = DEFAULT_STALE_MS } = {}) {
+  const { refreshFromServer } = useData();
+  const lastFetchAt = useRef(0);
+
+  const refreshLiveData = useCallback(async ({ force = false } = {}) => {
+    if (!refreshFromServer) return null;
+    const now = Date.now();
+    if (!force && onFocus && now - lastFetchAt.current < staleMs) return null;
     try {
-      const bundle = await fetchLiveBundle(authUserId);
-      dispatch({ type: 'MERGE_LIVE_DATA', payload: bundle });
+      const bundle = await refreshFromServer();
+      lastFetchAt.current = Date.now();
+      return bundle;
     } catch (e) {
       console.warn('Failed to refresh live data:', e?.message || e);
+      return null;
     }
-  }, [authUserId, dispatch]);
+  }, [refreshFromServer, onFocus, staleMs]);
 
   useFocusEffect(useCallback(() => {
-    if (onFocus) refreshLiveData();
+    if (onFocus) refreshLiveData({ force: false });
   }, [onFocus, refreshLiveData]));
 
-  return refreshLiveData;
+  return useCallback(() => refreshLiveData({ force: true }), [refreshLiveData]);
 }

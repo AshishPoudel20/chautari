@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated, Image,
+  View, Text, StyleSheet, Pressable, Alert, StatusBar, Animated, Image, RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, openExpertProfile, runAfterAlert } from '../utils/navigation';
+import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
 import { photoUrl, displayPhotoUrl } from '../utils/photos';
@@ -58,6 +59,17 @@ export default function CircleDetailScreen({ navigation, route }) {
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const [compactInteractive, setCompactInteractive] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshLiveData = useLiveDataRefresh({ onFocus: true });
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshLiveData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshLiveData]);
 
   useEffect(() => {
     const threshold = COLLAPSE_RANGE * 0.45;
@@ -279,6 +291,14 @@ export default function CircleDetailScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        refreshControl={(
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={accent?.color || colors.primary}
+            colors={[accent?.color || colors.primary]}
+          />
+        )}
         {...LIST_PERF}
       />
 

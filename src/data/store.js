@@ -326,10 +326,21 @@ function reducer(state, action) {
 
     case 'MERGE_LIVE_DATA': {
       const p = action.payload;
-      const liveById = new Map((p.questions || []).map((q) => [q.id, q]));
+      const liveQuestions = p.questions || [];
+      const liveById = new Map(liveQuestions.map((q) => [q.id, q]));
+
+      // Seed-only rows stay unless superseded by a live row with the same id.
+      const seedOnly = state.questions.filter(
+        (q) => SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id),
+      );
+      // Local optimistic posts from me not yet returned by the server.
+      const localPending = state.questions.filter(
+        (q) => !SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id) && q.authorId === 'me',
+      );
       const mergedQuestions = sortQuestions([
-        ...state.questions.filter((q) => SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id)),
-        ...(p.questions || []),
+        ...seedOnly,
+        ...localPending,
+        ...liveQuestions,
       ]);
       const usersById = new Map(state.users.map((u) => [u.id, u]));
       for (const u of p.users || []) {
@@ -799,7 +810,19 @@ export function DataProvider({ children }) {
     dispatch(next);
   }, []);
 
-  const value = useMemo(() => ({ state, dispatch: syncDispatch }), [state, syncDispatch]);
+  /** Re-query Supabase and merge into local state (uses raw dispatch, not syncDispatch). */
+  const refreshFromServer = React.useCallback(async () => {
+    const authUserId = stateRef.current.authUserId;
+    if (!authUserId || !isSupabaseConfigured()) return null;
+    const bundle = await fetchLiveBundle(authUserId);
+    dispatch({ type: 'MERGE_LIVE_DATA', payload: bundle });
+    return bundle;
+  }, []);
+
+  const value = useMemo(
+    () => ({ state, dispatch: syncDispatch, refreshFromServer }),
+    [state, syncDispatch, refreshFromServer],
+  );
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 
