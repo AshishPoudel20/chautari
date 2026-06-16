@@ -115,9 +115,11 @@ export async function completeOnboarding({ name, suburb, photo, newcomer, phone 
   let userId = (await supabase.auth.getUser()).data.user?.id;
   if (!userId && phone) {
     const user = await ensureSupabaseUserForPhone(phone);
-    userId = user.id;
+    userId = user?.id ?? null;
   }
-  if (!userId) throw new Error('Not signed in');
+  if (!userId) {
+    throw new Error('Could not sign in — check your connection and Supabase configuration.');
+  }
 
   const row = patchToRow({
     name,

@@ -13,7 +13,9 @@ export default function DigestManager({ navigationRef }) {
   useEffect(() => {
     if (!state.booted || !state.currentUserId) return;
     const summary = composeDigestSummary(state, circleById);
-    scheduleDigest(state.digestMode || 'daily', summary);
+    scheduleDigest(state.digestMode || 'daily', summary).catch((e) => {
+      console.warn('[digest] schedule failed:', e?.message || e);
+    });
   }, [state.booted, state.currentUserId, state.digestMode, state.questions, state.joinedCircles]);
 
   useEffect(() => {
