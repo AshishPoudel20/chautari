@@ -16,6 +16,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { getSession, onAuthStateChange } from '../services/auth';
 import { fetchProfile, profileMetaFromRow, profileRowToUser } from '../services/profile';
 import { fetchLiveBundle, persistAction, shouldSyncAction, isMockUserId, isValidUuid } from '../services/liveData';
+import { inflightKeyForAction } from '../utils/dispatchGuards';
 
 const SEED_QUESTION_IDS = new Set(seedQuestions.map((q) => q.id));
 
@@ -32,6 +33,13 @@ const countPostsToday = (questions, userId, bucket) => {
 };
 
 const STORAGE_KEY = 'chautari.state.v2';
+let dispatchErrorHandler = null;
+
+/** Toast bridge — registered by DispatchErrorBridge inside ToastProvider. */
+export function registerDispatchErrorHandler(handler) {
+  dispatchErrorHandler = handler;
+}
+
 const DataContext = createContext(null);
 
 let idCounter = 1;
@@ -724,6 +732,7 @@ export function DataProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, undefined, buildInitialState);
   const hydrated = useRef(false);
   const stateRef = useRef(state);
+  const inFlightActions = useRef(new Set());
   stateRef.current = state;
 
   // Load persisted mock state, then reconcile Supabase auth session.
@@ -733,9 +742,18 @@ export function DataProvider({ children }) {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) dispatch({ type: 'HYDRATE', payload: JSON.parse(raw) });
-        else dispatch({ type: 'BOOTED' });
+        if (raw) {
+          try {
+            dispatch({ type: 'HYDRATE', payload: JSON.parse(raw) });
+          } catch (parseErr) {
+            console.warn('[storage] Failed to parse persisted state — starting fresh:', parseErr?.message || parseErr);
+            dispatch({ type: 'BOOTED' });
+          }
+        } else {
+          dispatch({ type: 'BOOTED' });
+        }
       } catch (e) {
+        console.warn('[storage] Failed to read persisted state:', e?.message || e);
         dispatch({ type: 'BOOTED' });
       } finally {
         hydrated.current = true;
@@ -801,16 +819,35 @@ export function DataProvider({ children }) {
   useEffect(() => {
     if (!hydrated.current || !state.booted) return;
     const { booted, authReady, authUserId, ...toSave } = state;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave)).catch(() => {});
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave)).catch((e) => {
+      console.warn('[storage] Failed to persist app state:', e?.message || e);
+    });
   }, [state]);
 
   const syncDispatch = React.useCallback(async (action) => {
-    const snap = stateRef.current;
-    let next = action;
-    if (isSupabaseConfigured() && snap.authUserId && shouldSyncAction(action)) {
-      next = await persistAction(action, snap, snap.authUserId);
+    const flightKey = inflightKeyForAction(action);
+    if (flightKey) {
+      if (inFlightActions.current.has(flightKey)) {
+        return { ok: true, skipped: true };
+      }
+      inFlightActions.current.add(flightKey);
     }
-    dispatch(next);
+
+    try {
+      const snap = stateRef.current;
+      let next = action;
+      if (isSupabaseConfigured() && snap.authUserId && shouldSyncAction(action)) {
+        next = await persistAction(action, snap, snap.authUserId);
+      }
+      dispatch(next);
+      return { ok: true };
+    } catch (e) {
+      console.warn('[dispatch]', action?.type, e?.message || e);
+      dispatchErrorHandler?.("Couldn't save — check your connection.");
+      return { ok: false, error: e };
+    } finally {
+      if (flightKey) inFlightActions.current.delete(flightKey);
+    }
   }, []);
 
   /** Re-query Supabase and merge into local state (uses raw dispatch, not syncDispatch). */

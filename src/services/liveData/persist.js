@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
 import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
 import { isLiveQuestionId, makeId, isMockUserId } from './ids';
+import { isBenignDuplicateError } from '../../utils/dispatchGuards';
 import { verifiedCategoryFromCircle } from '../../utils/expertPost';
 
 const SYNC_ACTIONS = new Set([
@@ -32,7 +33,7 @@ async function toggleUpvote(userId, targetType, targetId, hadVote) {
       .eq('user_id', userId)
       .eq('target_type', targetType)
       .eq('target_id', targetId);
-    if (error) throw error;
+    if (error && !isBenignDuplicateError(error)) throw error;
     const table = targetType === 'question' ? 'questions' : targetType === 'answer' ? 'answers' : 'replies';
     await bumpVotes(table, targetId, -1);
   } else {
@@ -41,7 +42,7 @@ async function toggleUpvote(userId, targetType, targetId, hadVote) {
       target_type: targetType,
       target_id: targetId,
     });
-    if (error) throw error;
+    if (error && !isBenignDuplicateError(error)) throw error;
     const table = targetType === 'question' ? 'questions' : targetType === 'answer' ? 'answers' : 'replies';
     await bumpVotes(table, targetId, 1);
   }
@@ -154,13 +155,13 @@ export async function persistAction(action, state, userId) {
       if (had) {
         const { error } = await supabase.from('saved_questions').delete()
           .eq('user_id', userId).eq('question_id', action.questionId);
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       } else {
         const { error } = await supabase.from('saved_questions').insert({
           user_id: userId,
           question_id: action.questionId,
         });
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       }
       return action;
     }
@@ -171,13 +172,13 @@ export async function persistAction(action, state, userId) {
       if (had) {
         const { error } = await supabase.from('follows').delete()
           .eq('follower_id', userId).eq('following_id', action.userId);
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       } else {
         const { error } = await supabase.from('follows').insert({
           follower_id: userId,
           following_id: action.userId,
         });
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       }
       return action;
     }
@@ -187,13 +188,13 @@ export async function persistAction(action, state, userId) {
       if (had) {
         const { error } = await supabase.from('circle_members').delete()
           .eq('user_id', userId).eq('circle_id', action.circleId);
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       } else {
         const { error } = await supabase.from('circle_members').insert({
           user_id: userId,
           circle_id: action.circleId,
         });
-        if (error) throw error;
+        if (error && !isBenignDuplicateError(error)) throw error;
       }
       return action;
     }
