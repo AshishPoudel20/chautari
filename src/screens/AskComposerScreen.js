@@ -230,7 +230,7 @@ export default function AskComposerScreen({ navigation, route }) {
       if (photos.some((p) => needsPhotoUpload(p))) {
         photoUrls = await uploadAllPhotos(id);
       }
-      await dispatch({
+      const res = await dispatch({
         type: 'ASK_QUESTION',
         id,
         title,
@@ -241,6 +241,7 @@ export default function AskComposerScreen({ navigation, route }) {
         postedAsExpert: user?.verified ? postedAsExpert : undefined,
         professionLabel: user?.verified && postedAsExpert ? badgeTitle : undefined,
       });
+      if (res?.ok === false) throw res.error || new Error('Could not post question');
       Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
       setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
     } catch (e) {

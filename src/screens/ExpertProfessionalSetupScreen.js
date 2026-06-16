@@ -5,7 +5,7 @@ import KeyboardScreen from '../components/KeyboardScreen';
 import ExpertProfessionalFields from '../components/ExpertProfessionalFields';
 import { useData, useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
-import { canPostAsProfessional, validateExpertBadgeTitle } from '../utils/expertPost';
+import { hasExpertProfessionalProfile, validateExpertBadgeTitle } from '../utils/expertPost';
 
 /** One-time setup for experts verified before badge title + circle were required. */
 export default function ExpertProfessionalSetupScreen({ navigation }) {
@@ -23,7 +23,7 @@ export default function ExpertProfessionalSetupScreen({ navigation }) {
   const valid = !validateExpertBadgeTitle(badgeTitle) && !!circleId;
 
   useEffect(() => {
-    if (user && canPostAsProfessional(user)) {
+    if (user && hasExpertProfessionalProfile(user)) {
       navigation.goBack();
     }
   }, [user, navigation]);
@@ -33,11 +33,12 @@ export default function ExpertProfessionalSetupScreen({ navigation }) {
     if (!valid || saving) return;
     setSaving(true);
     try {
-      await dispatch({
+      const res = await dispatch({
         type: 'SET_EXPERT_PROFESSIONAL_PROFILE',
         expertBadgeTitle: badgeTitle.trim(),
         expertCircleId: circleId,
       });
+      if (res?.ok === false) throw res.error || new Error('Could not save');
       navigation.goBack();
     } catch (e) {
       Alert.alert('Could not save', e?.message || 'Try again.');

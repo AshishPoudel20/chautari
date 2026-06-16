@@ -19,8 +19,9 @@ export default function FollowButton({ userId, size = 'md', onChange }) {
 
   const following = isFollowing(userId);
 
-  const toggle = () => {
-    dispatch({ type: 'TOGGLE_FOLLOW', userId });
+  const toggle = async () => {
+    const res = await dispatch({ type: 'TOGGLE_FOLLOW', userId });
+    if (res?.ok === false) return;
     const name = userById(userId)?.name || 'this member';
     showToast(following ? `Unfollowed ${name}` : `Following ${name}`, { tone: following ? 'default' : 'success' });
     onChange && onChange(!following);
