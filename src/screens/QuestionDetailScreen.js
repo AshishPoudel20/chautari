@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useLayoutEffect, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, Platform, Keyboard, Switch, RefreshControl } from 'react-native';
+import MissingParamsFallback from '../components/MissingParamsFallback';
 import KeyboardScreen from '../components/KeyboardScreen';
 import Avatar from '../components/Avatar';
 import VerifiedBadge from '../components/VerifiedBadge';
@@ -44,7 +45,7 @@ function BodyText({ children, style, linkStyle }) {
 }
 
 export default function QuestionDetailScreen({ navigation, route }) {
-  const { questionId, justPosted } = route.params;
+  const { questionId, justPosted } = route.params || {};
   const { dispatch } = useData();
   const { questionById, userById, circleById, karmaFor, hasUpvotedAnswer, hasUpvotedReply, hasUpvotedQuestion, isSaved, isCircleCreator, isQuestionOwner, state, me } = useSelectors();
   const showToast = useToast();
@@ -169,12 +170,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
       const pinned = circle?.pinnedQuestionId === questionId;
       options.push({
         text: pinned ? 'Unpin from circle' : 'Pin to circle',
-        onPress: () => {
+        onPress: async () => {
           if (pinned) {
-            dispatch({ type: 'UNPIN_QUESTION_FROM_CIRCLE', circleId: question.circleId, questionId });
+            const res = await dispatch({ type: 'UNPIN_QUESTION_FROM_CIRCLE', circleId: question.circleId, questionId });
+            if (res?.ok === false) return;
             showToast('Unpinned from circle', { tone: 'default' });
           } else {
-            dispatch({ type: 'PIN_QUESTION_TO_CIRCLE', circleId: question.circleId, questionId });
+            const res = await dispatch({ type: 'PIN_QUESTION_TO_CIRCLE', circleId: question.circleId, questionId });
+            if (res?.ok === false) return;
             showToast('Pinned to circle', { tone: 'success' });
           }
         },
@@ -188,7 +191,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
           runAfterAlert(async () => {
             goBack();
             try {
-              await dispatch({ type: 'DELETE_QUESTION', questionId });
+              const res = await dispatch({ type: 'DELETE_QUESTION', questionId });
+              if (res?.ok === false) throw res.error || new Error('Could not delete');
               showToast('Question deleted', { tone: 'success' });
             } catch (e) {
               Alert.alert('Could not delete', e?.message || 'Try again.');
@@ -203,9 +207,10 @@ export default function QuestionDetailScreen({ navigation, route }) {
     Alert.alert(isMine ? 'Your question' : 'Question options', null, options);
   }, [question, isMine, dispatch, questionId, showToast, navigate, goBack, circleById, isCircleCreator]);
 
-  const toggleSave = useCallback(() => {
+  const toggleSave = useCallback(async () => {
     const wasSaved = isSaved(questionId);
-    dispatch({ type: 'TOGGLE_SAVE_QUESTION', questionId });
+    const res = await dispatch({ type: 'TOGGLE_SAVE_QUESTION', questionId });
+    if (res?.ok === false) return;
     showToast(wasSaved ? 'Removed from saved' : 'Saved for later', { tone: wasSaved ? 'default' : 'success' });
   }, [dispatch, questionId, showToast, isSaved]);
 
@@ -233,6 +238,16 @@ export default function QuestionDetailScreen({ navigation, route }) {
     com.sort((a, b) => (sort === 'top' ? b.upvotes - a.upvotes || b.createdAt - a.createdAt : b.createdAt - a.createdAt));
     return { pinned: pin, community: com };
   }, [question, state.users, sort]);
+
+  if (!questionId) {
+    return (
+      <MissingParamsFallback
+        navigation={navigation}
+        title="This question couldn't be loaded"
+        message="The link may be incomplete or expired. Go back and try opening the post again."
+      />
+    );
+  }
 
   if (!question) {
     return <View style={styles.container}><Text style={styles.missing}>This question is no longer available.</Text></View>;
@@ -287,7 +302,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
         if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
         photoUrlValue = await uploadReplyPhoto(replyId, { uri: replyPhoto.uri });
       }
-      await dispatch({
+      const res = await dispatch({
         type: 'ADD_REPLY',
         questionId,
         answerId,
@@ -298,6 +313,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
         postedAsExpert: currentUser?.verified ? replyPostedAsExpert : undefined,
         professionLabel: currentUser?.verified && replyPostedAsExpert ? replyBadgeTitle : undefined,
       });
+      if (res?.ok === false) throw res.error || new Error('Could not post reply');
       setReplyText('');
       setReplyPhoto(null);
       setReplyPostMode('member');
@@ -342,7 +358,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
         if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
         photoUrlValue = await uploadAnswerPhoto(answerId, { uri: answerPhoto.uri });
       }
-      await dispatch({
+      const res = await dispatch({
         type: 'ADD_ANSWER',
         questionId,
         id: answerId,
@@ -350,6 +366,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
         anonymous: answerAnonymous,
         photoUrl: photoUrlValue,
       });
+      if (res?.ok === false) throw res.error || new Error('Could not post answer');
       setAnswerText('');
       setAnswerPhoto(null);
       setAnswerAnonymous(false);

@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, Switch, Pressable, Alert, Keyboard,
 } from 'react-native';
+import MissingParamsFallback from '../components/MissingParamsFallback';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import KeyboardScreen from '../components/KeyboardScreen';
@@ -23,11 +24,11 @@ export default function AnswerComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow), [colors, spacing, font, radius, shadow]);
 
-  const { questionId } = route.params;
+  const { questionId } = route.params || {};
   const { dispatch } = useData();
   const { online } = useNetwork();
   const showToast = useToast();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
+  const { pickFromLibrary } = useImagePicker();
   const { questionById, me } = useSelectors();
   const question = questionById(questionId);
   const user = me();
@@ -71,7 +72,7 @@ export default function AnswerComposerScreen({ navigation, route }) {
         if (!isSupabaseConfigured()) throw new Error('Photo upload requires Supabase — check your .env.');
         photoUrlValue = await uploadAnswerPhoto(answerId, { uri: photo.uri });
       }
-      await dispatch({
+      const res = await dispatch({
         type: 'ADD_ANSWER',
         questionId,
         id: answerId,
@@ -79,6 +80,7 @@ export default function AnswerComposerScreen({ navigation, route }) {
         anonymous,
         photoUrl: photoUrlValue,
       });
+      if (res?.ok === false) throw res.error || new Error('Could not post answer');
       Keyboard.dismiss();
       navigation.goBack();
       showToast('Answer posted', { tone: 'success' });
@@ -88,6 +90,16 @@ export default function AnswerComposerScreen({ navigation, route }) {
       setSubmitting(false);
     }
   };
+
+  if (!questionId) {
+    return (
+      <MissingParamsFallback
+        navigation={navigation}
+        title="This question couldn't be loaded"
+        message="Go back and open the question before posting an answer."
+      />
+    );
+  }
 
   return (
     <>
@@ -175,7 +187,6 @@ export default function AnswerComposerScreen({ navigation, route }) {
           onClose={() => setPickerOpen(false)}
           title="Add answer photo"
           showRemove={!!photo}
-          onCamera={() => pickPhoto(takePhoto)}
           onLibrary={() => pickPhoto(pickFromLibrary)}
           onRemove={() => setPhoto(null)}
         />

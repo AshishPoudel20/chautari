@@ -1,5 +1,6 @@
 import React, { useMemo, useLayoutEffect, useEffect } from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
+import MissingParamsFallback from '../components/MissingParamsFallback';
 import ProfileView from '../components/ProfileView';
 import Button from '../components/Button';
 import { useToast } from '../components/Toast';
@@ -14,22 +15,25 @@ export default function UserProfileScreen({ navigation, route }) {
   const { spacing } = useTheme();
   const styles = useMemo(() => createStyles(spacing), [spacing]);
 
-  const { userId: rawUserId } = route.params;
+  const { userId: rawUserId } = route.params || {};
   const { dispatch, state } = useData();
   const { userById, isFollowing } = useSelectors();
   const showToast = useToast();
-  const userId = resolveUserId(rawUserId, state.authUserId);
-  const user = userById(userId);
-  const following = isFollowing(userId);
+  const userId = rawUserId ? resolveUserId(rawUserId, state.authUserId) : null;
+  const user = userId ? userById(userId) : null;
+  const following = userId ? isFollowing(userId) : false;
 
   useEffect(() => {
+    if (!rawUserId) return;
     if (isSelfUserId(rawUserId, state.authUserId)) {
       openSelfProfile(navigation);
     }
   }, [rawUserId, state.authUserId, navigation]);
 
-  const toggleFollow = () => {
-    dispatch({ type: 'TOGGLE_FOLLOW', userId });
+  const toggleFollow = async () => {
+    if (!userId) return;
+    const res = await dispatch({ type: 'TOGGLE_FOLLOW', userId });
+    if (res?.ok === false) return;
     showToast(following ? `Unfollowed ${user?.name}` : `Following ${user?.name}`, { tone: following ? 'default' : 'success' });
   };
 
@@ -42,6 +46,16 @@ export default function UserProfileScreen({ navigation, route }) {
       ),
     });
   }, [navigation, user]);
+
+  if (!rawUserId) {
+    return (
+      <MissingParamsFallback
+        navigation={navigation}
+        title="Profile couldn't be loaded"
+        message="This profile link is missing required information."
+      />
+    );
+  }
 
   if (isSelfUserId(rawUserId, state.authUserId)) return null;
 

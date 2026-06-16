@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import QuestionFeedList from '../components/QuestionFeedList';
+import MissingParamsFallback from '../components/MissingParamsFallback';
 import { useData, useSelectors } from '../data/store';
 import { categoryById } from '../data/categories';
 import { useTheme } from '../theme/ThemeContext';
@@ -21,9 +22,19 @@ export default function CategoryFeedScreen({ navigation, route }) {
   }, [navigation, category?.name]);
 
   const data = useMemo(
-    () => feedQuestions().filter((q) => q.category === categoryId),
+    () => (categoryId ? feedQuestions().filter((q) => q.category === categoryId) : []),
     [feedQuestions, categoryId],
   );
+
+  if (!categoryId) {
+    return (
+      <MissingParamsFallback
+        navigation={navigation}
+        title="Category couldn't be loaded"
+        message="This category link was incomplete."
+      />
+    );
+  }
 
   const header = (
     <View style={styles.header}>

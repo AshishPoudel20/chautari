@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MissingParamsFallback from '../components/MissingParamsFallback';
 import CircleDirectoryRow from '../components/CircleDirectoryRow';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard } from '../utils/navigation';
@@ -12,7 +13,7 @@ import {
 const PAGE_SIZE = 25;
 
 export default function CirclesSectionSeeAllScreen({ navigation, route }) {
-  const { sectionKey } = route.params;
+  const { sectionKey } = route.params || {};
   const { dispatch, state } = useData();
   const {
     joinedUserCirclesList,
@@ -60,6 +61,16 @@ export default function CirclesSectionSeeAllScreen({ navigation, route }) {
     if (circleById(circleId)?.isOfficial) return;
     dispatch({ type: 'TOGGLE_JOIN_CIRCLE', circleId });
   }, [circleById, dispatch]);
+
+  if (!sectionKey) {
+    return (
+      <MissingParamsFallback
+        navigation={navigation}
+        title="This list couldn't be loaded"
+        message="The circles section link was incomplete."
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
