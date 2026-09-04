@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { InteractionManager, Platform } from 'react-native';
+import { useGoBack as useSafeGoBack } from '../hooks/useGoBack';
 
 const GUARD_MS = 400;
 
@@ -53,6 +54,7 @@ export function openExpertProfile(navigation, { userId, title, authUserId, navig
 // Prevents double-tap from pushing duplicate screens onto the stack.
 export function useNavigationGuard(navigation) {
   const locked = useRef(false);
+  const safeGoBack = useSafeGoBack(navigation);
 
   const guard = useCallback((action) => {
     if (locked.current) return;
@@ -70,8 +72,8 @@ export function useNavigationGuard(navigation) {
     [navigation, guard],
   );
 
-  // Back is never guarded — the 400ms lock after navigate made custom back buttons feel dead.
-  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+  // Safe back is never guarded — the 400ms lock after navigate made custom back buttons feel dead.
+  const goBack = safeGoBack;
 
   const replace = useCallback(
     (...args) => guard(() => navigation.replace(...args)),

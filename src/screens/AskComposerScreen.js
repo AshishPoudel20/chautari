@@ -45,7 +45,7 @@ export default function AskComposerScreen({ navigation, route }) {
     isJoinedCircle,
   } = useSelectors();
   const { online } = useNetwork();
-  const { replace, navigate } = useNavigationGuard(navigation);
+  const { navigate } = useNavigationGuard(navigation);
   const { pickFromLibrary } = useImagePicker();
   const user = me();
   const [title, setTitle] = useState('');
@@ -243,7 +243,15 @@ export default function AskComposerScreen({ navigation, route }) {
       });
       if (res?.ok === false) throw res.error || new Error('Could not post question');
       Animated.timing(success, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-      setTimeout(() => replace('QuestionDetail', { questionId: id, justPosted: true }), 850);
+      // Dismiss the composer modal, then push detail on the root stack.
+      // `replace` from the modal group left a shallow/dead stack where back was a no-op.
+      setTimeout(() => {
+        const root = navigation.getParent() || navigation;
+        if (navigation.canGoBack()) navigation.goBack();
+        requestAnimationFrame(() => {
+          root.navigate('QuestionDetail', { questionId: id, justPosted: true });
+        });
+      }, 850);
     } catch (e) {
       setPosting(false);
       Alert.alert('Could not post', e?.message || 'Check your connection and try again.');

@@ -17,6 +17,8 @@ import { useNetwork } from '../data/network';
 import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import ExpertProfessionalConfirm from '../components/ExpertProfessionalConfirm';
 import { useNavigationGuard, runAfterAlert, openAuthorProfile } from '../utils/navigation';
+import { useAndroidBackHandler } from '../hooks/useGoBack';
+import BackButton from '../components/BackButton';
 import { useFocusEffect } from '@react-navigation/native';
 import { showsExpertBadge, displayProfessionLabel, hasExpertProfessionalProfile } from '../utils/expertPost';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
@@ -52,6 +54,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   const { online } = useNetwork();
   const { pickFromLibrary } = useImagePicker();
   const { navigate, goBack } = useNavigationGuard(navigation);
+  useAndroidBackHandler(goBack);
   const { colors, spacing, font, radius, line, shadow } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, line, shadow), [colors, spacing, font, radius, line, shadow]);
   const question = questionById(questionId);
@@ -216,6 +219,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerLeft: (props) => <BackButton {...props} tintColor={colors.text} />,
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
           <Pressable onPress={toggleSave} hitSlop={10}>
