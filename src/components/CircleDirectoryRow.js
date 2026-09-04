@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import CircleIcon from './CircleIcon';
-import { resolveCircleAccent } from '../data/circles';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function CircleDirectoryRow({
@@ -12,12 +11,11 @@ export default function CircleDirectoryRow({
   onToggleJoin,
   showJoinControl = true,
 }) {
-  const { colors, spacing, font, radius, shadow, isDark } = useTheme();
+  const { colors, spacing, font, radius, shadow } = useTheme();
   const styles = useMemo(
     () => createStyles(colors, spacing, font, radius, shadow),
     [colors, spacing, font, radius, shadow],
   );
-  const accent = resolveCircleAccent(circle.accentId, isDark, colors.surface);
 
   return (
     <Pressable
@@ -29,8 +27,8 @@ export default function CircleDirectoryRow({
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{circle.name}</Text>
           {circle.isOfficial ? (
-            <View style={[styles.official, { backgroundColor: accent.color }]}>
-              <Text style={[styles.officialText, { color: accent.onAccent }]}>Official</Text>
+            <View style={styles.official}>
+              <Text style={styles.officialText}>Official</Text>
             </View>
           ) : null}
         </View>
@@ -69,8 +67,20 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   rowBody: { flex: 1, marginLeft: spacing.md, marginRight: spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   name: { fontSize: font.body, fontWeight: '800', color: colors.text, flexShrink: 1 },
-  official: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill },
-  officialText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.3 },
+  official: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.verifiedTint,
+    borderWidth: 1,
+    borderColor: colors.verified,
+  },
+  officialText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    color: colors.verified,
+  },
   desc: { fontSize: font.caption, color: colors.textMuted, marginTop: 2 },
   meta: { fontSize: font.tiny, color: colors.textFaint, marginTop: 4, fontWeight: '600' },
   joinBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.primary },

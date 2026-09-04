@@ -1,34 +1,31 @@
 export const CIRCLE_DIR_SECTION_CAP = 5;
+export const CIRCLE_DIR_ALL_PAGE_SIZE = 10;
+/** Max joined user-circles shown under Your Circles before "See all" (official always shown). */
+export const CIRCLE_DIR_YOUR_JOINED_CAP = 5;
 
 export const CIRCLE_DIR_SECTIONS = {
   YOUR: 'your',
-  OFFICIAL: 'official',
   POPULAR: 'popular',
-  NEW: 'new',
-  RECOMMENDED: 'recommended',
+  ALL: 'all',
 };
 
 export const CIRCLE_DIR_SECTION_LABELS = {
   [CIRCLE_DIR_SECTIONS.YOUR]: 'Your Circles',
-  [CIRCLE_DIR_SECTIONS.OFFICIAL]: 'Official',
   [CIRCLE_DIR_SECTIONS.POPULAR]: 'Popular',
-  [CIRCLE_DIR_SECTIONS.NEW]: 'New',
-  [CIRCLE_DIR_SECTIONS.RECOMMENDED]: 'Recommended',
+  [CIRCLE_DIR_SECTIONS.ALL]: 'All',
 };
 
 export const CIRCLE_DIR_SEE_ALL_TITLES = {
   [CIRCLE_DIR_SECTIONS.YOUR]: 'Your Circles',
-  [CIRCLE_DIR_SECTIONS.OFFICIAL]: 'Official Circles',
   [CIRCLE_DIR_SECTIONS.POPULAR]: 'Popular Circles',
-  [CIRCLE_DIR_SECTIONS.NEW]: 'New Circles',
-  [CIRCLE_DIR_SECTIONS.RECOMMENDED]: 'Recommended Circles',
+  [CIRCLE_DIR_SECTIONS.ALL]: 'All Circles',
 };
 
 function filterByQuery(circles, query) {
   const q = query.trim().toLowerCase();
   if (!q) return circles;
   return circles.filter(
-    (c) => c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q),
+    (c) => c.name.toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q),
   );
 }
 
@@ -36,56 +33,55 @@ export function scorePopularCircle(circle, activitySince) {
   return (circle.memberCount || 0) + activitySince(circle.id) * 10;
 }
 
-export function buildPopularList(userCircles, joinedSet, activitySince) {
-  return userCircles
-    .filter((c) => !joinedSet.has(c.id))
-    .map((c) => ({ ...c, _popScore: scorePopularCircle(c, activitySince) }))
-    .sort((a, b) => b._popScore - a._popScore || b.createdAt - a.createdAt);
-}
-
-export function buildNewList(userCircles, joinedSet) {
-  return userCircles
-    .filter((c) => !joinedSet.has(c.id))
-    .sort((a, b) => b.createdAt - a.createdAt);
-}
-
-export function buildRecommendedList(circles, joinedSet, limit = Infinity) {
-  const joinedWords = new Set();
-  circles
-    .filter((c) => joinedSet.has(c.id) && !c.isOfficial)
-    .forEach((c) => {
-      `${c.name} ${c.description}`.toLowerCase().split(/\W+/).forEach((w) => {
-        if (w.length > 3) joinedWords.add(w);
-      });
-    });
-
-  return circles
-    .filter((c) => !c.isOfficial && !joinedSet.has(c.id))
-    .map((c) => {
-      let score = c.memberCount || 0;
-      `${c.name} ${c.description}`.toLowerCase().split(/\W+/).forEach((w) => {
-        if (joinedWords.has(w)) score += 45;
-      });
-      return { c, score };
-    })
-    .sort((a, b) => b.score - a.score || b.c.createdAt - a.c.createdAt)
-    .slice(0, limit)
-    .map((x) => x.c);
-}
-
-function takeUnique(list, used, max) {
+/** Official first, then joined user-created circles (deduped). */
+export function buildYourCirclesList(officialCircles, joinedUserCircles) {
+  const seen = new Set();
   const out = [];
-  for (const c of list) {
-    if (used.has(c.id)) continue;
-    used.add(c.id);
+  for (const c of officialCircles || []) {
+    if (!c?.id || seen.has(c.id)) continue;
+    seen.add(c.id);
     out.push(c);
-    if (out.length >= max) break;
+  }
+  for (const c of joinedUserCircles || []) {
+    if (!c?.id || seen.has(c.id) || c.isOfficial) continue;
+    seen.add(c.id);
+    out.push(c);
   }
   return out;
 }
 
+/** Unjoined user-created circles, ranked by members + recent activity. */
+export function buildPopularList(userCircles, joinedSet, activitySince) {
+  return (userCircles || [])
+    .filter((c) => c && !c.isOfficial && !joinedSet.has(c.id))
+    .map((c) => ({ ...c, _popScore: scorePopularCircle(c, activitySince) }))
+    .sort((a, b) => b._popScore - a._popScore || (b.createdAt || 0) - (a.createdAt || 0));
+}
+
 /**
- * Build capped, deduped directory sections for the main Circles screen.
+ * Remaining joinable circles for All — user-created, not joined, not already
+ * claimed by Popular (strict section dedupe).
+ */
+export function buildAllRemainingList(userCircles, joinedSet, excludeIds = []) {
+  const exclude = new Set(excludeIds);
+  return (userCircles || [])
+    .filter((c) => c && !c.isOfficial && !joinedSet.has(c.id) && !exclude.has(c.id))
+    .sort(
+      (a, b) => (b.createdAt || 0) - (a.createdAt || 0) || a.name.localeCompare(b.name),
+    );
+}
+
+/** @deprecated kept for any stray imports — prefer buildAllRemainingList */
+export function buildAllList(userCircles) {
+  return [...(userCircles || [])]
+    .filter((c) => c && !c.isOfficial)
+    .sort(
+      (a, b) => (b.createdAt || 0) - (a.createdAt || 0) || a.name.localeCompare(b.name),
+    );
+}
+
+/**
+ * Build capped, deduped directory sections: Your Circles → Popular → All.
  */
 export function buildDirectorySections({
   joinedUserCircles,
@@ -95,76 +91,71 @@ export function buildDirectorySections({
   activitySince,
   query = '',
   cap = CIRCLE_DIR_SECTION_CAP,
+  yourJoinedCap = CIRCLE_DIR_YOUR_JOINED_CAP,
+  allVisibleCount = CIRCLE_DIR_ALL_PAGE_SIZE,
 }) {
   const joinedSet = new Set(joinedIds);
   const searching = !!query.trim();
 
-  const yourAll = filterByQuery(joinedUserCircles, query);
-  const officialAll = filterByQuery(officialCircles, query);
-  const popularAll = filterByQuery(buildPopularList(userCircles, joinedSet, activitySince), query);
-  const newAll = filterByQuery(buildNewList(userCircles, joinedSet), query);
-  const recommendedAll = filterByQuery(buildRecommendedList(userCircles, joinedSet), query);
+  const officialAll = filterByQuery(officialCircles || [], query);
+  const joinedUserAll = filterByQuery(
+    (joinedUserCircles || []).filter((c) => c && !c.isOfficial),
+    query,
+  );
+  const yourFull = buildYourCirclesList(officialAll, joinedUserAll);
 
-  const used = new Set();
-  yourAll.forEach((c) => used.add(c.id));
-  officialAll.forEach((c) => used.add(c.id));
+  const popularFull = filterByQuery(
+    buildPopularList(userCircles, joinedSet, activitySince),
+    query,
+  );
+  const popularPreview = popularFull.slice(0, cap);
+  const popularPreviewIds = popularPreview.map((c) => c.id);
 
-  const yourPreview = yourAll.slice(0, cap);
-  const officialPreview = officialAll;
-  const popularPreview = takeUnique(popularAll, used, cap);
-  const newPreview = takeUnique(newAll, used, cap);
-  const recommendedPreview = takeUnique(recommendedAll, used, cap);
+  const allFull = filterByQuery(
+    buildAllRemainingList(userCircles, joinedSet, popularPreviewIds),
+    query,
+  );
+  const allPreview = allFull.slice(0, Math.max(CIRCLE_DIR_ALL_PAGE_SIZE, allVisibleCount));
+
+  // Official always in preview; only cap the joined user-created portion.
+  const yourPreview = [
+    ...officialAll,
+    ...joinedUserAll.slice(0, yourJoinedCap),
+  ];
+  const yourShowSeeAll = joinedUserAll.length > yourJoinedCap;
 
   const sections = [];
 
-  if (!searching || yourAll.length) {
+  if (!searching || yourFull.length) {
     sections.push({
       key: CIRCLE_DIR_SECTIONS.YOUR,
       title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.YOUR],
       data: yourPreview,
-      totalCount: yourAll.length,
-      showSeeAll: yourAll.length > cap,
-      emptyHint: !searching && yourAll.length === 0 ? 'Join circles to see them here.' : null,
+      totalCount: yourFull.length,
+      showSeeAll: yourShowSeeAll,
+      emptyHint: null,
     });
   }
 
-  if (officialAll.length) {
-    sections.push({
-      key: CIRCLE_DIR_SECTIONS.OFFICIAL,
-      title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.OFFICIAL],
-      data: officialPreview,
-      totalCount: officialAll.length,
-      showSeeAll: false,
-    });
-  }
-
-  if (popularAll.length) {
+  if (popularFull.length) {
     sections.push({
       key: CIRCLE_DIR_SECTIONS.POPULAR,
       title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.POPULAR],
       data: popularPreview,
-      totalCount: popularAll.length,
-      showSeeAll: popularAll.length > cap,
+      totalCount: popularFull.length,
+      showSeeAll: popularFull.length > cap,
     });
   }
 
-  if (newAll.length) {
+  if (!searching || allFull.length) {
     sections.push({
-      key: CIRCLE_DIR_SECTIONS.NEW,
-      title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.NEW],
-      data: newPreview,
-      totalCount: newAll.length,
-      showSeeAll: newAll.length > cap,
-    });
-  }
-
-  if (recommendedAll.length) {
-    sections.push({
-      key: CIRCLE_DIR_SECTIONS.RECOMMENDED,
-      title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.RECOMMENDED],
-      data: recommendedPreview,
-      totalCount: recommendedAll.length,
-      showSeeAll: recommendedAll.length > cap,
+      key: CIRCLE_DIR_SECTIONS.ALL,
+      title: CIRCLE_DIR_SECTION_LABELS[CIRCLE_DIR_SECTIONS.ALL],
+      data: allPreview,
+      totalCount: allFull.length,
+      showSeeAll: false,
+      showMore: allFull.length > allPreview.length,
+      emptyHint: !searching && allFull.length === 0 ? 'No more circles to browse.' : null,
     });
   }
 
@@ -184,15 +175,26 @@ export function getSectionFullList(sectionKey, ctx) {
 
   switch (sectionKey) {
     case CIRCLE_DIR_SECTIONS.YOUR:
-      return filterByQuery(joinedUserCircles, query);
-    case CIRCLE_DIR_SECTIONS.OFFICIAL:
-      return filterByQuery(officialCircles, query);
+      return filterByQuery(
+        buildYourCirclesList(officialCircles, joinedUserCircles),
+        query,
+      );
     case CIRCLE_DIR_SECTIONS.POPULAR:
-      return filterByQuery(buildPopularList(userCircles, joinedSet, activitySince), query);
-    case CIRCLE_DIR_SECTIONS.NEW:
-      return filterByQuery(buildNewList(userCircles, joinedSet), query);
-    case CIRCLE_DIR_SECTIONS.RECOMMENDED:
-      return filterByQuery(buildRecommendedList(userCircles, joinedSet), query);
+      return filterByQuery(
+        buildPopularList(userCircles, joinedSet, activitySince),
+        query,
+      );
+    case CIRCLE_DIR_SECTIONS.ALL: {
+      // Full All list = every unjoined user circle (complete catalog).
+      // Main directory preview excludes Popular's capped rows; See all shows all remaining joinables.
+      const popularIds = buildPopularList(userCircles, joinedSet, activitySince)
+        .slice(0, CIRCLE_DIR_SECTION_CAP)
+        .map((c) => c.id);
+      return filterByQuery(
+        buildAllRemainingList(userCircles, joinedSet, popularIds),
+        query,
+      );
+    }
     default:
       return [];
   }
