@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';
+import BackButton from '../components/BackButton';
 import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
 import ExpertProfileScreen from '../screens/ExpertProfileScreen';
 
@@ -14,6 +15,7 @@ export default function ExpertsStack() {
     headerTitleStyle: { fontWeight: '700' },
     headerShadowVisible: false,
     headerBackTitle: 'Back',
+    headerLeft: (props) => <BackButton {...props} tintColor={colors.text} />,
     contentStyle: { backgroundColor: colors.bg },
     animation: 'slide_from_right',
     freezeOnBlur: true,

@@ -14,6 +14,8 @@ import { EmptyState } from '../components/ui';
 import { FadeRise } from '../components/Motion';
 import { useData, useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, openExpertProfile, runAfterAlert } from '../utils/navigation';
+import { useAndroidBackHandler } from '../hooks/useGoBack';
+import BackButton from '../components/BackButton';
 import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
@@ -43,6 +45,7 @@ export default function CircleDetailScreen({ navigation, route }) {
     userById, answerCount, expertAnswerOn, state,
   } = useSelectors();
   const { navigate, goBack } = useNavigationGuard(navigation);
+  useAndroidBackHandler(goBack);
   const { colors, spacing, font, radius, shadow, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius, shadow, insets), [colors, spacing, font, radius, shadow, insets]);
@@ -261,9 +264,7 @@ export default function CircleDetailScreen({ navigation, route }) {
       </Animated.View>
 
       <View pointerEvents="box-none" style={[styles.navRow, { paddingTop: insets.top + 6 }]}>
-        <Pressable onPress={goBack} style={styles.backBtn} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-          <Text style={styles.backIcon}>←</Text>
-        </Pressable>
+        <BackButton variant="overlay" onPress={goBack} />
         {showCreatorTools ? (
           <Pressable onPress={openCreatorMenu} style={styles.backBtn} hitSlop={8}>
             <Text style={styles.gearIcon}>⚙</Text>

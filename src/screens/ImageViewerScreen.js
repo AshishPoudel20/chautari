@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
+import { useGoBack, useAndroidBackHandler } from '../hooks/useGoBack';
 import { viewerPhotoUrls } from '../utils/photos';
 
 const DISMISS_DRAG = 100;
@@ -20,6 +21,8 @@ const DISMISS_VELOCITY = 0.75;
 export default function ImageViewerScreen({ navigation, route }) {
   const { colors, spacing, font } = useTheme();
   const insets = useSafeAreaInsets();
+  const goBack = useGoBack(navigation);
+  useAndroidBackHandler(goBack);
   const { width, height } = useWindowDimensions();
   const styles = useMemo(
     () => createStyles(colors, spacing, font, insets, width),
@@ -54,7 +57,7 @@ export default function ImageViewerScreen({ navigation, route }) {
             toValue: height,
             duration: 200,
             useNativeDriver: true,
-          }).start(() => navigation.goBack());
+          }).start(() => goBack());
           return;
         }
         Animated.spring(translateY, {
@@ -71,7 +74,7 @@ export default function ImageViewerScreen({ navigation, route }) {
 
   return (
     <Animated.View style={[styles.container, { opacity: backdropOpacity }]}>
-      <Pressable style={styles.close} onPress={() => navigation.goBack()} hitSlop={12}>
+      <Pressable style={styles.close} onPress={goBack} hitSlop={12} accessibilityLabel="Close">
         <Text style={styles.closeText}>✕</Text>
       </Pressable>
       {items.length === 0 ? (

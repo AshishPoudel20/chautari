@@ -67,14 +67,19 @@ export default function PhotoSourceSheet({
       onRequestClose={onClose}
       onDismiss={handleDismiss}
     >
-      <View style={styles.root}>
+      <View style={styles.root} pointerEvents={visible ? 'auto' : 'none'}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" accessibilityLabel="Dismiss">
-          <Pressable style={styles.sheet} onPress={() => {}}>
+          <View />
+        </Pressable>
+        <View style={styles.sheet} pointerEvents="box-none">
+          <Pressable onPress={() => {}}>
             <Text style={styles.title}>{title}</Text>
-            <Pressable style={styles.row} onPress={() => queueAction('camera')}>
-              <Text style={styles.icon}>📸</Text>
-              <Text style={styles.label}>Take a photo</Text>
-            </Pressable>
+            {onCamera ? (
+              <Pressable style={styles.row} onPress={() => queueAction('camera')}>
+                <Text style={styles.icon}>📸</Text>
+                <Text style={styles.label}>Take a photo</Text>
+              </Pressable>
+            ) : null}
             <Pressable style={styles.row} onPress={() => queueAction('library')}>
               <Text style={styles.icon}>🖼</Text>
               <Text style={styles.label}>Choose from library</Text>
@@ -89,7 +94,7 @@ export default function PhotoSourceSheet({
               <Text style={[styles.label, styles.cancelText]}>Cancel</Text>
             </Pressable>
           </Pressable>
-        </Pressable>
+        </View>
       </View>
     </Modal>
   );
@@ -106,9 +111,12 @@ const createStyles = (colors, spacing, font, radius, shadow) => StyleSheet.creat
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
   },
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
