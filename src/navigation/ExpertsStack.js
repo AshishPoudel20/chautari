@@ -15,6 +15,7 @@ export default function ExpertsStack() {
     headerTitleStyle: { fontWeight: '700' },
     headerShadowVisible: false,
     headerBackTitle: 'Back',
+    headerBackVisible: false,
     headerLeft: (props) => <BackButton {...props} tintColor={colors.text} />,
     contentStyle: { backgroundColor: colors.bg },
     animation: 'slide_from_right',

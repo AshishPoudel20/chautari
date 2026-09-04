@@ -18,7 +18,6 @@ import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
 import ExpertProfessionalConfirm from '../components/ExpertProfessionalConfirm';
 import { useNavigationGuard, runAfterAlert, openAuthorProfile } from '../utils/navigation';
 import { useAndroidBackHandler } from '../hooks/useGoBack';
-import BackButton from '../components/BackButton';
 import { useFocusEffect } from '@react-navigation/native';
 import { showsExpertBadge, displayProfessionLabel, hasExpertProfessionalProfile } from '../utils/expertPost';
 import { timeAgo, displayAuthor, compactNumber } from '../utils/format';
@@ -219,7 +218,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: (props) => <BackButton {...props} tintColor={colors.text} />,
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
           <Pressable onPress={toggleSave} hitSlop={10}>
