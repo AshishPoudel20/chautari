@@ -1,18 +1,18 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
-import Button from '../components/Button';
-import Avatar from '../components/Avatar';
-import KeyboardScreen from '../components/KeyboardScreen';
-import PhotoSourceSheet from '../components/PhotoSourceSheet';
-import { Chip } from '../components/ui';
-import { useData } from '../data/store';
-import { SUBURBS } from '../data/categories';
-import { useTheme } from '../theme/ThemeContext';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { completeOnboarding } from '../services/profile';
-import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
-import { uploadAvatar } from '../services/mediaStorage';
+import Button from '../../components/Button';
+import Avatar from '../../components/Avatar';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import { Chip } from '../../components/ui';
+import { useData } from '../../data/store';
+import { SUBURBS } from '../../data/categories';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { completeOnboarding } from '../../services/profile';
+import { useProfilePhotoFlow } from '../../hooks/useProfilePhotoFlow';
+import { isLocalPhotoUri, photoUrl } from '../../utils/photos';
+import { uploadAvatar } from '../../services/mediaStorage';
 
 // Profile setup step 2 — suburb + photo, both optional and skippable.
 // This is the final onboarding step, so we create the account here.

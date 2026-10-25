@@ -1,11 +1,11 @@
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ActivityIndicator } from 'react-native';
-import Button from '../components/Button';
-import KeyboardScreen from '../components/KeyboardScreen';
-import { useTheme } from '../theme/ThemeContext';
-import { useData } from '../data/store';
-import { fetchProfile } from '../services/profile';
-import { sendPhoneOtp, verifyPhoneOtp, usesMockOtp } from '../services/auth';
+import Button from '../../components/Button';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import { useTheme } from '../../theme/ThemeContext';
+import { useData } from '../../data/store';
+import { fetchProfile } from '../../services/profile';
+import { sendPhoneOtp, verifyPhoneOtp, usesMockOtp } from '../../services/auth';
 
 const LENGTH = 6;
 

@@ -1,9 +1,9 @@
 import React, { useMemo,  useState  } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
-import Button from '../components/Button';
-import KeyboardScreen from '../components/KeyboardScreen';
-import { Field, Input } from '../components/ui';
-import { useTheme } from '../theme/ThemeContext';
+import Button from '../../components/Button';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import { Field, Input } from '../../components/ui';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Profile setup step 1 — name is required.
 // We carry the name forward and only create the account at the final step,

@@ -1,8 +1,8 @@
 import React, { useMemo,  useEffect, useRef  } from 'react';
 import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
-import { MotifBand } from '../components/Motif';
-import ShinyWordmark from '../components/ShinyWordmark';
-import { useTheme } from '../theme/ThemeContext';
+import { MotifBand } from '../../components/Motif';
+import ShinyWordmark from '../../components/ShinyWordmark';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Animated logo splash (~1.5s). The actual hold/route is governed by RootNavigator.
 export default function SplashScreen() {

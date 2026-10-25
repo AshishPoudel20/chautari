@@ -7,12 +7,12 @@ import { useTheme } from '../theme/ThemeContext';
 import { useData } from '../data/store';
 import { CIRCLE_DIR_SEE_ALL_TITLES } from '../utils/circleDirectory';
 
-import SplashScreen from '../screens/SplashScreen';
-import WelcomeScreen from '../screens/WelcomeScreen';
-import PhoneEntryScreen from '../screens/PhoneEntryScreen';
-import OtpScreen from '../screens/OtpScreen';
-import ProfileNameScreen from '../screens/ProfileNameScreen';
-import ProfileSuburbScreen from '../screens/ProfileSuburbScreen';
+import SplashScreen from '../screens/auth/SplashScreen';
+import WelcomeScreen from '../screens/auth/WelcomeScreen';
+import PhoneEntryScreen from '../screens/auth/PhoneEntryScreen';
+import OtpScreen from '../screens/auth/OtpScreen';
+import ProfileNameScreen from '../screens/auth/ProfileNameScreen';
+import ProfileSuburbScreen from '../screens/auth/ProfileSuburbScreen';
 import MainTabs from './MainTabs';
 import QuestionDetailScreen from '../screens/QuestionDetailScreen';
 import AskComposerScreen from '../screens/AskComposerScreen';

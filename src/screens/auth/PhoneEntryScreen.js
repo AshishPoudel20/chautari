@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import Button from '../components/Button';
-import KeyboardScreen from '../components/KeyboardScreen';
-import { Input } from '../components/ui';
-import { useTheme } from '../theme/ThemeContext';
-import { sendPhoneOtp, toE164Au, usesMockOtp } from '../services/auth';
+import Button from '../../components/Button';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import { Input } from '../../components/ui';
+import { useTheme } from '../../theme/ThemeContext';
+import { sendPhoneOtp, toE164Au, usesMockOtp } from '../../services/auth';
 
 // AU mobile entry. +61 is fixed; user types the 9-digit mobile (starts with 4).
 export default function PhoneEntryScreen({ navigation }) {
