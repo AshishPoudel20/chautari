@@ -37,7 +37,7 @@ import DeleteAccountScreen from '../screens/DeleteAccountScreen';
 import ImageViewerScreen from '../screens/ImageViewerScreen';
 import MyPostsScreen from '../screens/profile/MyPostsScreen';
 import SavedPostsScreen from '../screens/profile/SavedPostsScreen';
-import ArrivalChecklistScreen from '../screens/ArrivalChecklistScreen';
+import ArrivalChecklistScreen from '../screens/checklist/ArrivalChecklistScreen';
 import ProfilePhotoPreviewScreen from '../screens/ProfilePhotoPreviewScreen';
 
 const Stack = createNativeStackNavigator();

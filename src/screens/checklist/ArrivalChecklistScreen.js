@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Easing } from 'react-native';
-import { useData, useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
-import { CHECKLIST_ITEMS, CHECKLIST_TOTAL } from '../data/checklist';
+import { useData, useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
+import { CHECKLIST_ITEMS, CHECKLIST_TOTAL } from '../../data/checklist';
 
 export default function ArrivalChecklistScreen({ navigation }) {
   const { dispatch } = useData();
