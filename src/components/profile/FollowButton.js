@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
-import { useData, useSelectors } from '../data/store';
-import { useToast } from './common/Toast';
-import { useTheme } from '../theme/ThemeContext';
-import { isSelfUserId } from '../utils/navigation';
+import { useData, useSelectors } from '../../data/store';
+import { useToast } from '../common/Toast';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSelfUserId } from '../../utils/navigation';
 
 // One-tap, optimistic follow / unfollow. State lives in the reducer and updates
 // synchronously, so the toggle reflects instantly (Build Brief v2). Confirms

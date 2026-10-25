@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, ScrollView, Pressable } from 'react-n
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Avatar from '../../components/common/Avatar';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
-import FollowButton from '../../components/FollowButton';
+import FollowButton from '../../components/profile/FollowButton';
 import { Chip, EmptyState } from '../../components/common/ui';
 import { useSelectors } from '../../data/store';
 import { CATEGORIES, SUBURBS, professionLabel } from '../../data/categories';

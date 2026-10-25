@@ -1,17 +1,17 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Linking } from 'react-native';
-import Avatar from './common/Avatar';
-import VerifiedBadge from './common/VerifiedBadge';
-import KarmaBadge from './common/KarmaBadge';
-import FoundingMemberBadge from './common/FoundingMemberBadge';
-import Button from './common/Button';
-import QuestionCard from './feed/QuestionCard';
-import { EmptyState } from './common/ui';
-import { useSelectors } from '../data/store';
-import { useNavigationGuard, openAuthorProfile, resolveUserId } from '../utils/navigation';
-import { categoryName } from '../data/categories';
-import { compactNumber } from '../utils/format';
-import { useTheme } from '../theme/ThemeContext';
+import Avatar from '../common/Avatar';
+import VerifiedBadge from '../common/VerifiedBadge';
+import KarmaBadge from '../common/KarmaBadge';
+import FoundingMemberBadge from '../common/FoundingMemberBadge';
+import Button from '../common/Button';
+import QuestionCard from '../feed/QuestionCard';
+import { EmptyState } from '../common/ui';
+import { useSelectors } from '../../data/store';
+import { useNavigationGuard, openAuthorProfile, resolveUserId } from '../../utils/navigation';
+import { categoryName } from '../../data/categories';
+import { compactNumber } from '../../utils/format';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Shared profile layout for My / Other / Expert profiles.
 // `actions` is rendered under the stats row; `mode` tweaks copy.

@@ -9,7 +9,7 @@ import ChecklistFeedCard from '../../components/feed/ChecklistFeedCard';
 import FeedSortToggle from '../../components/feed/FeedSortToggle';
 import Avatar from '../../components/common/Avatar';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
-import FollowButton from '../../components/FollowButton';
+import FollowButton from '../../components/profile/FollowButton';
 import { EmptyState, CountBadge } from '../../components/common/ui';
 import { PulseDot } from '../../components/common/Motion';
 import { QuestionCardSkeleton } from '../../components/common/Skeleton';
