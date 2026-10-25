@@ -2,40 +2,96 @@
 
 **Community Q&A for the Nepali diaspora in Australia**
 
-Chautari is a mobile-first platform where newcomers and long-term residents ask practical questions â€” visas, tax, healthcare, renting, careers â€” and get answers from the community and **verified local experts** (migration agents, accountants, GPs, mortgage brokers, and more).
+Chautari is a mobile-first platform where newcomers and long-term residents ask practical questions (visas, tax, healthcare, renting, careers) and get answers from the community and **verified local experts** (migration agents, accountants, GPs, mortgage brokers, and more).
 
-> *A chautari is the shaded resting place under a tree where villagers gather to talk â€” the spirit of the product.*
-
----
-
-## Problem
-
-Settling in Australia involves hundreds of small, high-stakes decisions spread across fragmented forums, Facebook groups, and word-of-mouth. Information is noisy, outdated, or hard to trust. Chautari concentrates that knowledge in one place, with clear signals for who is a verified professional versus a helpful neighbour sharing lived experience.
+> *A chautari is the shaded resting place under a tree where villagers gather to talk, which is the spirit of the product.*
 
 **Target launch:** 2027 (Greater Melbourne first, Australia-wide later)
 
-**Current status:** In active development. Hybrid model: mock seed feed + **Supabase** for auth, profiles, user-generated Q&A sync, and **photo storage** when `.env` is configured.
+**Current status:** In active development. Hybrid model: local seed feed + **Supabase** for auth, profiles, user-generated Q&A sync, and photo storage when `.env` is configured.
+
+For a complete, file-by-file map of the codebase (navigation, state, data flow, feed pipeline, Supabase schema, business rules) see [`docs/APP_MAP.md`](./docs/APP_MAP.md).
 
 ---
 
-## Photo upload (Supabase Storage)
+## Getting started
 
-Real image pick â†’ compress (HEICâ†’JPEG) â†’ upload â†’ public URL â†’ render everywhere.
+### Requirements
 
-| Target | Limit | Config |
-|--------|-------|--------|
-| Question photos | Up to 5, ~5 MB each, JPEG/PNG/HEIC | Always on |
-| Profile avatar | Single image; native 1:1 crop + circular preview confirm | Always on |
-| Circle banner | Single image (create/edit) | Always on; accent fallback when none |
-| Answer / reply photos | Single each | `ENABLE_REPLY_PHOTOS` in `src/constants/media.js` (PRD excludes these; prototype flag) |
+- Node 18+ and npm
+- A **development build** of the app on a device/emulator (see below). The project is on **Expo SDK 58**; the Expo Go app in the stores targets an older SDK and will not load this project.
+- Optional: a Supabase project (for sign-in, profile sync, posting to the live DB, and photo upload)
 
-**Bucket:** public `media` â€” see [`supabase/migrations/006_storage_media.sql`](supabase/migrations/006_storage_media.sql) and [`supabase/README.md`](supabase/README.md).
+### Folder layout
 
-**Client:** `expo-image-picker` + `expo-image-manipulator`; all uploads go through `uploadImageAsset()` in `src/services/mediaStorage.js` (stage blob/crop URIs â†’ `file://` JPEG â†’ expo-file-system base64 â†’ ArrayBuffer â†’ Supabase Storage). Never `fetch(blob:)`. Requires signed-in Supabase user.
+This repo is the app itself. If you cloned the outer workspace folder, it contains a thin wrapper `package.json` and `start.cmd` that delegate into this folder:
 
-**Profile photo flow:** chooser â†’ native square crop (`allowsEditing` + `aspect: [1, 1]`) â†’ `ProfilePhotoPreview` screen (circular `Avatar` at 88pt) â†’ upload on confirm. Question/circle/answer flows skip preview/crop.
+```
+<outer folder>/
+├── package.json      # npm run start / android / ios / web -> forwards to chautari-test/
+├── start.cmd         # Windows: installs deps if missing, then `npx expo start`
+└── chautari-test/    # <- this repo (app root)
+```
 
-**iOS gallery in Expo Go:** The shared picker requests `requestMediaLibraryPermissionsAsync()` then opens the library after the source sheet dismisses (iOS blocks the picker if it opens while a modal is closing). Fully quit and reopen Expo Go after changing `app.json` permission strings; those keys apply to dev builds, not Expo Goâ€™s own Info.plist â€” if the library still never prompts, use a development build so `photosPermission` is embedded.
+### Install and run
+
+From the **outer folder**:
+
+```bash
+npm run start          # = npm --prefix chautari-test run start
+npm run start:clear    # same, with Metro cache cleared
+npm run android        # expo start --android
+npm run ios            # expo start --ios
+```
+
+Or from this folder (`chautari-test/`):
+
+```bash
+npm install
+npx expo start
+```
+
+Then open the project in your development build (press `a` / `i`, or scan the QR code with the dev build, not Expo Go).
+
+### Development build (instead of Expo Go)
+
+The project uses Continuous Native Generation (no committed `android/` or `ios/` folders).
+
+- **Android APK via EAS** (profile defined in `eas.json`):
+  ```bash
+  npx eas build --platform android --profile preview
+  ```
+  Install the resulting APK on a device, then run `npx expo start` and open the project from the dev build.
+- **Local native run** (requires Android Studio / Xcode toolchains):
+  ```bash
+  npx expo run:android
+  npx expo run:ios
+  ```
+
+### Environment variables
+
+Copy `.env.example` to `.env` (gitignored, never commit it).
+
+| Variable | Used by | Purpose |
+|----------|---------|---------|
+| `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js` | Supabase project URL. If unset, the app runs fully offline on seed data. |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `src/lib/supabase.js` | Supabase anon (public) key. Never put a `service_role` key in the app. |
+| `EXPO_PUBLIC_AUTH_DEV_MODE` | `src/services/auth.js` | `true` (default) uses a mock OTP in the UI; set `false` for real SMS OTP via Supabase Auth. |
+| `SUPABASE_DB_URL` | `supabase/*.js` scripts only | Direct Postgres connection string for running migrations and verification scripts. Not read by the app. |
+
+Feature flags in code (not env): `ENABLE_REPLY_PHOTOS` in `src/constants/media.js`.
+
+### Reset local state
+
+State persists between launches via AsyncStorage (`chautari.state.v2`). To reset: **Profile → Settings → Delete account**, or clear the app's storage.
+
+### Verify a clean bundle
+
+```bash
+npx expo-doctor
+npx expo export --platform android
+npx expo export --platform ios
+```
 
 ---
 
@@ -43,87 +99,81 @@ Real image pick â†’ compress (HEICâ†’JPEG) â†’ upload â†’ pu
 
 | Layer | Technology |
 |-------|------------|
-| Mobile app | React Native, Expo SDK 54 |
-| Navigation | React Navigation (native stack + bottom tabs) |
-| State (prototype) | React Context + reducer, persisted via AsyncStorage |
-| Theming | Semantic design tokens, light + dark mode |
-| Planned production | Supabase (PostgreSQL, Auth, Row Level Security, Realtime, Storage) |
-
-The prototype runs **offline-capable mock feed** from `seed.js` while **auth, profiles, user posts, and photos** sync to Supabase when `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set in `.env` (see `.env.example`).
-
----
-
-## Key features (built in this prototype)
-
-- **Onboarding** â€” phone OTP flow (mocked), profile setup, newcomer opt-in for arrival checklist
-- **Feeds** â€” For You with **Hot/New** toggle, **80/20 joined/discovery** composition ([FEED_COMPOSITION.md](./docs/FEED_COMPOSITION.md)), and permanent membership in the 8 official circles; Following tab; live activity signals. Ranking: [FEED_RANKING.md](./docs/FEED_RANKING.md).
-- **Circles** â€” official topic communities + user-created circles; join/leave, create, edit, pin
-- **Q&A** â€” ask/answer/reply, anonymous posting, **real photo upload**, bookmarks, upvotes with karma
-- **Verified experts** â€” directory with filters, expert profiles, pinned expert answers, daily post cap
-- **Notifications** â€” grouped activity feed, digest scheduling (local `expo-notifications`)
-- **Arrival checklist** â€” first-60-days newcomer tasks with deep-links to community threads
-- **Trust & safety surfaces** â€” report flows, account deletion, legal/help screens
+| Mobile app | React Native 0.88, Expo SDK 58, JavaScript (no TypeScript) |
+| Navigation | React Navigation 7 (native stack + bottom tabs) |
+| State | React Context + reducer (`src/data/store.js`), persisted via AsyncStorage |
+| Backend | Supabase (PostgreSQL, Auth, Row Level Security, Storage) |
+| Theming | Semantic design tokens, light + dark mode (`src/theme/`) |
+| Media | `expo-image-picker` + `expo-image-manipulator`, uploads to the public `media` bucket |
 
 ---
 
-## Architecture overview
+## Key features
 
-```
-App.js
-â”œâ”€â”€ ThemeProvider          # light/dark semantic tokens
-â”œâ”€â”€ DataProvider           # mock store (store.js) â†” AsyncStorage
-â””â”€â”€ RootNavigator
-    â”œâ”€â”€ Auth stack         # splash â†’ welcome â†’ OTP â†’ profile setup
-    â””â”€â”€ Signed-in stack
-        â”œâ”€â”€ MainTabs       # Home Â· Circles Â· Experts Â· Profile
-        â”œâ”€â”€ Modals         # Ask, Answer, Report, Image viewer
-        â””â”€â”€ Push screens   # Question detail, Search, Activity, Settings, â€¦
-```
-
-**Data layer (prototype):** `src/data/store.js` is the single mock backend â€” questions, users, circles, notifications, and user actions all flow through a reducer with selectors. Seed data in `src/data/seed.js` refreshes relative timestamps on each launch so the feed feels alive.
-
-**Theming:** `src/theme/palettes.js` defines semantic colour tokens consumed via `useTheme()` â€” no hardcoded colours in screens.
-
-**Circles accent system:** palette keys resolve to theme-aware light/dark hex values with contrast clamping (`src/data/circles.js`, `src/utils/color.js`).
-
-**For You ranking:** constants in `src/feed/rankingConfig.js` (`DISCOVERY_RATIO`, `DISCOVERY_MIN_SCORE`, Hot score weights); snapshot-per-session Hot sort in `src/feed/feedRanking.js`; 80/20 composition in `src/feed/feedComposition.js` + `src/hooks/useForYouFeed.js`. Specs: [FEED_RANKING.md](./docs/FEED_RANKING.md), [FEED_COMPOSITION.md](./docs/FEED_COMPOSITION.md).
-
-**Official circles:** all 8 topic circles are permanent membership (every user is always joined; no leave control).
+- **Onboarding**: phone OTP flow (mock by default), profile name/suburb/photo, newcomer opt-in for the arrival checklist
+- **Feeds**: For You with **Hot/New** toggle and **80/20 joined/discovery** composition ([`docs/FEED_COMPOSITION.md`](./docs/FEED_COMPOSITION.md), [`docs/FEED_RANKING.md`](./docs/FEED_RANKING.md)); Following tab; permanent membership in the 8 official circles; tap the Home tab again to scroll to top and refresh
+- **Circles**: official topic communities + user-created circles; join/leave, create, edit, pin a question
+- **Q&A**: ask/answer/reply, anonymous posting, photo upload, bookmarks, upvotes with karma
+- **Verified experts**: directory with filters, expert profiles, pinned expert answers, professional post mode with a daily cap
+- **Notifications**: grouped activity feed, local digest scheduling (`expo-notifications`)
+- **Arrival checklist**: newcomer tasks with deep-links to community threads
+- **Trust & safety**: report flow, account deletion, help/terms/privacy/about screens
 
 ---
 
-## Screenshots
+## Photo upload (Supabase Storage)
 
-<!-- Add images before publishing â€” suggested paths: -->
-<!-- ![Home feed â€” For You](docs/screenshots/home-foryou.png) -->
-<!-- ![Circle hub](docs/screenshots/circle-detail.png) -->
-<!-- ![Expert directory](docs/screenshots/experts.png) -->
-<!-- ![Dark mode](docs/screenshots/dark-mode.png) -->
+Real image pick → compress (HEIC→JPEG) → upload → public URL → render everywhere.
 
-*Screenshots coming soon.*
+| Target | Limit | Config |
+|--------|-------|--------|
+| Question photos | Up to 5, ~5 MB each, JPEG/PNG/HEIC | Always on |
+| Profile avatar | Single image; native 1:1 crop + circular preview confirm | Always on |
+| Circle banner | Single image (create/edit) | Always on; accent fallback when none |
+| Answer / reply photos | Single each | `ENABLE_REPLY_PHOTOS` in `src/constants/media.js` |
+
+**Bucket:** public `media`; see [`supabase/migrations/006_storage_media.sql`](supabase/migrations/006_storage_media.sql) and [`supabase/README.md`](supabase/README.md).
+
+**Client:** all uploads go through `uploadImageAsset()` in `src/services/mediaStorage.js` (stage blob/crop URIs → `file://` JPEG → base64 → ArrayBuffer → Supabase Storage). Requires a signed-in Supabase user.
+
+**Profile photo flow:** chooser → native square crop → `ProfilePhotoPreview` screen → upload on confirm.
 
 ---
 
-## Getting started
+## Project structure
 
-**Requirements:** Node 18+, npm, [Expo Go](https://expo.dev/go) on a device or simulator.
-
-```bash
-git clone <your-repo-url>
-cd chautari-test
-npm install
-npx expo start
+```
+App.js                      # Providers + RootNavigator
+src/
+├── navigation/             # RootNavigator, MainTabs, ExpertsStack
+├── screens/                # grouped by feature
+│   ├── auth/  home/  questions/  circles/  experts/
+│   ├── profile/  checklist/  settings/  modals/
+├── components/             # common/ feed/ question/ circles/ profile/
+├── data/                   # store.js (reducer + selectors), seed.js, circles.js, categories.js, ...
+├── feed/                   # feedComposition.js, feedRanking.js, rankingConfig.js
+├── hooks/                  # useForYouFeed, useLiveDataRefresh, useImagePicker, ...
+├── services/               # auth, profile, mediaStorage, digest, liveData/*
+├── lib/                    # supabase client
+├── theme/                  # ThemeContext, palettes
+├── constants/  utils/
+supabase/
+├── migrations/             # 000..010 SQL, applied in order (never edit existing files)
+├── run-migrations.js  verify.js  scripts/
+docs/                       # APP_MAP, CLEANUP_REPORT, FEED_*, PRD, BUILD_BRIEF, BUGS
 ```
 
-Press `i` (iOS simulator), `a` (Android emulator), or scan the QR code in Expo Go.
+---
 
-State persists between launches via AsyncStorage. To reset: **Settings â†’ Delete account**, or clear app storage.
+## Documentation
 
-Verify a clean bundle:
-
-```bash
-npx expo export --platform ios
-```
+- [`docs/APP_MAP.md`](./docs/APP_MAP.md): complete app map (run, navigation, state, data flow, feed pipeline, Supabase, business rules, trace guides)
+- [`docs/CLEANUP_REPORT.md`](./docs/CLEANUP_REPORT.md): what the structure cleanup removed/moved and how it was verified
+- [`docs/FEED_COMPOSITION.md`](./docs/FEED_COMPOSITION.md): For You 80/20 joined/discovery blend
+- [`docs/FEED_RANKING.md`](./docs/FEED_RANKING.md): For You Hot/New ranking spec
+- [`docs/PRD.md`](./docs/PRD.md) and [`docs/BUILD_BRIEF.md`](./docs/BUILD_BRIEF.md): original product and design briefs
+- [`docs/BUGS.md`](./docs/BUGS.md): navigation audit log from polish passes
+- [`supabase/README.md`](./supabase/README.md): how to run migrations
 
 ---
 
@@ -132,27 +182,13 @@ npx expo export --platform ios
 | Phase | Focus |
 |-------|--------|
 | **Now** | Prototype polish, UX validation, architecture hardening |
-| **2025â€“26** | Supabase backend â€” auth (real OTP), PostgreSQL schema, RLS policies, file storage |
-| **2026** | Beta with verified expert onboarding pipeline, moderation tools |
-| **2027** | Public launch â€” Greater Melbourne, then national expansion |
-
----
-
-## Repository notes
-
-- `docs/FEED_COMPOSITION.md` â€” For You 80/20 joined/discovery blend (quality gate, official permanent membership)
-- `docs/FEED_RANKING.md` â€” For You Hot/New ranking spec (constants, snapshot approach)
-- `docs/PRD.md` and `docs/BUILD_BRIEF.md` â€” original product and design briefs used during prototype development
-- `docs/BUGS.md` â€” navigation audit log from polish passes
-- `src/constants/media.js` â€” upload limits + `ENABLE_REPLY_PHOTOS` flag
-- Copy `.env.example` â†’ `.env` for Supabase (gitignored; never commit secrets)
+| **2026** | Supabase backend hardening (real OTP, RLS review, moderation tools), beta with verified expert onboarding |
+| **2027** | Public launch: Greater Melbourne, then national expansion |
 
 ---
 
 ## Author
 
-**Ashish Poudel** â€” product & engineering
+**Ashish Poudel**, product & engineering
 
----
-
-Copyright Â© 2026 Ashish Poudel. All rights reserved.
+Copyright © 2026 Ashish Poudel. All rights reserved.
