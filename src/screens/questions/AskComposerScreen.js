@@ -1,28 +1,28 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch, Animated, Easing, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import Avatar from '../components/Avatar';
-import KeyboardScreen from '../components/KeyboardScreen';
-import Button from '../components/Button';
-import PhotoStrip from '../components/PhotoStrip';
-import PhotoSourceSheet from '../components/PhotoSourceSheet';
-import { Field, Input, CharCount } from '../components/ui';
-import ExpertPostQuota from '../components/ExpertPostQuota';
-import ExpertPostModeToggle from '../components/ExpertPostModeToggle';
-import ExpertProfessionalConfirm from '../components/ExpertProfessionalConfirm';
-import CircleChip from '../components/CircleChip';
-import { useData, useSelectors } from '../data/store';
-import { useNetwork } from '../data/network';
-import { useNavigationGuard } from '../utils/navigation';
-import { useTheme } from '../theme/ThemeContext';
-import { useImagePicker } from '../hooks/useImagePicker';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { uploadQuestionPhotos } from '../services/mediaStorage';
-import { needsPhotoUpload, photoUrl } from '../utils/photos';
-import { MAX_QUESTION_PHOTOS } from '../constants/media';
+import Avatar from '../../components/Avatar';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import Button from '../../components/Button';
+import PhotoStrip from '../../components/PhotoStrip';
+import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import { Field, Input, CharCount } from '../../components/ui';
+import ExpertPostQuota from '../../components/ExpertPostQuota';
+import ExpertPostModeToggle from '../../components/ExpertPostModeToggle';
+import ExpertProfessionalConfirm from '../../components/ExpertProfessionalConfirm';
+import CircleChip from '../../components/CircleChip';
+import { useData, useSelectors } from '../../data/store';
+import { useNetwork } from '../../data/network';
+import { useNavigationGuard } from '../../utils/navigation';
+import { useTheme } from '../../theme/ThemeContext';
+import { useImagePicker } from '../../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { uploadQuestionPhotos } from '../../services/mediaStorage';
+import { needsPhotoUpload, photoUrl } from '../../utils/photos';
+import { MAX_QUESTION_PHOTOS } from '../../constants/media';
 import {
   hasExpertProfessionalProfile,
-} from '../utils/expertPost';
+} from '../../utils/expertPost';
 
 const TITLE_MIN = 10, TITLE_MAX = 120, BODY_MIN = 30, BODY_MAX = 4000;
 
