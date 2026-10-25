@@ -2,13 +2,13 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import QuestionCard from '../components/QuestionCard';
-import { Input, Chip, EmptyState } from '../components/ui';
-import { useSelectors } from '../data/store';
-import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
-import { SUBURBS } from '../data/categories';
-import CircleChip from '../components/CircleChip';
-import { useTheme } from '../theme/ThemeContext';
+import QuestionCard from '../../components/QuestionCard';
+import { Input, Chip, EmptyState } from '../../components/ui';
+import { useSelectors } from '../../data/store';
+import { useNavigationGuard, openAuthorProfile } from '../../utils/navigation';
+import { SUBURBS } from '../../data/categories';
+import CircleChip from '../../components/CircleChip';
+import { useTheme } from '../../theme/ThemeContext';
 
 const DATE_RANGES = [
   { id: 'any', label: 'Any time', ms: Infinity },

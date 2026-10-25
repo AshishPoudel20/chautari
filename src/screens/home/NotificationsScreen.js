@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
-import Avatar from '../components/Avatar';
-import { EmptyState } from '../components/ui';
-import { useToast } from '../components/Toast';
-import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard, openExpertProfile, navigateToMainTab } from '../utils/navigation';
-import { timeAgo } from '../utils/format';
-import { useTheme } from '../theme/ThemeContext';
+import Avatar from '../../components/Avatar';
+import { EmptyState } from '../../components/ui';
+import { useToast } from '../../components/Toast';
+import { useData, useSelectors } from '../../data/store';
+import { useNavigationGuard, openExpertProfile, navigateToMainTab } from '../../utils/navigation';
+import { timeAgo } from '../../utils/format';
+import { useTheme } from '../../theme/ThemeContext';
 
 const ICONS = { answer: '💬', milestone: '🎉', follow: '➕', expert: '🎓', expert_answer: '✓', expert_karma: '🪔', digest: '📬' };
 const DAY = 24 * 60 * 60 * 1000;

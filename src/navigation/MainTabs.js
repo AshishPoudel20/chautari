@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../theme/ThemeContext';
 
-import HomeScreen from '../screens/HomeScreen';
+import HomeScreen from '../screens/home/HomeScreen';
 import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
 import MyProfileScreen from '../screens/MyProfileScreen';
 import ExpertsStack from './ExpertsStack';
