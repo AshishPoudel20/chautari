@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Switch } from 'react-native';
-import { useData, useSelectors } from '../data/store';
-import { composeDigestSummary, scheduleDigest, ensureNotificationPermissions } from '../services/digest';
-import { useNetwork } from '../data/network';
-import { useTheme } from '../theme/ThemeContext';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { signOut } from '../services/auth';
+import { useData, useSelectors } from '../../data/store';
+import { composeDigestSummary, scheduleDigest, ensureNotificationPermissions } from '../../services/digest';
+import { useNetwork } from '../../data/network';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { signOut } from '../../services/auth';
 
 // Settings: support links (real screens), account actions, and a demo offline toggle.
 export default function SettingsScreen({ navigation }) {

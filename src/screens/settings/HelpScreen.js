@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Help / FAQ — a real screen with expandable Q&A entries.
 const FAQ = [

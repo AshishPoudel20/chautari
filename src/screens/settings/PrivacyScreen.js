@@ -1,5 +1,5 @@
 import React from 'react';
-import { DocScreen, DocSection, DocParagraph } from '../components/DocScreen';
+import { DocScreen, DocSection, DocParagraph } from '../../components/DocScreen';
 
 // Privacy Policy — clearly-marked sample copy for the prototype.
 export default function PrivacyScreen() {
