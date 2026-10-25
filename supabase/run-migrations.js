@@ -1,6 +1,6 @@
 /**
  * One-off: run SQL migration files against remote Supabase (uses SUPABASE_DB_URL from .env).
- * Usage: node supabase/run-migrations.js [000|001|002|003|all]
+ * Usage: node supabase/run-migrations.js [000|001|002|003|004|005|006|007|008|009|010|011|all]
  */
 const fs = require('fs');
 const path = require('path');
@@ -22,6 +22,12 @@ const FILES = {
   '003': '003_clear_auth_users.sql',
   '004': '004_rls_content_updates.sql',
   '005': '005_flexible_social_refs.sql',
+  '006': '006_storage_media.sql',
+  '007': '007_credentials_storage.sql',
+  '008': '008_expert_post_mode.sql',
+  '009': '009_expert_profile_fields.sql',
+  '010': '010_relax_answer_reply_lengths.sql',
+  '011': '011_clear_seed_content.sql',
 };
 
 async function runFile(client, name) {
