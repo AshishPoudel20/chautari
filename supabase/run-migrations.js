@@ -6,13 +6,15 @@ const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
-function loadEnv() {
+function loadEnvFile() {
   const envPath = path.join(__dirname, '..', '.env');
   if (!fs.existsSync(envPath)) throw new Error('Missing .env with SUPABASE_DB_URL');
+  const env = {};
   for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
     const m = line.match(/^([^#=]+)=(.*)$/);
-    if (m) process.env[m[1].trim()] = m[2].trim();
+    if (m) env[m[1].trim()] = m[2].trim();
   }
+  return env;
 }
 
 const FILES = {
@@ -39,8 +41,8 @@ async function runFile(client, name) {
 }
 
 async function main() {
-  loadEnv();
-  const url = process.env.SUPABASE_DB_URL;
+  const env = loadEnvFile();
+  const url = env.SUPABASE_DB_URL;
   if (!url) throw new Error('SUPABASE_DB_URL not set in .env');
 
   const arg = process.argv[2] || 'all';
