@@ -1,12 +1,12 @@
 import React, { useMemo, useLayoutEffect, useEffect } from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import MissingParamsFallback from '../components/MissingParamsFallback';
-import ProfileView from '../components/ProfileView';
-import Button from '../components/Button';
-import { useToast } from '../components/Toast';
-import { useData, useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
-import { isSelfUserId, openSelfProfile, resolveUserId } from '../utils/navigation';
+import MissingParamsFallback from '../../components/MissingParamsFallback';
+import ProfileView from '../../components/ProfileView';
+import Button from '../../components/Button';
+import { useToast } from '../../components/Toast';
+import { useData, useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSelfUserId, openSelfProfile, resolveUserId } from '../../utils/navigation';
 
 // Other User Profile with a follow button.
 // Followers count is hidden here (own followers are visible to self only;

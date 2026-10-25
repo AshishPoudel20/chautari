@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../components/Avatar';
-import VerifiedBadge from '../components/VerifiedBadge';
-import Button from '../components/Button';
-import { useSelectors } from '../data/store';
-import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
-import { useTheme } from '../theme/ThemeContext';
-import { useNavigationGuard } from '../utils/navigation';
-import ExpertPostQuota from '../components/ExpertPostQuota';
-import KarmaBadge from '../components/KarmaBadge';
-import { compactNumber } from '../utils/format';
-import FoundingMemberBadge from '../components/FoundingMemberBadge';
-import { CHECKLIST_TOTAL } from '../data/checklist';
+import Avatar from '../../components/Avatar';
+import VerifiedBadge from '../../components/VerifiedBadge';
+import Button from '../../components/Button';
+import { useSelectors } from '../../data/store';
+import { useLiveDataRefresh } from '../../hooks/useLiveDataRefresh';
+import { useTheme } from '../../theme/ThemeContext';
+import { useNavigationGuard } from '../../utils/navigation';
+import ExpertPostQuota from '../../components/ExpertPostQuota';
+import KarmaBadge from '../../components/KarmaBadge';
+import { compactNumber } from '../../utils/format';
+import FoundingMemberBadge from '../../components/FoundingMemberBadge';
+import { CHECKLIST_TOTAL } from '../../data/checklist';
 
 function formatJoined(ts) {
   if (!ts) return 'Recently';

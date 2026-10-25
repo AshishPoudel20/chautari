@@ -1,19 +1,19 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Avatar from '../components/Avatar';
-import KeyboardScreen from '../components/KeyboardScreen';
-import Button from '../components/Button';
-import PhotoSourceSheet from '../components/PhotoSourceSheet';
-import { Field, Input, Chip } from '../components/ui';
-import { useToast } from '../components/Toast';
-import { useData, useSelectors } from '../data/store';
-import { SUBURBS } from '../data/categories';
-import { useTheme } from '../theme/ThemeContext';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { updateProfile } from '../services/profile';
-import { uploadAvatar } from '../services/mediaStorage';
-import { useProfilePhotoFlow } from '../hooks/useProfilePhotoFlow';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import Avatar from '../../components/Avatar';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import Button from '../../components/Button';
+import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import { Field, Input, Chip } from '../../components/ui';
+import { useToast } from '../../components/Toast';
+import { useData, useSelectors } from '../../data/store';
+import { SUBURBS } from '../../data/categories';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { updateProfile } from '../../services/profile';
+import { uploadAvatar } from '../../services/mediaStorage';
+import { useProfilePhotoFlow } from '../../hooks/useProfilePhotoFlow';
+import { isLocalPhotoUri, photoUrl } from '../../utils/photos';
 
 export default function EditProfileScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();

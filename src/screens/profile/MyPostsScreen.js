@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import ExpertPostQuota from '../components/ExpertPostQuota';
-import QuestionFeedList from '../components/QuestionFeedList';
-import { EmptyState } from '../components/ui';
-import { useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
+import ExpertPostQuota from '../../components/ExpertPostQuota';
+import QuestionFeedList from '../../components/QuestionFeedList';
+import { EmptyState } from '../../components/ui';
+import { useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function MyPostsScreen({ navigation }) {
   const {

@@ -22,11 +22,11 @@ import CirclesSectionSeeAllScreen from '../screens/circles/CirclesSectionSeeAllS
 import EditCircleScreen from '../screens/circles/EditCircleScreen';
 import SearchScreen from '../screens/home/SearchScreen';
 import ExpertProfileScreen from '../screens/experts/ExpertProfileScreen';
-import UserProfileScreen from '../screens/UserProfileScreen';
+import UserProfileScreen from '../screens/profile/UserProfileScreen';
 import VerifiedApplicationScreen from '../screens/experts/VerifiedApplicationScreen';
 import ExpertProfessionalSetupScreen from '../screens/experts/ExpertProfessionalSetupScreen';
 import NotificationsScreen from '../screens/home/NotificationsScreen';
-import EditProfileScreen from '../screens/EditProfileScreen';
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ReportScreen from '../screens/ReportScreen';
 import HelpScreen from '../screens/HelpScreen';
@@ -35,8 +35,8 @@ import PrivacyScreen from '../screens/PrivacyScreen';
 import AboutScreen from '../screens/AboutScreen';
 import DeleteAccountScreen from '../screens/DeleteAccountScreen';
 import ImageViewerScreen from '../screens/ImageViewerScreen';
-import MyPostsScreen from '../screens/MyPostsScreen';
-import SavedPostsScreen from '../screens/SavedPostsScreen';
+import MyPostsScreen from '../screens/profile/MyPostsScreen';
+import SavedPostsScreen from '../screens/profile/SavedPostsScreen';
 import ArrivalChecklistScreen from '../screens/ArrivalChecklistScreen';
 import ProfilePhotoPreviewScreen from '../screens/ProfilePhotoPreviewScreen';
 
