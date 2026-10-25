@@ -29,7 +29,7 @@ export default function CreateCircleScreen({ navigation }) {
   const { state } = useSelectors();
   const { replace } = useNavigationGuard(navigation);
   const { online } = useNetwork();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
+  const { pickFromLibrary } = useImagePicker();
   const { colors, spacing, font, radius } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
@@ -72,7 +72,7 @@ export default function CreateCircleScreen({ navigation }) {
         if (!isSupabaseConfigured()) throw new Error('Image upload requires Supabase — check your .env.');
         imageUrl = await uploadCircleImage(newId, { uri: bannerPhoto.uri });
       }
-      dispatch({
+      const res = await dispatch({
         type: 'CREATE_CIRCLE',
         id: newId,
         name: name.trim(),
@@ -81,6 +81,7 @@ export default function CreateCircleScreen({ navigation }) {
         icon,
         imageUrl,
       });
+      if (!res?.ok) throw new Error(res?.error?.message || "Couldn't save your circle.");
       replace('CircleDetail', { circleId: newId });
     } catch (e) {
       Alert.alert('Could not create circle', e?.message || 'Try again.');
@@ -178,7 +179,6 @@ export default function CreateCircleScreen({ navigation }) {
         onClose={() => setPickerOpen(false)}
         title="Add circle banner"
         showRemove={!!bannerPhoto}
-        onCamera={() => pickBanner(takePhoto)}
         onLibrary={() => pickBanner(pickFromLibrary)}
         onRemove={() => setBannerPhoto(null)}
       />

@@ -52,6 +52,7 @@ export default function SettingsScreen({ navigation }) {
       <Text style={styles.section}>Account</Text>
       <View style={styles.group}>
         <Row label="Edit profile" icon="✏️" onPress={() => navigation.navigate('EditProfile')} />
+        <Row label="Create a circle" icon="⭕" onPress={() => navigation.navigate('CreateCircle')} />
         <Row label="Log out" icon="🚪" onPress={logout} />
         <Row label="Delete account" icon="🗑️" danger onPress={() => navigation.navigate('DeleteAccount')} last />
       </View>

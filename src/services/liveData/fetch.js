@@ -1,10 +1,11 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { mapQuestion, mapProfileRow } from './mappers';
+import { mapQuestion, mapProfileRow, mapCircle } from './mappers';
 import { filterValidUuids, isValidUuid } from './ids';
 
 const EMPTY_BUNDLE = {
   questions: [],
   users: [],
+  circles: [],
   myUpvotes: { questions: [], answers: [], replies: [] },
   savedQuestions: [],
   following: [],
@@ -40,6 +41,7 @@ export async function fetchLiveBundle(currentUserId) {
 
   const [
     questionsRes,
+    circlesRes,
     upvotesRes,
     savedRes,
     followsRes,
@@ -49,6 +51,11 @@ export async function fetchLiveBundle(currentUserId) {
     supabase
       .from('questions')
       .select('*, answers(*, replies(*))')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('circles')
+      .select('*')
+      .eq('is_official', false)
       .order('created_at', { ascending: false }),
     supabase.from('upvotes').select('target_type, target_id').eq('user_id', currentUserId),
     supabase.from('saved_questions').select('question_id').eq('user_id', currentUserId),
@@ -61,6 +68,7 @@ export async function fetchLiveBundle(currentUserId) {
     warnFetch('questions', questionsRes.error);
     throw questionsRes.error;
   }
+  if (circlesRes.error) warnFetch('circles', circlesRes.error);
   if (upvotesRes.error) warnFetch('upvotes', upvotesRes.error);
   if (savedRes.error) warnFetch('saved_questions', savedRes.error);
   if (followsRes.error) warnFetch('follows', followsRes.error);
@@ -68,6 +76,9 @@ export async function fetchLiveBundle(currentUserId) {
   if (checklistRes.error) warnFetch('checklist_progress', checklistRes.error);
 
   const questions = (questionsRes.data || []).map((row) => mapQuestion(row, currentUserId));
+  const circles = (circlesRes.data || [])
+    .map((row) => mapCircle(row, currentUserId))
+    .filter(Boolean);
 
   const profileIdSet = new Set([currentUserId]);
   for (const row of followsRes.data || []) {
@@ -99,6 +110,7 @@ export async function fetchLiveBundle(currentUserId) {
   return {
     questions,
     users,
+    circles,
     myUpvotes,
     savedQuestions: (savedRes.data || []).map((r) => r.question_id),
     // Mock follows (u_*) may exist in follows.following_id (TEXT) — never merge those into state.

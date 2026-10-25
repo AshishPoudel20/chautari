@@ -366,10 +366,19 @@ function reducer(state, action) {
         usersById.set(u.id, existing ? { ...existing, ...u } : u);
       }
       const uniq = (a, b) => [...new Set([...(a || []), ...(b || [])])];
+
+      const liveCircles = (p.circles || []).filter((c) => c?.id && !c.isOfficial);
+      const circlesById = new Map(state.circles.map((c) => [c.id, c]));
+      for (const live of liveCircles) {
+        const existing = circlesById.get(live.id);
+        circlesById.set(live.id, existing ? { ...existing, ...live } : live);
+      }
+
       return {
         ...state,
         questions: mergedQuestions,
         users: [...usersById.values()],
+        circles: mergeCircles([...circlesById.values()]),
         myUpvotes: {
           questions: uniq(state.myUpvotes.questions, p.myUpvotes?.questions),
           answers: uniq(state.myUpvotes.answers, p.myUpvotes?.answers),

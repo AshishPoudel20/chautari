@@ -28,36 +28,17 @@ export function validateExpertBadgeTitle(title) {
   return null;
 }
 
-/** Badge title from verification (explicit field, then legacy profession). */
-export function resolveExpertBadgeTitle(user) {
-  if (!user) return null;
-  const explicit = user.expertBadgeTitle?.trim();
-  if (explicit && !validateExpertBadgeTitle(explicit)) return explicit;
-  const legacy = user.profession?.trim();
-  if (legacy && !validateExpertBadgeTitle(legacy)) return legacy;
-  return null;
-}
-
-/** Professional circle from verification (explicit field, then legacy category). */
-export function resolveExpertCircleId(user) {
-  if (!user) return null;
-  return user.expertCircleId || user.verifiedCategory || null;
-}
-
-/** Verified expert can post professionally — badge + circle come from profile, not the composer. */
-export function canPostAsProfessional(user) {
-  if (!user?.verified) return false;
-  return !!(resolveExpertBadgeTitle(user) && resolveExpertCircleId(user));
-}
-
-/** @deprecated use canPostAsProfessional */
+/** True when a verified expert has declared badge title + circle for professional posting. */
 export function hasExpertProfessionalProfile(user) {
-  return canPostAsProfessional(user);
+  if (!user?.verified) return false;
+  return !validateExpertBadgeTitle(user.expertBadgeTitle) && !!user.expertCircleId;
 }
 
 /** Snapshot badge title at post time; legacy rows fall back to profession / category. */
 export function snapshotProfessionLabel(user) {
-  return resolveExpertBadgeTitle(user) || professionLabel(user);
+  const title = user?.expertBadgeTitle?.trim();
+  if (title) return title;
+  return professionLabel(user);
 }
 
 export function displayProfessionLabel(item, author) {

@@ -81,3 +81,22 @@ export function mapProfileRow(row, currentUserId) {
     createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
   };
 }
+
+export function mapCircle(row, currentUserId) {
+  if (!row?.id) return null;
+  return {
+    id: row.id,
+    name: row.name || '',
+    handle: row.handle || row.id,
+    description: row.description || '',
+    icon: row.icon || '📌',
+    accentId: row.accent_id || 'crimson',
+    imageUrl: row.image_url || null,
+    creatorId: authorToApp(row.creator_id, currentUserId),
+    memberCount: row.member_count ?? 0,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    isOfficial: !!row.is_official,
+    isPrivate: false,
+    pinnedQuestionId: row.pinned_question_id || null,
+  };
+}

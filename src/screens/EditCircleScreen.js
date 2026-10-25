@@ -32,7 +32,7 @@ export default function EditCircleScreen({ navigation, route }) {
   const { goBack } = useNavigationGuard(navigation);
   const { online } = useNetwork();
   const showToast = useToast();
-  const { pickFromLibrary, takePhoto } = useImagePicker();
+  const { pickFromLibrary } = useImagePicker();
   const { colors, spacing, font, radius } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font, radius), [colors, spacing, font, radius]);
 
@@ -166,7 +166,6 @@ export default function EditCircleScreen({ navigation, route }) {
         onClose={() => setPickerOpen(false)}
         title="Change circle banner"
         showRemove={!!bannerPhoto}
-        onCamera={() => pickBanner(takePhoto)}
         onLibrary={() => pickBanner(pickFromLibrary)}
         onRemove={() => setBannerPhoto(null)}
       />
