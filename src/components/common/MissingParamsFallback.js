@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { useGoBack } from '../hooks/useGoBack';
+import { useTheme } from '../../theme/ThemeContext';
+import { useGoBack } from '../../hooks/useGoBack';
 
 /** Shown when a screen was opened without required navigation params. */
 export default function MissingParamsFallback({

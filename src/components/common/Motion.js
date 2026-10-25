@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Tasteful entrance: fade in + slight rise. Staggered by `index` so a feed of
 // cards cascades in (~250ms each). Never bouncy/childish — just enough to signal

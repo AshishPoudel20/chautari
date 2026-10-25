@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
-import KeyboardScreen from '../../components/KeyboardScreen';
-import Button from '../../components/Button';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
+import Button from '../../components/common/Button';
 import SinglePhotoPicker from '../../components/SinglePhotoPicker';
 import PhotoSourceSheet from '../../components/PhotoSourceSheet';
-import { Field, Input, CharCount } from '../../components/ui';
+import { Field, Input, CharCount } from '../../components/common/ui';
 import CircleChip from '../../components/CircleChip';
 import { useData, useSelectors } from '../../data/store';
 import { useNavigationGuard } from '../../utils/navigation';

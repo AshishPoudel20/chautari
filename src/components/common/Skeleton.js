@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Animated, View, StyleSheet, Easing } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // A gently shimmering placeholder block. Used for tasteful loading states while
 // mock data "loads".

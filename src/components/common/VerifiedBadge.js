@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // "Verified expert" badge shown next to names on profiles and answers.
 // On-brand crimson (an expert marker), not a generic social-blue tick.

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Field, Input } from './ui';
+import { Field, Input } from './common/ui';
 import CircleChip from './CircleChip';
 import { useTheme } from '../theme/ThemeContext';
 import { EXPERT_BADGE_TITLE_MAX, validateExpertBadgeTitle } from '../utils/expertPost';

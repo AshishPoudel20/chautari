@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo } from 'react';
 import { FlatList, View, StyleSheet } from 'react-native';
 import QuestionCard from './QuestionCard';
-import { FadeRise } from './Motion';
-import { EmptyState } from './ui';
+import { FadeRise } from './common/Motion';
+import { EmptyState } from './common/ui';
 import { useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { useTheme } from '../theme/ThemeContext';

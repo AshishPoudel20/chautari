@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Linking } from 'react-native';
-import Avatar from './Avatar';
-import VerifiedBadge from './VerifiedBadge';
-import KarmaBadge from './KarmaBadge';
-import FoundingMemberBadge from './FoundingMemberBadge';
-import Button from './Button';
+import Avatar from './common/Avatar';
+import VerifiedBadge from './common/VerifiedBadge';
+import KarmaBadge from './common/KarmaBadge';
+import FoundingMemberBadge from './common/FoundingMemberBadge';
+import Button from './common/Button';
 import QuestionCard from './QuestionCard';
-import { EmptyState } from './ui';
+import { EmptyState } from './common/ui';
 import { useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, resolveUserId } from '../utils/navigation';
 import { categoryName } from '../data/categories';

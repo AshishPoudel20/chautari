@@ -1,17 +1,17 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../../components/Avatar';
-import VerifiedBadge from '../../components/VerifiedBadge';
-import Button from '../../components/Button';
+import Avatar from '../../components/common/Avatar';
+import VerifiedBadge from '../../components/common/VerifiedBadge';
+import Button from '../../components/common/Button';
 import { useSelectors } from '../../data/store';
 import { useLiveDataRefresh } from '../../hooks/useLiveDataRefresh';
 import { useTheme } from '../../theme/ThemeContext';
 import { useNavigationGuard } from '../../utils/navigation';
 import ExpertPostQuota from '../../components/ExpertPostQuota';
-import KarmaBadge from '../../components/KarmaBadge';
+import KarmaBadge from '../../components/common/KarmaBadge';
 import { compactNumber } from '../../utils/format';
-import FoundingMemberBadge from '../../components/FoundingMemberBadge';
+import FoundingMemberBadge from '../../components/common/FoundingMemberBadge';
 import { CHECKLIST_TOTAL } from '../../data/checklist';
 
 function formatJoined(ts) {

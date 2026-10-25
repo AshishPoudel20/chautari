@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Text, Pressable, ActivityIndicator, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Primary / secondary / ghost / danger button with disabled + loading states.
 export default function Button({ title, onPress, variant = 'primary', disabled, loading, style, icon, size = 'md' }) {

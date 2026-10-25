@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { StackActions } from '@react-navigation/native';
-import Avatar from '../../components/Avatar';
-import Button from '../../components/Button';
+import Avatar from '../../components/common/Avatar';
+import Button from '../../components/common/Button';
 import { useTheme } from '../../theme/ThemeContext';
 import { PROFILE_AVATAR_SIZE } from '../../constants/media';
 import { prepareImageForUpload } from '../../services/mediaStorage';

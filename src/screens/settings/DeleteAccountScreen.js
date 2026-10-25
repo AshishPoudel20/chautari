@@ -1,7 +1,7 @@
 import React, { useMemo,  useState, useRef  } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
-import Button from '../../components/Button';
-import KeyboardScreen from '../../components/KeyboardScreen';
+import Button from '../../components/common/Button';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';
 import { isSupabaseConfigured } from '../../lib/supabase';

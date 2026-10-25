@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Switch } from 'react-native';
-import Button from '../../components/Button';
-import Avatar from '../../components/Avatar';
-import KeyboardScreen from '../../components/KeyboardScreen';
+import Button from '../../components/common/Button';
+import Avatar from '../../components/common/Avatar';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
 import PhotoSourceSheet from '../../components/PhotoSourceSheet';
-import { Chip } from '../../components/ui';
+import { Chip } from '../../components/common/ui';
 import { useData } from '../../data/store';
 import { SUBURBS } from '../../data/categories';
 import { useTheme } from '../../theme/ThemeContext';

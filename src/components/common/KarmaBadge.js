@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { compactNumber } from '../utils/format';
+import { useTheme } from '../../theme/ThemeContext';
+import { compactNumber } from '../../utils/format';
 
 // Subtle diyo/leaf karma indicator beside names.
 export default function KarmaBadge({ karma, compact }) {

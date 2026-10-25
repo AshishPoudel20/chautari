@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Quiet saffron chip — profiles only. Diyo-style mark from motif language.
 export default function FoundingMemberBadge() {

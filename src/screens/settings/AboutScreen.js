@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { DocScreen, DocSection, DocParagraph } from '../../components/DocScreen';
-import { MotifBand } from '../../components/Motif';
+import { DocScreen, DocSection, DocParagraph } from '../../components/common/DocScreen';
+import { MotifBand } from '../../components/common/Motif';
 import { useTheme } from '../../theme/ThemeContext';
 
 // About Chautari — the story and what the prototype is.

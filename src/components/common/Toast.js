@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useRef, useState, useMemo } from 'react';
 import { Animated, StyleSheet, Text, View, Easing } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Lightweight global toast for confirmation feedback (post / follow / report /
 // profile saved / offline). One at a time; auto-dismisses. No dependencies.

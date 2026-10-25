@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { useData, useSelectors } from '../data/store';
-import { useToast } from './Toast';
+import { useToast } from './common/Toast';
 import { useTheme } from '../theme/ThemeContext';
 import { isSelfUserId } from '../utils/navigation';
 

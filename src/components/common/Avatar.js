@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { displayPhotoUrl } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { displayPhotoUrl } from '../../utils/photos';
 
 // First-letter avatar fallback when there's no photo (per brief).
 // `anon` renders a neutral placeholder.

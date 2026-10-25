@@ -1,8 +1,8 @@
 import React, { useMemo,  useState  } from 'react';
 import { Text, StyleSheet, View } from 'react-native';
-import Button from '../../components/Button';
-import KeyboardScreen from '../../components/KeyboardScreen';
-import { Field, Input } from '../../components/ui';
+import Button from '../../components/common/Button';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
+import { Field, Input } from '../../components/common/ui';
 import { useTheme } from '../../theme/ThemeContext';
 
 // Profile setup step 1 — name is required.

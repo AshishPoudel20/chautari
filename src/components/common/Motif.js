@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // A restrained Nepali-inspired motif: a row of small diamonds (a nod to textile
 // and temple lattice work). Used ONLY in empty states, the splash, and section

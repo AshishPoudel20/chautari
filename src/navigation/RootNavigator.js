@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
-import DigestManager from '../components/DigestManager';
-import BackButton from '../components/BackButton';
+import DigestManager from '../components/common/DigestManager';
+import BackButton from '../components/common/BackButton';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';

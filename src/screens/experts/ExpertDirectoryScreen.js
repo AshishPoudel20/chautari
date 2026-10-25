@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../../components/Avatar';
-import VerifiedBadge from '../../components/VerifiedBadge';
+import Avatar from '../../components/common/Avatar';
+import VerifiedBadge from '../../components/common/VerifiedBadge';
 import FollowButton from '../../components/FollowButton';
-import { Chip, EmptyState } from '../../components/ui';
+import { Chip, EmptyState } from '../../components/common/ui';
 import { useSelectors } from '../../data/store';
 import { CATEGORIES, SUBURBS, professionLabel } from '../../data/categories';
 import { useTheme } from '../../theme/ThemeContext';

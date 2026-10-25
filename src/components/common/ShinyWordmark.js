@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 const WORDMARK = 'Chautari';
 const DELAY_MS = 300;

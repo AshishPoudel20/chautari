@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { Pressable, Text, StyleSheet, Platform } from 'react-native';
 import { HeaderBackButton } from '@react-navigation/elements';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useTheme } from '../theme/ThemeContext';
-import { useGoBack } from '../hooks/useGoBack';
+import { useTheme } from '../../theme/ThemeContext';
+import { useGoBack } from '../../hooks/useGoBack';
 
 /** Screens that must always offer an escape hatch even if the stack is shallow. */
 export const ALWAYS_BACK_ROUTES = new Set([

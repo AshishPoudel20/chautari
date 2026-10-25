@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import Avatar from './Avatar';
-import VerifiedBadge from './VerifiedBadge';
+import Avatar from './common/Avatar';
+import VerifiedBadge from './common/VerifiedBadge';
 import { useTheme } from '../theme/ThemeContext';
 import { professionLabel } from '../data/categories';
 

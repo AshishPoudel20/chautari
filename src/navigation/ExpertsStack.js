@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';
-import BackButton from '../components/BackButton';
+import BackButton from '../components/common/BackButton';
 import ExpertDirectoryScreen from '../screens/experts/ExpertDirectoryScreen';
 import ExpertProfileScreen from '../screens/experts/ExpertProfileScreen';
 

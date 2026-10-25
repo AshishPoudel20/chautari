@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
-import Avatar from '../../components/Avatar';
-import { EmptyState } from '../../components/ui';
-import { useToast } from '../../components/Toast';
+import Avatar from '../../components/common/Avatar';
+import { EmptyState } from '../../components/common/ui';
+import { useToast } from '../../components/common/Toast';
 import { useData, useSelectors } from '../../data/store';
 import { useNavigationGuard, openExpertProfile, navigateToMainTab } from '../../utils/navigation';
 import { timeAgo } from '../../utils/format';

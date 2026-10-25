@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import Button from '../../components/Button';
-import KeyboardScreen from '../../components/KeyboardScreen';
-import { Input } from '../../components/ui';
+import Button from '../../components/common/Button';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
+import { Input } from '../../components/common/ui';
 import { useTheme } from '../../theme/ThemeContext';
 import { sendPhoneOtp, toE164Au, usesMockOtp } from '../../services/auth';
 

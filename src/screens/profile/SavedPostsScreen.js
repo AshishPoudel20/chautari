@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import QuestionFeedList from '../../components/QuestionFeedList';
-import { EmptyState } from '../../components/ui';
+import { EmptyState } from '../../components/common/ui';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';
-import { useToast } from '../../components/Toast';
+import { useToast } from '../../components/common/Toast';
 
 export default function SavedPostsScreen({ navigation }) {
   const { dispatch } = useData();

@@ -1,7 +1,7 @@
 import React, { useMemo,  useEffect, useRef  } from 'react';
 import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
-import { MotifBand } from '../../components/Motif';
-import ShinyWordmark from '../../components/ShinyWordmark';
+import { MotifBand } from '../../components/common/Motif';
+import ShinyWordmark from '../../components/common/ShinyWordmark';
 import { useTheme } from '../../theme/ThemeContext';
 
 // Animated logo splash (~1.5s). The actual hold/route is governed by RootNavigator.

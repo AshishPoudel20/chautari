@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Avatar from '../../components/Avatar';
-import KeyboardScreen from '../../components/KeyboardScreen';
-import Button from '../../components/Button';
+import Avatar from '../../components/common/Avatar';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
+import Button from '../../components/common/Button';
 import PhotoSourceSheet from '../../components/PhotoSourceSheet';
-import { Field, Input, Chip } from '../../components/ui';
-import { useToast } from '../../components/Toast';
+import { Field, Input, Chip } from '../../components/common/ui';
+import { useToast } from '../../components/common/Toast';
 import { useData, useSelectors } from '../../data/store';
 import { SUBURBS } from '../../data/categories';
 import { useTheme } from '../../theme/ThemeContext';

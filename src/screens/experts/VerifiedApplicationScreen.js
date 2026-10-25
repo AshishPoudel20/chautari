@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
-import Button from '../../components/Button';
+import Button from '../../components/common/Button';
 import PhotoSourceSheet from '../../components/PhotoSourceSheet';
-import KeyboardScreen from '../../components/KeyboardScreen';
+import KeyboardScreen from '../../components/common/KeyboardScreen';
 import ExpertProfessionalFields from '../../components/ExpertProfessionalFields';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';

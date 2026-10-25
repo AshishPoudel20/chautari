@@ -1,9 +1,9 @@
 import React, { useMemo, useLayoutEffect, useEffect } from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import MissingParamsFallback from '../../components/MissingParamsFallback';
+import MissingParamsFallback from '../../components/common/MissingParamsFallback';
 import ProfileView from '../../components/ProfileView';
-import Button from '../../components/Button';
-import { useToast } from '../../components/Toast';
+import Button from '../../components/common/Button';
+import { useToast } from '../../components/common/Toast';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';
 import { isSelfUserId, openSelfProfile, resolveUserId } from '../../utils/navigation';

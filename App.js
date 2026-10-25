@@ -2,9 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DataProvider } from './src/data/store';
 import { NetworkProvider } from './src/data/network';
-import { ToastProvider } from './src/components/Toast';
-import DispatchErrorBridge from './src/components/DispatchErrorBridge';
-import ErrorBoundary from './src/components/ErrorBoundary';
+import { ToastProvider } from './src/components/common/Toast';
+import DispatchErrorBridge from './src/components/common/DispatchErrorBridge';
+import ErrorBoundary from './src/components/common/ErrorBoundary';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 

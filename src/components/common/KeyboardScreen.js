@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // Keeps footer actions above the keyboard. Footer sits below a flex ScrollView;
 // KeyboardAvoidingView shrinks the layout so the footer stays tappable.
