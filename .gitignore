@@ -50,3 +50,7 @@ GoogleService-Info.plist
 # generated native folders
 /ios
 /android
+
+# Build outputs
+*.apk
+*.aab
