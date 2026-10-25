@@ -28,6 +28,11 @@ Run each file **in order**, one at a time. Check the result panel shows success 
 | 5 | `migrations/004_rls_content_updates.sql` | Content RLS updates |
 | 6 | `migrations/005_flexible_social_refs.sql` | Flexible social refs |
 | 7 | `migrations/006_storage_media.sql` | **Photo storage** — `media` bucket + policies + `image_url` / `photo_url` columns |
+| 8 | `migrations/007_credentials_storage.sql` | Credentials prefix on storage insert policy |
+| 9 | `migrations/008_expert_post_mode.sql` | Expert post / reply columns |
+| 10 | `migrations/009_expert_profile_fields.sql` | Expert badge + circle on profiles |
+| 11 | `migrations/010_relax_answer_reply_lengths.sql` | Answers and replies: any non-empty body |
+| 12 | `migrations/011_clear_seed_content.sql` | Null dangling checklist `question_id`; delete empty 002 seed user circles |
 
 ### Storage — `media` bucket (migration 006)
 
@@ -86,7 +91,7 @@ Karma is **computed** from upvotes (same as the prototype) — not stored.
 
 ## After reset
 
-1. The app uses **hybrid data**: mock feed/users from `seed.js` + **real `profiles` rows** after onboarding.
+1. The app uses **live Supabase data** after onboarding (official circles + checklist catalog ship in the client).
 2. Dashboard → Authentication → **Email** → ON, **Confirm email** → OFF (prototype sign-up uses email under the hood).
 3. Default: mock OTP (any 6 digits). Your profile is written to Supabase when you tap **Finish** on onboarding.
 4. Set `EXPO_PUBLIC_AUTH_DEV_MODE=false` in `.env` when Twilio SMS is ready for real phone OTP.

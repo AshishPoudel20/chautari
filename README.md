@@ -8,7 +8,7 @@ Chautari is a mobile-first platform where newcomers and long-term residents ask 
 
 **Target launch:** 2027 (Greater Melbourne first, Australia-wide later)
 
-**Current status:** In active development. Hybrid model: local seed feed + **Supabase** for auth, profiles, user-generated Q&A sync, and photo storage when `.env` is configured.
+**Current status:** In active development. Live data from **Supabase** (auth, profiles, Q&A, circles, photo storage) when `.env` is configured. Official circles and the arrival checklist catalog ship with the app; there is no bundled fake feed.
 
 For a complete, file-by-file map of the codebase (navigation, state, data flow, feed pipeline, Supabase schema, business rules) see [`docs/APP_MAP.md`](./docs/APP_MAP.md).
 
@@ -74,7 +74,7 @@ Copy `.env.example` to `.env` (gitignored, never commit it).
 
 | Variable | Used by | Purpose |
 |----------|---------|---------|
-| `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js` | Supabase project URL. If unset, the app runs fully offline on seed data. |
+| `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js` | Supabase project URL. If unset, the app stays signed out of the backend (official circles only, empty feed). |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `src/lib/supabase.js` | Supabase anon (public) key. Never put a `service_role` key in the app. |
 | `EXPO_PUBLIC_AUTH_DEV_MODE` | `src/lib/supabase.js` (consumed by `src/services/auth.js`) | `true` (default) uses a mock OTP in the UI; set `false` for real SMS OTP via Supabase Auth. |
 | `SUPABASE_DB_URL` | `supabase/*.js` scripts only | Direct Postgres connection string for running migrations and verification scripts. Not read by the app. |
@@ -83,7 +83,7 @@ Feature flags in code (not env): `ENABLE_REPLY_PHOTOS` in `src/constants/media.j
 
 ### Reset local state
 
-State persists between launches via AsyncStorage (`chautari.state.v2`). To reset: **Profile → Settings → Delete account**, or clear the app's storage.
+State persists between launches via AsyncStorage (`chautari.state.v3`; older `v2` caches are deleted on boot). To reset: **Profile → Settings → Delete account**, or clear the app's storage.
 
 ### Verify a clean bundle
 
@@ -150,7 +150,7 @@ src/
 │   ├── auth/  home/  questions/  circles/  experts/
 │   ├── profile/  checklist/  settings/  modals/
 ├── components/             # common/ feed/ question/ circles/ profile/
-├── data/                   # store.js (reducer + selectors), seed.js, circles.js, categories.js, ...
+├── data/                   # store.js (reducer + selectors), circles.js, categories.js, checklist.js, ...
 ├── feed/                   # feedComposition.js, feedRanking.js, rankingConfig.js
 ├── hooks/                  # useForYouFeed, useLiveDataRefresh, useImagePicker, ...
 ├── services/               # auth, profile, mediaStorage, digest, liveData/*

@@ -35,7 +35,7 @@ Defined in `.env` (gitignored; template in `.env.example`).
 
 | Variable | Read in | Effect |
 |---|---|---|
-| `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js:5` | With the anon key, enables `isSupabaseConfigured()`. Unset → app runs fully offline on seed data, `authReady` is true immediately (`src/data/store.js:168`). |
+| `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js:5` | With the anon key, enables `isSupabaseConfigured()`. Unset → no backend session (`authReady` is true immediately); feed stays empty aside from official circles. |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `src/lib/supabase.js:6` | Anon key for the Supabase client. Never ship `service_role`. |
 | `EXPO_PUBLIC_AUTH_DEV_MODE` | `src/lib/supabase.js:11-12` | Anything except the string `false` → `isAuthDevMode()` true → mock OTP in UI, real Supabase account created at onboarding finish via email/password (`src/services/auth.js:19-48`). `false` → real SMS OTP via `supabase.auth.signInWithOtp`. |
 | `SUPABASE_DB_URL` | `supabase/run-migrations.js`, `supabase/verify.js`, `supabase/scripts/run-sql.js` | Direct Postgres URL for scripts only. Not read by the app. |
@@ -46,7 +46,7 @@ Code-level flags (not env): `ENABLE_REPLY_PHOTOS = true` in `src/constants/media
 
 | Key | Written by | Contents |
 |---|---|---|
-| `chautari.state.v2` | `src/data/store.js:35, 831` | Whole reducer state minus `booted`, `authReady`, `authUserId` |
+| `chautari.state.v3` | `src/data/store.js` (`STORAGE_KEY`) | Whole reducer state minus `booted`, `authReady`, `authUserId`. Legacy `chautari.state.v2` is deleted on boot. |
 | `chautari.theme.v1` | `src/theme/ThemeContext.js:6, 17, 26` | `'light'` or `'dark'` (default `'light'`; no system-follow mode) |
 | Supabase auth session | `src/lib/supabase.js:17` (`storage: AsyncStorage`) | Managed by supabase-js |
 
@@ -64,7 +64,7 @@ chautari-test/
 ├── .env.example                Env template
 ├── docs/                       APP_MAP, CLEANUP_REPORT, FEED_COMPOSITION, FEED_RANKING, PRD, BUILD_BRIEF, BUGS
 ├── supabase/
-│   ├── migrations/             000..010 SQL (see §10). Never edit existing files.
+│   ├── migrations/             000..011 SQL (see §10). Never edit existing 000–010 files.
 │   ├── run-migrations.js       Applies migrations in order via `pg`
 │   ├── verify.js               Sanity-checks schema
 │   ├── scripts/run-sql.js      Run arbitrary SQL file
@@ -92,11 +92,10 @@ chautari-test/
     │   ├── circles/            CircleChip, CircleIcon, CircleDirectoryRow, CircleAboutSection, ExpertsHereRow, AccentSwatch
     │   └── profile/            ProfileView, FollowButton
     ├── data/
-    │   ├── store.js            DataProvider: reducer, persistence, Supabase bootstrap, syncDispatch, useSelectors (1019 lines)
-    │   ├── seed.js             6 seed users, 15 seed questions, seed following/notifications
-    │   ├── circles.js          8 official circles, seed user circles, accent palette + presentation helpers, slugify, name checks
+    │   ├── store.js            DataProvider: reducer, persistence, Supabase bootstrap, syncDispatch, useSelectors
+    │   ├── circles.js          8 official circles, accent palette + presentation helpers, slugify, name checks
     │   ├── categories.js       CATEGORIES (8 official circle ids), SUBURBS, professionLabel()
-    │   ├── checklist.js        10 "First 30 Days" items with deep-linked questionIds
+    │   ├── checklist.js        10 "First 30 Days" items (`questionId` is null until a live thread exists)
     │   └── network.js          Mock online/offline context (toggle in Settings)
     ├── feed/
     │   ├── rankingConfig.js    Tunables: GRAVITY, WEIGHTS, PAGE_SIZE, DISCOVERY_RATIO, DISCOVERY_MIN_SCORE; score()
@@ -118,7 +117,7 @@ chautari-test/
     │       ├── fetch.js        fetchLiveBundle(): 7 parallel queries + profiles
     │       ├── persist.js      persistAction(): per-action Supabase writes for SYNC_ACTIONS
     │       ├── mappers.js      DB row → app shape (question/answer/reply/profile/circle)
-    │       └── ids.js          UUID checks, seed-id detection, makeId()
+    │       └── ids.js          UUID checks, makeId()
     ├── lib/supabase.js         Supabase client + isSupabaseConfigured/isAuthDevMode
     ├── theme/                  ThemeContext (light/dark, persisted), palettes.js, tokens.js
     ├── constants/              media.js (upload limits), newcomer.js (60-day window)
@@ -278,22 +277,17 @@ Navigation helpers: `src/utils/navigation.js` (`useNavigationGuard` debounces do
   authReady: !isSupabaseConfigured(), // Supabase session check finished (true immediately offline)
   authUserId: null,           // Supabase auth.users.id (UUID) or null
   currentUserId: null,        // 'me' when signed in with a profile, else null
-  users: seedUsers,           // [{ id, name, suburb, photo, bio, verified, verifiedCategory, profession,
-                              //    expertBadgeTitle, expertCircleId, followers, isFoundingMember, createdAt }]
-  circles: seedCircles,       // [{ id, name, handle, description, icon, accentId, imageUrl, creatorId,
-                              //    memberCount, createdAt, isOfficial, isPrivate, pinnedQuestionId }]
-  joinedCircles: [...],       // circle ids (official ids always treated as joined)
-  questions: [...],           // [{ id, authorId, anonymous, circleId, title, body, photos[], createdAt, upvotes, views,
-                              //    postedAsExpert?, professionLabel?, answers: [{ id, authorId, anonymous, body, photo,
-                              //    createdAt, upvotes, replies: [{ id, authorId, anonymous, body, photo, createdAt, upvotes,
-                              //    postedAsExpert?, professionLabel? }] }] }]
-  following: [],              // user ids
+  users: [],                  // live profiles + `me`; [{ id, name, suburb, photo, bio, verified, ... }]
+  circles: buildOfficialCircles(), // official 8 + live user circles after MERGE
+  joinedCircles: officialCircleIds(), // official ids always treated as joined
+  questions: [],              // live + optimistic `me` posts
+  following: [],              // user ids (UUIDs)
   notifications: [],          // [{ id, type, text, questionId?, milestone?, createdAt, read }]
   myUpvotes: { questions: [], answers: [], replies: [] },
   savedQuestions: [],
   reports: [],
   expertApplication: null,    // { expertBadgeTitle, expertCircleId, credentialName, credentialUrl, status, submittedAt }
-  expertUpvoteBonuses: { u_bibek: 2, u_pratima: 1, u_dipesh: 3, u_sunita: 1 },
+  expertUpvoteBonuses: {},
   digestMode: 'daily',        // 'daily' | 'weekly' | 'off'
   checklistDone: [],          // checklist item ids
   checklistCardDismissed: false,
@@ -302,7 +296,7 @@ Navigation helpers: `src/utils/navigation.js` (`useNavigationGuard` debounces do
 }
 ```
 
-Persisted to `chautari.state.v2` on every change after hydration, excluding `booted`, `authReady`, `authUserId` (`store.js:828-834`).
+Persisted to `chautari.state.v3` on every change after hydration, excluding `booted`, `authReady`, `authUserId`. Legacy `v2` is removed on boot.
 
 ### Dispatch pipeline
 
@@ -312,26 +306,26 @@ Persisted to `chautari.state.v2` on every change after hydration, excluding `boo
 
 | Action | Payload | Reducer effect (`store.js`) | Supabase write (`persist.js`) | Dispatched from |
 |---|---|---|---|---|
-| `HYDRATE` | `payload` (persisted state) | Merge seed users/questions/circles into persisted; defaults; `booted: true` (192-219) | – | DataProvider boot |
+| `HYDRATE` | `payload` (persisted state) | Restore persisted users/questions; ensure official circles; defaults; `booted: true` | – | DataProvider boot |
 | `BOOTED` | – | `booted: true` | – | DataProvider boot (no/invalid storage) |
 | `AUTH_READY` | – | `authReady: true` | – | DataProvider boot |
 | `SET_AUTH` | `userId` | `authUserId` | – | DataProvider, OtpScreen, ProfileSuburbScreen |
 | `CLEAR_AUTH` | – | `authUserId: null` | – | DataProvider on `SIGNED_OUT` |
 | `CLEAR_LOCAL_SESSION` | – | `currentUserId: null` | – | DataProvider |
-| `RESTORE_SESSION` | `userId`, `profile` row | Build `me` from row, seed following/notifications if empty, newcomer/digest/checklist meta (234-251) | – | DataProvider, OtpScreen |
-| `SIGN_UP` | `name`, `newcomer`, `authUserId` | Create `me` (followers 7, founding member), seed following/notifications, default joined circles, `c_fhb` creator = me (253-280) | – (profile written by `completeOnboarding`) | ProfileSuburbScreen |
+| `RESTORE_SESSION` | `userId`, `profile` row | Build `me` from row; keep existing following/notifications (or `[]`); official joined fallback; newcomer/digest/checklist meta | – | DataProvider, OtpScreen |
+| `SIGN_UP` | `name`, `newcomer`, `authUserId` | Create `me` (followers 0, founding member), official joined circles only | – (profile written by `completeOnboarding`) | ProfileSuburbScreen |
 | `UPDATE_PROFILE` | `patch` | Patch `me`; sanitize photo (282-291) | – (EditProfile calls `updateProfile()` directly) | ProfileSuburbScreen, EditProfileScreen |
 | `LOGOUT` | – | `currentUserId: null`, `authUserId: null` | – | SettingsScreen |
 | `DELETE_ACCOUNT` | – | `buildInitialState()` (full wipe) | – | DeleteAccountScreen |
 | `ASK_QUESTION` | `id`, `title`, `body`, `circleId`, `anonymous`, `photos`, `postedAsExpert?`, `professionLabel?` | Enforce daily caps; expert posts never anonymous; expert circle override; prepend question (300-333) | insert `questions` | AskComposerScreen |
-| `MERGE_LIVE_DATA` | `payload` bundle | Seed-only + local-pending + live questions; merge users/circles; union upvotes/saves/follows/joins/checklist (334-397) | – | DataProvider initial load, `refreshFromServer` |
-| `ADD_ANSWER` | `questionId`, `id`, `body`, `anonymous`, `photoUrl` | Append answer (399-416) | insert `answers` (live question ids only) | QuestionDetailScreen |
-| `ADD_REPLY` | `questionId`, `answerId`, `id`, `body`, `anonymous`, `photoUrl`, `postedAsExpert?`, `professionLabel?` | Append reply (418-447) | insert `replies` (live ids only) | QuestionDetailScreen |
+| `MERGE_LIVE_DATA` | `payload` bundle | Local-pending `me` posts + live questions; merge users/circles; union upvotes/saves/UUID follows/joins/checklist | – | DataProvider initial load, `refreshFromServer` |
+| `ADD_ANSWER` | `questionId`, `id`, `body`, `anonymous`, `photoUrl` | Append answer | insert `answers` | QuestionDetailScreen |
+| `ADD_REPLY` | `questionId`, `answerId`, `id`, `body`, `anonymous`, `photoUrl`, `postedAsExpert?`, `professionLabel?` | Append reply | insert `replies` | QuestionDetailScreen |
 | `TOGGLE_UPVOTE_QUESTION` | `questionId` | ±1, track in `myUpvotes.questions` (449-464) | `upvotes` insert/delete + bump `questions.upvotes` | QuestionCard/QuestionDetail |
 | `TOGGLE_SAVE_QUESTION` | `questionId` | toggle `savedQuestions` (466-474) | `saved_questions` insert/delete | QuestionDetail, QuestionCard |
 | `TOGGLE_UPVOTE_ANSWER` | `answerId` | ±1; milestone notification; expert-upvote bonus for answer author when voter is verified (476-527) | `upvotes` + bump `answers.upvotes` | QuestionDetail |
 | `TOGGLE_UPVOTE_REPLY` | `replyId` | ±1 (529-550) | `upvotes` + bump `replies.upvotes` | QuestionDetail |
-| `TOGGLE_FOLLOW` | `userId` | toggle following; adjust `followers` count; no self-follow (552-567) | `follows` insert/delete (skipped for mock `u_*` ids) | FollowButton |
+| `TOGGLE_FOLLOW` | `userId` | toggle following; adjust `followers` count; no self-follow | `follows` insert/delete (skipped for `'me'` / non-UUID) | FollowButton |
 | `DELETE_QUESTION` | `questionId` | remove (569-570) | delete `questions` where author = me | QuestionDetail |
 | `MARK_NOTIFS_READ` | – | all `read: true` | – | NotificationsScreen |
 | `SUBMIT_EXPERT_APPLICATION` | `expertBadgeTitle`, `expertCircleId`, `credentialName`, `credentialUrl`, `status` | store application; if `approved`, mark `me` verified with category/profession (574-601) | insert `expert_applications`; if approved update `profiles` | VerifiedApplicationScreen |
@@ -364,17 +358,17 @@ Notifications/checklist: `unreadNotifs`, `isChecklistItemDone`, `checklistDoneCo
 
 ### Boot
 
-1. `DataProvider` reads `chautari.state.v2` → `HYDRATE` or `BOOTED` (`store.js:748-769`).
+1. `DataProvider` deletes legacy `chautari.state.v2`, then reads `chautari.state.v3` → `HYDRATE` or `BOOTED`.
 2. If Supabase configured: `getSession()`; on session → `SET_AUTH`, `fetchProfile`; profile with a name → `RESTORE_SESSION`, else `CLEAR_LOCAL_SESSION`; always `AUTH_READY` (770-794). Subscribes to `onAuthStateChange` for `SIGNED_OUT` (796-802).
 3. When `authUserId && currentUserId && authReady`: `fetchLiveBundle` → `MERGE_LIVE_DATA` (811-825).
 4. `RootNavigator` shows `Splash` until `booted && authReady && 1.5 s`.
 
-### Hybrid data model
+### Live data model
 
-- **Seed** (`data/seed.js`, `data/circles.js`): 15 questions, 6 users, 8 official + several user circles. Seed question ids are in `SEED_QUESTION_IDS`; seed users are `u_*`. Seed timestamps are refreshed relative to now on every launch (`mergeQuestions`, `store.js:87-108`).
-- **Live** (Supabase): anything the signed-in user creates (`q_*`, `a_*`, `r_*`, `c_*` ids via `makeId`) plus other users' live rows. `isLiveQuestionId` = not a seed id (`services/liveData/ids.js:18-20`). Writes against seed threads (answering a seed question, upvoting a seed question) are **local only**.
-- `MERGE_LIVE_DATA` keeps seed-only rows, keeps local optimistic rows from `me` not yet on the server, and takes live rows as truth for the rest (`store.js:340-352`).
-- Author id mapping: DB `author_id === authUserId` ↔ app `'me'` (`services/liveData/mappers.js:authorToApp`). Mock `u_*` follow ids are never sent to Supabase (`persist.js:170`), and `follows.following_id` is TEXT since migration 005 to tolerate them.
+- **Reference (client):** 8 official circles (`data/circles.js:buildOfficialCircles`) and 10 checklist items (`data/checklist.js`). No bundled users, questions, follows or notifications.
+- **Live (Supabase):** profiles, Q&A, user-created circles, follows, saves, upvotes, reports. Every synced write goes to Supabase when configured (`persist.js` `SYNC_ACTIONS`).
+- `MERGE_LIVE_DATA` keeps local optimistic rows from `me` not yet on the server and takes live rows as truth for the rest.
+- Author id mapping: DB `author_id === authUserId` ↔ app `'me'` (`services/liveData/mappers.js:authorToApp`). Follows only persist for UUID targets (`persist.js` skips `'me'`).
 
 ### Refresh
 
@@ -429,11 +423,7 @@ sequenceDiagram
   end
   QD->>SD: dispatch ADD_ANSWER {questionId, id, body, anonymous, photoUrl}
   SD->>PA: persistAction
-  alt questionId is live (not seed)
-    PA->>SB: insert answers row
-  else seed question
-    PA-->>SD: skip (local only)
-  end
+  PA->>SB: insert answers row
   SD->>R: append answer to question.answers
   SD-->>QD: { ok: true } → toast "Answer posted"
 ```
@@ -497,7 +487,7 @@ Following tab: `followingFeed()` = questions authored or answered by followed us
 | `services/liveData/fetch.js` | `fetchLiveBundle` | 7 parallel queries: `questions(*, answers(*, replies(*)))`, non-official `circles`, my `upvotes`, `saved_questions`, `follows`, `circle_members`, `checklist_progress`; then `profiles in (…uuids)`. Non-UUID ids filtered. |
 | `services/liveData/persist.js` | `shouldSyncAction`, `persistAction` | See action table (§5). |
 | `services/liveData/mappers.js` | `authorToApp`, `authorToDb`, `mapReply`, `mapAnswer`, `mapQuestion`, `mapProfileRow`, `mapCircle` | snake_case rows → camelCase app objects; `created_at` → epoch ms. |
-| `services/liveData/ids.js` | `isValidUuid`, `filterValidUuids`, `isLiveQuestionId`, `isMockUserId`, `makeId` | |
+| `services/liveData/ids.js` | `isValidUuid`, `filterValidUuids`, `makeId` | |
 | `lib/supabase.js` | `supabase`, `isSupabaseConfigured`, `isAuthDevMode` | Client is `null` when not configured. |
 
 ### Hooks
@@ -540,7 +530,7 @@ Following tab: `followingFeed()` = questions authored or answered by followed us
 |---|---|
 | `000_reset_public_schema.sql` | Drops and recreates `public` schema (destructive; dev only) |
 | `001_chautari_schema.sql` | Enums, all tables, indexes, `handle_new_user` trigger (auto-insert `profiles` on `auth.users` insert), `set_updated_at` triggers, RLS enable + policies |
-| `002_seed_reference_data.sql` | 8 official circles (ids match `data/categories.js`) plus seed user circles; 10 `checklist_items` (`tfn`, `bank`, `sim`, `myki`, `health`, `gp`, `rent`, `licence`, `job`, `emergency`) |
+| `002_seed_reference_data.sql` | 8 official circles (ids match `data/categories.js`) plus leftover seed user circles; 10 `checklist_items` |
 | `003_clear_auth_users.sql` | `DELETE FROM auth.identities / auth.users` (dev reset) |
 | `004_rls_content_updates.sql` | UPDATE policies on `questions`/`answers`/`replies` for any authenticated user (needed for vote-count bumps) |
 | `005_flexible_social_refs.sql` | Drop FK `saved_questions.question_id`; `follows.following_id` → TEXT, drop FK, add no-self-follow check (allows seed ids) |
@@ -549,10 +539,11 @@ Following tab: `followingFeed()` = questions authored or answered by followed us
 | `008_expert_post_mode.sql` | `questions.posted_as_expert`, `questions.profession_label`, `replies.posted_as_expert`, `replies.profession_label` |
 | `009_expert_profile_fields.sql` | `profiles.expert_badge_title`, `profiles.expert_circle_id` (FK circles, set null) |
 | `010_relax_answer_reply_lengths.sql` | Replace `answers_body_check` and `replies_body_check` with `char_length(btrim(body)) > 0` |
+| `011_clear_seed_content.sql` | Null `checklist_items.question_id` when the question is missing; delete empty 002 seed user circles |
 
 Whether all migrations have been applied to the current hosted project is **UNVERIFIED** from the repo.
 
-### Tables (after 010)
+### Tables (after 011)
 
 | Table | Key columns | Notes |
 |---|---|---|
@@ -562,7 +553,7 @@ Whether all migrations have been applied to the current hosted project is **UNVE
 | `questions` | `id TEXT PK`, `circle_id → circles (RESTRICT)`, `author_id UUID`, `anonymous`, `title` (10–120 chars), `body` (30–4000 chars), `photos JSONB`, `upvotes`, `views`, `posted_as_expert`, `profession_label`, timestamps | |
 | `answers` | `id TEXT PK`, `question_id → questions (CASCADE)`, `author_id`, `anonymous`, `body` (non-empty after 010), `upvotes`, `photo_url`, `created_at` | |
 | `replies` | `id TEXT PK`, `answer_id → answers (CASCADE)`, `author_id`, `anonymous`, `body` (non-empty after 010), `upvotes`, `photo_url`, `posted_as_expert`, `profession_label`, `created_at` | |
-| `follows` | `(follower_id UUID, following_id TEXT) PK`, no self-follow | `following_id` may hold seed ids |
+| `follows` | `(follower_id UUID, following_id TEXT) PK`, no self-follow | App writes UUID `following_id` only |
 | `saved_questions` | `(user_id, question_id) PK` | no FK to questions since 005 |
 | `upvotes` | `(user_id, target_type enum question/answer/reply, target_id TEXT) PK` | |
 | `notifications` | `id`, `user_id`, `type` enum, `text`, `actor_id`, `question_id`, `read` | **Not written by the app** (notifications are local only) |
@@ -613,7 +604,7 @@ Bucket `media` (public read). Object path must be `<prefix>/<auth.uid()>/<file>`
 | Dev auth creates `user+<digits>@chautari.app` with a fixed password | `services/auth.js:3, 23-48` |
 | Digest: daily 18:00 or weekly Monday 18:00 local notification; off disables | `services/digest.js:67-69` |
 | Splash shows at least 1.5 s | `navigation/RootNavigator.js:66` |
-| Writes to seed threads stay local; only `q_*`-style live ids sync | `services/liveData/ids.js:18-20`, `persist.js:78, 93, 113, 120` |
+| Every `SYNC_ACTIONS` write goes to Supabase when configured | `services/liveData/persist.js` |
 | Delete account wipes all local state and signs out of Supabase; server rows are **not** deleted | `screens/settings/DeleteAccountScreen.js:38-40`, `store.js:296-299` |
 
 ---
@@ -624,9 +615,9 @@ Bucket `media` (public read). Object path must be `<prefix>/<auth.uid()>/<file>`
 |---|---|---|
 | Phone OTP sign-in | **Mock by default**; real SMS path exists behind `EXPO_PUBLIC_AUTH_DEV_MODE=false` and requires Supabase phone provider configured (**UNVERIFIED** provider setup) | `services/auth.js` |
 | Profile sync (name, suburb, avatar, bio, newcomer, digest, checklist dismissed) | Working when configured | `services/profile.js`, `persist.js` |
-| Ask / answer / reply with photos | Working; live sync only for non-seed threads | §6 |
-| Upvotes, saves, follows, joins | Working; optimistic with server toggle; mock users local-only | `persist.js` |
-| For You feed (Hot/New, 80/20) | Working, client-side over merged seed+live data | §7 |
+| Ask / answer / reply with photos | Working; synced when Supabase is configured | §6 |
+| Upvotes, saves, follows, joins | Working; optimistic with server toggle | `persist.js` |
+| For You feed (Hot/New, 80/20) | Working, client-side over live questions | §7 |
 | Following feed | Working (local filter) | `store.js:1032` |
 | Circles create/edit/pin | Working | |
 | Expert directory, profiles, verified application | Working; **approval is automatic** (prototype) | `VerifiedApplicationScreen.js:79` |
@@ -653,7 +644,7 @@ Bucket `media` (public read). Object path must be `<prefix>/<auth.uid()>/<file>`
 **"Why didn't my write reach Supabase?"**
 1. `lib/supabase.js:isSupabaseConfigured()` false → everything local.
 2. `store.js:848`: needs `snap.authUserId` and `shouldSyncAction` (`persist.js:8-15`).
-3. Inside `persistAction`, seed-thread guards return early (`isLiveQuestionId`), mock follow ids skipped.
+3. Inside `persistAction`, follow skips `'me'` / non-UUID targets.
 4. Error → console `[dispatch] <type>` + toast; reducer does not run; check RLS in `001`/`004`.
 
 **"Where is X rendered on the Home screen?"**
