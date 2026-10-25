@@ -29,8 +29,7 @@ import { uploadAnswerPhoto, uploadReplyPhoto } from '../services/mediaStorage';
 import { normalizeDisplayPhotoUrls } from '../utils/photos';
 import { ENABLE_REPLY_PHOTOS } from '../constants/media';
 
-const ANSWER_BODY_MIN = 20;
-const ANSWER_BODY_MAX = 4000;
+// Answers and replies accept any length — only an empty body is rejected.
 const ANSWER_COMPOSER = '__answer__';
 
 // Renders text with visually distinct links (links allowed in answers/replies).
@@ -284,8 +283,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   };
 
   const submitReply = async (answerId) => {
-    const len = replyText.trim().length;
-    if (len < 5 || len > 1000 || replySubmitting) return;
+    if (!replyText.trim() || replySubmitting) return;
     if (replyPostedAsExpert && !hasExpertProfessionalProfile(currentUser)) {
       pendingProfessionalReply.current = true;
       navigate('ExpertProfessionalSetup');
@@ -345,8 +343,7 @@ export default function QuestionDetailScreen({ navigation, route }) {
   };
 
   const submitAnswer = async () => {
-    const len = answerText.trim().length;
-    if (len < ANSWER_BODY_MIN || len > ANSWER_BODY_MAX || answerSubmitting) return;
+    if (!answerText.trim() || answerSubmitting) return;
     if (!online) {
       Alert.alert('No connection', 'You’re offline. Reconnect to post your answer — your draft stays here.');
       return;
@@ -480,15 +477,14 @@ export default function QuestionDetailScreen({ navigation, route }) {
 
   const renderBottomBar = () => {
     if (activeBottomComposer === ANSWER_COMPOSER) {
-      const len = answerText.trim().length;
-      const valid = len >= ANSWER_BODY_MIN && len <= ANSWER_BODY_MAX;
+      const valid = answerText.trim().length > 0;
       return (
         <View style={styles.stickyBottom}>
           <View style={styles.composerToolbar}>
             <Pressable style={styles.toolBtn} onPress={insertAnswerLink}>
               <Text style={styles.toolBtnText}>🔗 Link</Text>
             </Pressable>
-            <CharCount value={answerText} min={ANSWER_BODY_MIN} max={ANSWER_BODY_MAX} />
+            <CharCount value={answerText} />
           </View>
           <View style={styles.replyComposer}>
             <TextInput
@@ -500,7 +496,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
               onSelectionChange={(e) => { answerSelection.current = e.nativeEvent.selection; }}
               multiline
               autoFocus
-              maxLength={ANSWER_BODY_MAX + 50}
               onFocus={scrollToAnswersSection}
             />
             <Pressable
@@ -559,7 +554,6 @@ export default function QuestionDetailScreen({ navigation, route }) {
               onChangeText={setReplyText}
               multiline
               autoFocus
-              maxLength={1000}
               onFocus={() => scrollToAnswer(activeBottomComposer)}
             />
             {ENABLE_REPLY_PHOTOS ? (
@@ -573,8 +567,8 @@ export default function QuestionDetailScreen({ navigation, route }) {
             ) : null}
             <Pressable
               onPress={() => submitReply(activeBottomComposer)}
-              disabled={replyText.trim().length < 5 || replySubmitting}
-              style={[styles.replySend, (replyText.trim().length < 5 || replySubmitting) && styles.replySendDisabled]}
+              disabled={!replyText.trim() || replySubmitting}
+              style={[styles.replySend, (!replyText.trim() || replySubmitting) && styles.replySendDisabled]}
               accessibilityLabel="Send reply"
             >
               <Text style={styles.replySendText}>{replySubmitting ? '…' : 'Send'}</Text>

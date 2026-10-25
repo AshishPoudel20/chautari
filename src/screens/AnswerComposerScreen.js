@@ -18,7 +18,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { uploadAnswerPhoto } from '../services/mediaStorage';
 import { ENABLE_REPLY_PHOTOS } from '../constants/media';
 
-const BODY_MIN = 20, BODY_MAX = 4000;
+// Answers accept any length — only an empty body is rejected.
 
 export default function AnswerComposerScreen({ navigation, route }) {
   const { colors, spacing, font, radius, shadow } = useTheme();
@@ -39,8 +39,7 @@ export default function AnswerComposerScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const selection = useRef({ start: 0, end: 0 });
 
-  const len = body.trim().length;
-  const valid = len >= BODY_MIN && len <= BODY_MAX;
+  const valid = body.trim().length > 0;
 
   const insertLink = () => {
     const url = 'https://';
@@ -130,10 +129,10 @@ export default function AnswerComposerScreen({ navigation, route }) {
             <Pressable style={styles.toolBtn} onPress={insertLink}>
               <Text style={styles.toolBtnText}>🔗 Insert link</Text>
             </Pressable>
-            <CharCount value={body} min={BODY_MIN} max={BODY_MAX} />
+            <CharCount value={body} />
           </View>
 
-          <Field error={len > 0 && !valid ? `Answers are ${BODY_MIN}–${BODY_MAX} characters.` : null}>
+          <Field>
             <Input
               placeholder="Share what you know from experience. Be kind and specific — links are welcome."
               value={body}
@@ -141,7 +140,6 @@ export default function AnswerComposerScreen({ navigation, route }) {
               onSelectionChange={(e) => { selection.current = e.nativeEvent.selection; }}
               multiline
               autoFocus
-              maxLength={BODY_MAX + 50}
               style={{ minHeight: 160 }}
             />
           </Field>
