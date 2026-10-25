@@ -1,24 +1,18 @@
-// Global app state for Chautari. Mock seed data + Supabase sync for live user actions.
+// Global app state for Chautari. Official circles locally + Supabase for live content.
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  seedUsers, seedQuestions, seedFollowing, seedNotifications,
-  seedCircles, seedJoinedCircles,
-} from './seed';
 import { milestoneCrossed, startOfLocalDay } from '../utils/format';
 import { resolveUserId } from '../utils/navigation';
 import { computeKarmaForUser } from '../utils/karma';
-import { slugify, isCircleNameTaken } from './circles';
+import { slugify, isCircleNameTaken, buildOfficialCircles, officialCircleIds } from './circles';
 import { verifiedCategoryFromCircle } from '../utils/expertPost';
 import { sanitizePhotoUrlsForStorage, sanitizeProfilePhoto } from '../utils/photos';
 import { NEWCOMER_WINDOW_MS } from '../constants/newcomer';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { getSession, onAuthStateChange } from '../services/auth';
 import { fetchProfile, profileMetaFromRow, profileRowToUser } from '../services/profile';
-import { fetchLiveBundle, persistAction, shouldSyncAction, isMockUserId, isValidUuid } from '../services/liveData';
+import { fetchLiveBundle, persistAction, shouldSyncAction, isValidUuid } from '../services/liveData';
 import { inflightKeyForAction } from '../utils/dispatchGuards';
-
-const SEED_QUESTION_IDS = new Set(seedQuestions.map((q) => q.id));
 
 export const EXPERT_DAILY_POST_LIMIT = 2;
 export const MEMBER_DAILY_POST_LIMIT = 5;
@@ -32,7 +26,8 @@ const countPostsToday = (questions, userId, bucket) => {
   }).length;
 };
 
-const STORAGE_KEY = 'chautari.state.v2';
+const STORAGE_KEY = 'chautari.state.v3';
+const LEGACY_STORAGE_KEY = 'chautari.state.v2';
 let dispatchErrorHandler = null;
 
 /** Toast bridge — registered by DispatchErrorBridge inside ToastProvider. */
@@ -56,70 +51,25 @@ function normalizeQuestion(q) {
   };
 }
 
-function mergeSeedReplyExpertFlags(existingReplies, seedReplies) {
-  if (!seedReplies?.length) return existingReplies;
-  const byId = new Map(seedReplies.map((r) => [r.id, r]));
-  return (existingReplies || []).map((r) => {
-    const seed = byId.get(r.id);
-    if (!seed || seed.postedAsExpert == null) return r;
-    return {
-      ...r,
-      postedAsExpert: seed.postedAsExpert,
-      professionLabel: seed.professionLabel ?? null,
-    };
-  });
-}
-
-function mergeSeedAnswerExpertFlags(existingAnswers, seedAnswers) {
-  if (!seedAnswers?.length) return existingAnswers;
-  const byId = new Map(seedAnswers.map((a) => [a.id, a]));
-  return (existingAnswers || []).map((a) => {
-    const seed = byId.get(a.id);
-    if (!seed) return a;
-    return {
-      ...a,
-      replies: mergeSeedReplyExpertFlags(a.replies, seed.replies),
-    };
-  });
-}
-
-// Pull in new seed questions and refresh relative timestamps on every launch.
 function mergeQuestions(persisted = []) {
-  const byId = new Map(persisted.map((q) => [q.id, normalizeQuestion(q)]));
-  for (const sq of seedQuestions) {
-    const existing = byId.get(sq.id);
-    const normalized = normalizeQuestion(sq);
-    if (!existing) {
-      byId.set(sq.id, normalized);
-      continue;
-    }
-    byId.set(sq.id, {
-      ...existing,
-      createdAt: normalized.createdAt,
-      circleId: normalized.circleId,
-      ...(normalized.postedAsExpert != null ? {
-        postedAsExpert: normalized.postedAsExpert,
-        professionLabel: normalized.professionLabel ?? null,
-      } : {}),
-      answers: mergeSeedAnswerExpertFlags(existing.answers, normalized.answers),
-    });
-  }
-  return sortQuestions([...byId.values()]);
+  return sortQuestions((persisted || []).map(normalizeQuestion));
 }
 
 function mergeCircles(persisted = []) {
-  const byId = new Map(persisted.map((c) => [c.id, c]));
-  for (const sc of seedCircles) {
-    const existing = byId.get(sc.id);
+  const byId = new Map((persisted || []).map((c) => [c.id, c]));
+  for (const oc of buildOfficialCircles()) {
+    const existing = byId.get(oc.id);
     if (!existing) {
-      byId.set(sc.id, sc);
+      byId.set(oc.id, oc);
     } else {
-      byId.set(sc.id, {
+      byId.set(oc.id, {
         ...existing,
-        pinnedQuestionId: sc.isOfficial
-          ? sc.pinnedQuestionId
-          : (existing.pinnedQuestionId ?? sc.pinnedQuestionId ?? null),
-        creatorId: sc.id === 'c_fhb' ? 'me' : existing.creatorId,
+        isOfficial: true,
+        name: oc.name,
+        handle: oc.handle,
+        description: oc.description,
+        icon: oc.icon,
+        accentId: existing.accentId || oc.accentId,
       });
     }
   }
@@ -127,7 +77,7 @@ function mergeCircles(persisted = []) {
 }
 
 function defaultJoinedCircles() {
-  return [...seedJoinedCircles];
+  return officialCircleIds();
 }
 
 /** Official circles are permanent membership — always treated as joined. */
@@ -140,26 +90,10 @@ function computeEffectiveJoinedCircleIds(state) {
 }
 
 function mergeUsers(persisted = []) {
-  const byId = new Map(persisted.map((u) => [u.id, u]));
-  for (const su of seedUsers) {
-    const existing = byId.get(su.id);
-    if (!existing) byId.set(su.id, su);
-    else if (su.id !== 'me') {
-      byId.set(su.id, {
-        ...existing,
-        verified: su.verified,
-        profession: su.profession,
-        verifiedCategory: su.verifiedCategory,
-        expertBadgeTitle: su.expertBadgeTitle,
-        expertCircleId: su.expertCircleId,
-        bio: su.bio,
-        name: su.name,
-        suburb: su.suburb,
-        isFoundingMember: existing.isFoundingMember ?? su.isFoundingMember ?? false,
-      });
-    }
-  }
-  return [...byId.values()];
+  return (persisted || []).map((u) => ({
+    ...u,
+    photo: sanitizeProfilePhoto(u.photo),
+  }));
 }
 
 function buildInitialState() {
@@ -168,17 +102,17 @@ function buildInitialState() {
     authReady: !isSupabaseConfigured(),
     authUserId: null,
     currentUserId: null, // null = signed out
-    users: seedUsers,
-    circles: seedCircles,
+    users: [],
+    circles: buildOfficialCircles(),
     joinedCircles: defaultJoinedCircles(),
-    questions: sortQuestions(seedQuestions.map(normalizeQuestion)),
+    questions: [],
     following: [], // ids the current user follows
     notifications: [],
     myUpvotes: { questions: [], answers: [], replies: [] },
     savedQuestions: [], // bookmarked question ids
     reports: [],
     expertApplication: null, // { category, customCategory, status }
-    expertUpvoteBonuses: { u_bibek: 2, u_pratima: 1, u_dipesh: 3, u_sunita: 1 },
+    expertUpvoteBonuses: {},
     digestMode: 'daily', // 'daily' | 'weekly' | 'off'
     checklistDone: [],
     checklistCardDismissed: false,
@@ -240,8 +174,8 @@ function reducer(state, action) {
         authUserId: action.userId,
         currentUserId: 'me',
         users: [me, ...state.users.filter((u) => u.id !== 'me' && u.id !== action.userId)],
-        following: state.following?.length ? state.following : seedFollowing,
-        notifications: state.notifications?.length ? state.notifications : seedNotifications,
+        following: state.following || [],
+        notifications: state.notifications || [],
         joinedCircles: state.joinedCircles?.length ? state.joinedCircles : defaultJoinedCircles(),
         newcomer: meta.newcomer ?? false,
         newcomerSince: meta.newcomerSince ?? null,
@@ -251,7 +185,6 @@ function reducer(state, action) {
     }
 
     case 'SIGN_UP': {
-      // Create the 'me' user with a name; following/notifications seeded now.
       const me = {
         id: 'me',
         name: action.name,
@@ -259,7 +192,7 @@ function reducer(state, action) {
         photo: null,
         bio: '',
         verified: false,
-        followers: 7,
+        followers: 0,
         createdAt: Date.now(),
         isFoundingMember: true,
       };
@@ -268,12 +201,9 @@ function reducer(state, action) {
         authUserId: action.authUserId ?? state.authUserId,
         currentUserId: 'me',
         users: [me, ...state.users.filter((u) => u.id !== 'me' && u.id !== action.authUserId)],
-        following: state.following?.length ? state.following : seedFollowing,
-        notifications: state.notifications?.length ? state.notifications : seedNotifications,
+        following: state.following || [],
+        notifications: state.notifications || [],
         joinedCircles: defaultJoinedCircles(),
-        circles: state.circles.map((c) =>
-          c.id === 'c_fhb' ? { ...c, creatorId: 'me' } : c
-        ),
         newcomer: !!action.newcomer,
         newcomerSince: action.newcomer ? Date.now() : null,
       };
@@ -294,7 +224,6 @@ function reducer(state, action) {
       return { ...state, currentUserId: null, authUserId: null };
 
     case 'DELETE_ACCOUNT': {
-      // Hard delete: wipe everything and return to a clean seeded, signed-out state.
       return buildInitialState();
     }
 
@@ -337,16 +266,11 @@ function reducer(state, action) {
       const liveQuestions = p.questions || [];
       const liveById = new Map(liveQuestions.map((q) => [q.id, q]));
 
-      // Seed-only rows stay unless superseded by a live row with the same id.
-      const seedOnly = state.questions.filter(
-        (q) => SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id),
-      );
       // Local optimistic posts from me not yet returned by the server.
       const localPending = state.questions.filter(
-        (q) => !SEED_QUESTION_IDS.has(q.id) && !liveById.has(q.id) && q.authorId === 'me',
+        (q) => !liveById.has(q.id) && q.authorId === 'me',
       );
       const mergedQuestions = sortQuestions([
-        ...seedOnly,
         ...localPending,
         ...liveQuestions,
       ]);
@@ -386,7 +310,7 @@ function reducer(state, action) {
         },
         savedQuestions: uniq(state.savedQuestions, p.savedQuestions),
         following: uniq(
-          state.following.filter((id) => isMockUserId(id)),
+          (state.following || []).filter(isValidUuid),
           (p.following || []).filter(isValidUuid),
         ),
         joinedCircles: p.joinedCircles?.length
@@ -744,12 +668,13 @@ export function DataProvider({ children }) {
   const inFlightActions = useRef(new Set());
   stateRef.current = state;
 
-  // Load persisted mock state, then reconcile Supabase auth session.
+  // Load persisted state, then reconcile Supabase auth session.
   useEffect(() => {
     let authSub;
     let mounted = true;
     (async () => {
       try {
+        await AsyncStorage.removeItem(LEGACY_STORAGE_KEY);
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           try {
@@ -808,7 +733,7 @@ export function DataProvider({ children }) {
     };
   }, []);
 
-  // Load Supabase Q&A + social state for signed-in user (merged with mock seed).
+  // Load Supabase Q&A + social state for signed-in user.
   useEffect(() => {
     if (!state.authUserId || !state.currentUserId || !state.authReady) return;
     if (!isSupabaseConfigured()) return;
@@ -1088,7 +1013,7 @@ export function useSelectors() {
 
   const isChecklistItemDone = (itemId) => state.checklistDone.includes(itemId);
   const checklistDoneCount = () => state.checklistDone.length;
-  const isQuestionOwner = (q) => !!q && (q.authorId === 'me' || q.authorId === 'me_seed_anon');
+  const isQuestionOwner = (q) => !!q && q.authorId === 'me';
 
   const isNewcomerActive = () =>
     !!state.newcomer

@@ -37,11 +37,6 @@ const OFFICIAL_ACCENTS = ['crimson', 'saffron', 'teal', 'ocean', 'forest', 'plum
 const DAY = 24 * 60 * 60 * 1000;
 const ago = (ms) => Date.now() - ms;
 
-const OFFICIAL_PINNED = {
-  migration: 'q1',
-  loans: 'q16',
-};
-
 export function buildOfficialCircles() {
   return CATEGORIES.map((c, i) => ({
     id: c.id,
@@ -55,85 +50,13 @@ export function buildOfficialCircles() {
     createdAt: ago(400 * DAY),
     isOfficial: true,
     isPrivate: false,
-    pinnedQuestionId: OFFICIAL_PINNED[c.id] || null,
+    pinnedQuestionId: null,
   }));
 }
 
-export const seedUserCircles = [
-  {
-    id: 'c_footscray',
-    name: 'Footscray Nepali Community',
-    handle: 'footscray-nepali',
-    description: 'Local meetups, temple events and helping newcomers in the west.',
-    icon: '🍲',
-    accentId: 'saffron',
-    creatorId: 'u_bibek',
-    memberCount: 340,
-    createdAt: ago(90 * DAY),
-    isOfficial: false,
-    isPrivate: false,
-  },
-  {
-    id: 'c_fhb',
-    name: 'First Home Buyers AU',
-    handle: 'first-home-buyers-au',
-    description: 'Deposits, FHOG, stamp duty and the emotional rollercoaster of buying.',
-    icon: '🏠',
-    accentId: 'teal',
-    creatorId: 'me',
-    memberCount: 120,
-    createdAt: ago(60 * DAY),
-    isOfficial: false,
-    isPrivate: false,
-    pinnedQuestionId: 'q_fhb_pin',
-  },
-  {
-    id: 'c_monash',
-    name: 'Monash Uni Nepalese Students',
-    handle: 'monash-nepalese',
-    description: 'Units, placements, casual work and surviving exam season together.',
-    icon: '🎓',
-    accentId: 'plum',
-    creatorId: 'u_dipesh',
-    memberCount: 85,
-    createdAt: ago(45 * DAY),
-    isOfficial: false,
-    isPrivate: false,
-  },
-  {
-    id: 'c_cricket',
-    name: 'Cricket Melbourne',
-    handle: 'cricket-melbourne',
-    description: 'Weekend games, gear swaps and finding a side that needs one more.',
-    icon: '🏏',
-    accentId: 'forest',
-    creatorId: 'u_niraj',
-    memberCount: 60,
-    createdAt: ago(30 * DAY),
-    isOfficial: false,
-    isPrivate: false,
-  },
-  {
-    id: 'c_tiny',
-    name: 'Gundruk Recipe Club',
-    handle: 'gundruk-recipe-club',
-    description: 'A tiny circle for fermenting, drying and cooking gundruk properly.',
-    icon: '🌿',
-    accentId: 'olive',
-    creatorId: 'u_sabina',
-    memberCount: 4,
-    createdAt: ago(3 * DAY),
-    isOfficial: false,
-    isPrivate: false,
-  },
-];
-
-export const seedJoinedCircles = [
-  ...CATEGORIES.map((c) => c.id),
-  'c_footscray',
-  'c_monash',
-  'c_fhb',
-];
+export function officialCircleIds() {
+  return CATEGORIES.map((c) => c.id);
+}
 
 function paletteEntry(accentId) {
   return CIRCLE_ACCENT_PALETTE[accentId] || CIRCLE_ACCENT_PALETTE.crimson;

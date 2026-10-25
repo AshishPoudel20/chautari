@@ -17,7 +17,7 @@ export const DISCOVERY_RATIO = 0.20;
 
 /**
  * Minimum Hot score for a non-joined post to enter discovery.
- * Tuned on seed: excludes Gundruk Recipe Club low-engagement (~1.4); includes Cricket Melbourne threads (~8+).
+ * Discovery floor: excludes very low-engagement posts from the For You discovery pool.
  */
 export const DISCOVERY_MIN_SCORE = 2.0;
 

@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { slugify } from '../../data/circles';
 import { sanitizePhotoUrlsForStorage } from '../../utils/photos';
-import { isLiveQuestionId, makeId, isMockUserId } from './ids';
+import { makeId, isValidUuid } from './ids';
 import { isBenignDuplicateError } from '../../utils/dispatchGuards';
 import { verifiedCategoryFromCircle } from '../../utils/expertPost';
 
@@ -75,7 +75,6 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'ADD_ANSWER': {
-      if (!isLiveQuestionId(action.questionId)) return action;
       const id = action.id || makeId('a');
       const { error } = await supabase.from('answers').insert({
         id,
@@ -90,7 +89,6 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'ADD_REPLY': {
-      if (!isLiveQuestionId(action.questionId)) return action;
       const id = action.id || makeId('r');
       const replyRow = {
         id,
@@ -110,14 +108,12 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'DELETE_QUESTION': {
-      if (!isLiveQuestionId(action.questionId)) return action;
       const { error } = await supabase.from('questions').delete().eq('id', action.questionId).eq('author_id', userId);
       if (error) throw error;
       return action;
     }
 
     case 'TOGGLE_UPVOTE_QUESTION': {
-      if (!isLiveQuestionId(action.questionId)) return action;
       const had = state.myUpvotes.questions.includes(action.questionId);
       await toggleUpvote(userId, 'question', action.questionId, had);
       return action;
@@ -127,7 +123,7 @@ export async function persistAction(action, state, userId) {
       const parentQ = state.questions.find((q) =>
         (q.answers || []).some((a) => a.id === action.answerId),
       );
-      if (!parentQ || !isLiveQuestionId(parentQ.id)) return action;
+      if (!parentQ) return action;
       const had = state.myUpvotes.answers.includes(action.answerId);
       await toggleUpvote(userId, 'answer', action.answerId, had);
       return action;
@@ -144,7 +140,7 @@ export async function persistAction(action, state, userId) {
         }
         if (parentQ) break;
       }
-      if (!parentQ || !isLiveQuestionId(parentQ.id)) return action;
+      if (!parentQ) return action;
       const had = state.myUpvotes.replies.includes(action.replyId);
       await toggleUpvote(userId, 'reply', action.replyId, had);
       return action;
@@ -167,7 +163,7 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'TOGGLE_FOLLOW': {
-      if (action.userId === 'me' || isMockUserId(action.userId)) return action;
+      if (action.userId === 'me' || !isValidUuid(action.userId)) return action;
       const had = state.following.includes(action.userId);
       if (had) {
         const { error } = await supabase.from('follows').delete()
@@ -239,7 +235,6 @@ export async function persistAction(action, state, userId) {
     }
 
     case 'PIN_QUESTION_TO_CIRCLE': {
-      if (!isLiveQuestionId(action.questionId)) return action;
       const { error } = await supabase.from('circles').update({
         pinned_question_id: action.questionId,
       }).eq('id', action.circleId).eq('creator_id', userId);

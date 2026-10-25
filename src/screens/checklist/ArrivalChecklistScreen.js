@@ -116,13 +116,15 @@ export default function ArrivalChecklistScreen({ navigation }) {
                 <Text style={styles.itemExplainer}>{item.explainer}</Text>
               </Pressable>
             </View>
-            <Pressable
-              onPress={() => openThread(item.questionId)}
-              style={styles.linkRow}
-              hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-            >
-              <Text style={styles.linkText}>See answers from the community →</Text>
-            </Pressable>
+            {item.questionId ? (
+              <Pressable
+                onPress={() => openThread(item.questionId)}
+                style={styles.linkRow}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+              >
+                <Text style={styles.linkText}>See answers from the community →</Text>
+              </Pressable>
+            ) : null}
           </View>
         );
       })}

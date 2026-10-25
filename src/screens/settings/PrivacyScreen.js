@@ -7,7 +7,7 @@ export default function PrivacyScreen() {
     <DocScreen sample>
       <DocSection heading="Your privacy">
         <DocParagraph>
-          This is sample Privacy Policy text for a prototype. Importantly: this build stores everything locally on your device and sends nothing to a server. There is no backend, no analytics, and no third-party data sharing.
+          This is sample Privacy Policy text for a prototype. This build keeps a local session cache on your device and syncs posts, follows and profile details to Supabase when configured. There is no analytics and no third-party data sharing.
         </DocParagraph>
       </DocSection>
       <DocSection heading="What a production app would collect">
@@ -27,7 +27,7 @@ export default function PrivacyScreen() {
       </DocSection>
       <DocSection heading="This prototype">
         <DocParagraph>
-          All data here is seeded mock content plus whatever you create during your session, persisted only in this app’s local storage. Deleting the account or clearing app storage removes it entirely.
+          This build stores a local cache of your session on the device and syncs posts, follows and profile details to Supabase when configured. Deleting the account or clearing app storage removes the local cache.
         </DocParagraph>
       </DocSection>
     </DocScreen>
