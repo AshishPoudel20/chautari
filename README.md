@@ -76,7 +76,7 @@ Copy `.env.example` to `.env` (gitignored, never commit it).
 |----------|---------|---------|
 | `EXPO_PUBLIC_SUPABASE_URL` | `src/lib/supabase.js` | Supabase project URL. If unset, the app runs fully offline on seed data. |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `src/lib/supabase.js` | Supabase anon (public) key. Never put a `service_role` key in the app. |
-| `EXPO_PUBLIC_AUTH_DEV_MODE` | `src/services/auth.js` | `true` (default) uses a mock OTP in the UI; set `false` for real SMS OTP via Supabase Auth. |
+| `EXPO_PUBLIC_AUTH_DEV_MODE` | `src/lib/supabase.js` (consumed by `src/services/auth.js`) | `true` (default) uses a mock OTP in the UI; set `false` for real SMS OTP via Supabase Auth. |
 | `SUPABASE_DB_URL` | `supabase/*.js` scripts only | Direct Postgres connection string for running migrations and verification scripts. Not read by the app. |
 
 Feature flags in code (not env): `ENABLE_REPLY_PHOTOS` in `src/constants/media.js`.
