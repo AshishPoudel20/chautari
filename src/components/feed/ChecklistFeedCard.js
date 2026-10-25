@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { CHECKLIST_TOTAL } from '../data/checklist';
+import { useTheme } from '../../theme/ThemeContext';
+import { CHECKLIST_TOTAL } from '../../data/checklist';
 
 export default function ChecklistFeedCard({ doneCount, onOpen, onDismiss }) {
   const { colors, spacing, font, radius, shadow } = useTheme();

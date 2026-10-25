@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Image, StyleSheet, ActivityIndicator } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { normalizeDisplayPhotoUrls } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { normalizeDisplayPhotoUrls } from '../../utils/photos';
 
 /** Fixed square size for question card feed thumbnails (72–96px range). */
 export const QUESTION_CARD_THUMB_SIZE = 84;

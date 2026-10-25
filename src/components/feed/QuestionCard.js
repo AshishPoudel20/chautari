@@ -1,14 +1,14 @@
 import React, { useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Avatar from './common/Avatar';
-import CircleChip from './CircleChip';
-import VerifiedBadge from './common/VerifiedBadge';
+import Avatar from '../common/Avatar';
+import CircleChip from '../CircleChip';
+import VerifiedBadge from '../common/VerifiedBadge';
 import ExpertMarker from './ExpertMarker';
 import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';
-import { useTheme } from '../theme/ThemeContext';
-import { timeAgo, compactNumber, displayAuthor } from '../utils/format';
-import { showsExpertBadge, displayProfessionLabel } from '../utils/expertPost';
-import { normalizeDisplayPhotoUrls } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { timeAgo, compactNumber, displayAuthor } from '../../utils/format';
+import { showsExpertBadge, displayProfessionLabel } from '../../utils/expertPost';
+import { normalizeDisplayPhotoUrls } from '../../utils/photos';
 
 function QuestionCard({
   question, author, circle, expert,

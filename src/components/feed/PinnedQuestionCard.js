@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import QuestionCard from './QuestionCard';
-import { useTheme } from '../theme/ThemeContext';
-import { resolveCircleAccent } from '../data/circles';
+import { useTheme } from '../../theme/ThemeContext';
+import { resolveCircleAccent } from '../../data/circles';
 
 export default function PinnedQuestionCard({
   question, author, circle, answerCount, expert,

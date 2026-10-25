@@ -5,7 +5,7 @@ import VerifiedBadge from './common/VerifiedBadge';
 import KarmaBadge from './common/KarmaBadge';
 import FoundingMemberBadge from './common/FoundingMemberBadge';
 import Button from './common/Button';
-import QuestionCard from './QuestionCard';
+import QuestionCard from './feed/QuestionCard';
 import { EmptyState } from './common/ui';
 import { useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile, resolveUserId } from '../utils/navigation';

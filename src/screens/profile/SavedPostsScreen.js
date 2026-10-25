@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import QuestionFeedList from '../../components/QuestionFeedList';
+import QuestionFeedList from '../../components/feed/QuestionFeedList';
 import { EmptyState } from '../../components/common/ui';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';

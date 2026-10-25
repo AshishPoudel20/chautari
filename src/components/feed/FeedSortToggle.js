@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 /** Hot | New segmented control — For You tab only. */
 export default function FeedSortToggle({ mode, onChange }) {

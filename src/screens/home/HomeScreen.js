@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, Pressable, RefreshControl, Alert, LayoutAnimati
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ShinyWordmark from '../../components/common/ShinyWordmark';
-import QuestionFeedList from '../../components/QuestionFeedList';
-import CirclesRecommendRow from '../../components/CirclesRecommendRow';
-import ChecklistFeedCard from '../../components/ChecklistFeedCard';
-import FeedSortToggle from '../../components/FeedSortToggle';
+import QuestionFeedList from '../../components/feed/QuestionFeedList';
+import CirclesRecommendRow from '../../components/feed/CirclesRecommendRow';
+import ChecklistFeedCard from '../../components/feed/ChecklistFeedCard';
+import FeedSortToggle from '../../components/feed/FeedSortToggle';
 import Avatar from '../../components/common/Avatar';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 import FollowButton from '../../components/FollowButton';

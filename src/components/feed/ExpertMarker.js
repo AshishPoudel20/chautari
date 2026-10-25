@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme } from '../../theme/ThemeContext';
 
 // The "an expert is here" alive marker for feed cards. Saffron-accented and
 // weighted so it reads as "you'll get a credible answer here" at a glance.

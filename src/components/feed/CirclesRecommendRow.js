@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
-import { useTheme } from '../theme/ThemeContext';
-import { resolveCircleAccent } from '../data/circles';
-import CircleIcon from './CircleIcon';
+import { useData, useSelectors } from '../../data/store';
+import { useNavigationGuard } from '../../utils/navigation';
+import { useTheme } from '../../theme/ThemeContext';
+import { resolveCircleAccent } from '../../data/circles';
+import CircleIcon from '../CircleIcon';
 
 export default function CirclesRecommendRow({ navigation, limit = 5 }) {
   const { dispatch } = useData();

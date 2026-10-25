@@ -4,8 +4,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import QuestionCard from '../../components/QuestionCard';
-import PinnedQuestionCard from '../../components/PinnedQuestionCard';
+import QuestionCard from '../../components/feed/QuestionCard';
+import PinnedQuestionCard from '../../components/feed/PinnedQuestionCard';
 import CircleAboutSection from '../../components/CircleAboutSection';
 import ExpertsHereRow from '../../components/ExpertsHereRow';
 import MotifOverlay from '../../components/common/MotifOverlay';
