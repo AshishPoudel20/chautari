@@ -35,7 +35,6 @@ export default function AskComposerScreen({ navigation, route }) {
     me,
     canExpertPostProfessionalToday,
     canPostMemberToday,
-    expertProfessionalPostsToday,
     expertDailyPostLimit,
     memberPostsToday,
     memberDailyPostLimit,

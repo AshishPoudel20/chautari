@@ -3,11 +3,10 @@ import { View, StyleSheet, Alert } from 'react-native';
 import ExpertPostQuota from '../components/ExpertPostQuota';
 import QuestionFeedList from '../components/QuestionFeedList';
 import { EmptyState } from '../components/ui';
-import { useData, useSelectors } from '../data/store';
+import { useSelectors } from '../data/store';
 import { useTheme } from '../theme/ThemeContext';
 
 export default function MyPostsScreen({ navigation }) {
-  const { dispatch } = useData();
   const {
     myQuestions, me, canOpenComposerToday,
     canExpertPostProfessionalToday, canPostMemberToday,

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, Pressable } from 'react-native';
 import Avatar from '../components/Avatar';
-import VerifiedBadge from '../components/VerifiedBadge';
 import { EmptyState } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { useData, useSelectors } from '../data/store';

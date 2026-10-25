@@ -9,7 +9,7 @@ import { useToast } from '../components/Toast';
 export default function SavedPostsScreen({ navigation }) {
   const { dispatch } = useData();
   const { savedQuestionsList } = useSelectors();
-  const { colors, spacing, font, radius } = useTheme();
+  const { colors, radius } = useTheme();
   const showToast = useToast();
   const data = savedQuestionsList();
 

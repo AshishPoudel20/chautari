@@ -19,7 +19,7 @@ import BackButton from '../components/BackButton';
 import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveCircleAccent, circleBannerGradient } from '../data/circles';
-import { photoUrl, displayPhotoUrl } from '../utils/photos';
+import { displayPhotoUrl } from '../utils/photos';
 
 const BANNER_EXPANDED = 196;
 const COLLAPSE_RANGE = 130;
@@ -41,7 +41,7 @@ export default function CircleDetailScreen({ navigation, route }) {
   const { dispatch } = useData();
   const {
     circleById, isJoinedCircle, questionsInCircle, pinnedQuestionInCircle,
-    expertsInCircle, isCircleCreator, joinedCirclesList,
+    expertsInCircle, isCircleCreator,
     userById, answerCount, expertAnswerOn, state,
   } = useSelectors();
   const { navigate, goBack } = useNavigationGuard(navigation);

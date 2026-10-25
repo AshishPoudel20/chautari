@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Linking } from 'react-native';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import KarmaBadge from './KarmaBadge';

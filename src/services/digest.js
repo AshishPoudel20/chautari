@@ -1,7 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const DIGEST_CHANNEL = 'chautari-digest';
 const DIGEST_NOTIF_ID = 'chautari-daily-digest';
 
 Notifications.setNotificationHandler({

@@ -56,12 +56,6 @@ export function useForYouFeed({
 
   const hasMore = hasMoreInSnapshot(snapshot, visibleCount);
 
-  const bumpHotSnapshot = useCallback(() => {
-    setReferenceTime(Date.now());
-    setSnapshotGen((g) => g + 1);
-    setVisibleCount(PAGE_SIZE);
-  }, []);
-
   const changeSortMode = useCallback((mode) => {
     setSortMode((prev) => {
       if (prev === mode) return prev;

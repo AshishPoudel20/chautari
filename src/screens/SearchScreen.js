@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useHeaderHeight } from '@react-navigation/elements';
 import QuestionCard from '../components/QuestionCard';
 import { Input, Chip, EmptyState } from '../components/ui';
-import { useData, useSelectors } from '../data/store';
+import { useSelectors } from '../data/store';
 import { useNavigationGuard, openAuthorProfile } from '../utils/navigation';
 import { SUBURBS } from '../data/categories';
 import CircleChip from '../components/CircleChip';
@@ -29,7 +29,6 @@ export default function SearchScreen({ navigation, route }) {
   const { colors, spacing, font } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, font), [colors, spacing, font]);
 
-  const { dispatch } = useData();
   const { feedQuestions, userById, circleById, state, answerCount, expertAnswerOn } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
   const [query, setQuery] = useState('');
