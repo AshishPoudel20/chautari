@@ -27,6 +27,7 @@ export default function QuestionFeedList({
   InsertComponent = null,
   onEndReached,
   hasMore = false,
+  listRef,
 }) {
   const { userById, circleById, answerCount, expertAnswerOn, state } = useSelectors();
   const { navigate } = useNavigationGuard(navigation);
@@ -81,6 +82,7 @@ export default function QuestionFeedList({
 
   return (
     <FlatList
+      ref={listRef}
       style={styles.list}
       data={data}
       keyExtractor={(q) => q.id}

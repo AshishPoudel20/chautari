@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, RefreshControl, InteractionManager, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, RefreshControl, Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ShinyWordmark from '../components/ShinyWordmark';
@@ -44,6 +44,8 @@ export default function HomeScreen({ navigation }) {
   const [replayKey, setReplayKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sheenKey, setSheenKey] = useState(0);
+  const listRef = useRef(null);
+  const refreshingRef = useRef(false);
   const refreshLiveData = useLiveDataRefresh({ onFocus: true });
 
   useFocusEffect(useCallback(() => {
@@ -60,11 +62,11 @@ export default function HomeScreen({ navigation }) {
 
   useEffect(() => {
     let timeout;
-    const task = InteractionManager.runAfterInteractions(() => {
+    const idleId = requestIdleCallback(() => {
       timeout = setTimeout(() => setLoading(false), 500);
     });
     return () => {
-      task.cancel();
+      cancelIdleCallback(idleId);
       if (timeout) clearTimeout(timeout);
     };
   }, []);
@@ -99,15 +101,30 @@ export default function HomeScreen({ navigation }) {
   };
 
   const onRefresh = useCallback(async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
     setRefreshing(true);
     try {
       await refreshLiveData();
       if (tab === 'foryou') forYou.refresh();
       setReplayKey((k) => k + 1);
+      setSheenKey((k) => k + 1);
     } finally {
+      refreshingRef.current = false;
       setRefreshing(false);
     }
   }, [tab, forYou, refreshLiveData]);
+
+  useEffect(() => {
+    return navigation.addListener('tabPress', () => {
+      // tabPress can fire after Home is focused when switching from another tab.
+      // Only scroll if Home is already the selected tab in the tab bar.
+      const tabState = navigation.getState();
+      if (tabState?.routes?.[tabState.index]?.name !== 'Home') return;
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      onRefresh();
+    });
+  }, [navigation, onRefresh]);
 
   const onLoadMore = useCallback(() => {
     if (tab === 'foryou' && forYou.hasMore) forYou.loadMore();
@@ -194,6 +211,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       ) : (
         <QuestionFeedList
+          listRef={listRef}
           data={data}
           navigation={navigation}
           replayKey={replayKey}
