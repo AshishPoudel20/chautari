@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import Button from '../components/Button';
-import KeyboardScreen from '../components/KeyboardScreen';
-import ExpertProfessionalFields from '../components/ExpertProfessionalFields';
-import { useData, useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
-import { hasExpertProfessionalProfile, validateExpertBadgeTitle } from '../utils/expertPost';
+import Button from '../../components/Button';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import ExpertProfessionalFields from '../../components/ExpertProfessionalFields';
+import { useData, useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
+import { hasExpertProfessionalProfile, validateExpertBadgeTitle } from '../../utils/expertPost';
 
 /** One-time setup for experts verified before badge title + circle were required. */
 export default function ExpertProfessionalSetupScreen({ navigation }) {

@@ -1,17 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
-import Button from '../components/Button';
-import PhotoSourceSheet from '../components/PhotoSourceSheet';
-import KeyboardScreen from '../components/KeyboardScreen';
-import ExpertProfessionalFields from '../components/ExpertProfessionalFields';
-import { useData, useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
-import { useNetwork } from '../data/network';
-import { useImagePicker } from '../hooks/useImagePicker';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { uploadExpertCredential } from '../services/mediaStorage';
-import { isLocalPhotoUri, displayPhotoUrl } from '../utils/photos';
-import { validateExpertBadgeTitle } from '../utils/expertPost';
+import Button from '../../components/Button';
+import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import ExpertProfessionalFields from '../../components/ExpertProfessionalFields';
+import { useData, useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
+import { useNetwork } from '../../data/network';
+import { useImagePicker } from '../../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { uploadExpertCredential } from '../../services/mediaStorage';
+import { isLocalPhotoUri, displayPhotoUrl } from '../../utils/photos';
+import { validateExpertBadgeTitle } from '../../utils/expertPost';
 
 export default function VerifiedApplicationScreen({ navigation }) {
   const { colors, spacing, font, radius } = useTheme();

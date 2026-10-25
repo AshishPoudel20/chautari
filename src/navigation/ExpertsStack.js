@@ -2,8 +2,8 @@ import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../theme/ThemeContext';
 import BackButton from '../components/BackButton';
-import ExpertDirectoryScreen from '../screens/ExpertDirectoryScreen';
-import ExpertProfileScreen from '../screens/ExpertProfileScreen';
+import ExpertDirectoryScreen from '../screens/experts/ExpertDirectoryScreen';
+import ExpertProfileScreen from '../screens/experts/ExpertProfileScreen';
 
 const Stack = createNativeStackNavigator();
 

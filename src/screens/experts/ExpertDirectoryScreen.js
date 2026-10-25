@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Avatar from '../components/Avatar';
-import VerifiedBadge from '../components/VerifiedBadge';
-import FollowButton from '../components/FollowButton';
-import { Chip, EmptyState } from '../components/ui';
-import { useSelectors } from '../data/store';
-import { CATEGORIES, SUBURBS, professionLabel } from '../data/categories';
-import { useTheme } from '../theme/ThemeContext';
-import { compactNumber } from '../utils/format';
-import { useNavigationGuard, openExpertProfile, isSelfUserId } from '../utils/navigation';
+import Avatar from '../../components/Avatar';
+import VerifiedBadge from '../../components/VerifiedBadge';
+import FollowButton from '../../components/FollowButton';
+import { Chip, EmptyState } from '../../components/ui';
+import { useSelectors } from '../../data/store';
+import { CATEGORIES, SUBURBS, professionLabel } from '../../data/categories';
+import { useTheme } from '../../theme/ThemeContext';
+import { compactNumber } from '../../utils/format';
+import { useNavigationGuard, openExpertProfile, isSelfUserId } from '../../utils/navigation';
 
 // Expert Directory: browse all verified experts, filter by category + suburb.
 export default function ExpertDirectoryScreen({ navigation }) {

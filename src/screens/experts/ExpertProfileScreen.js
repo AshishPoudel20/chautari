@@ -1,12 +1,12 @@
 import React, { useMemo, useLayoutEffect, useEffect } from 'react';
 import { View, Pressable, Text, StyleSheet } from 'react-native';
-import MissingParamsFallback from '../components/MissingParamsFallback';
-import ProfileView from '../components/ProfileView';
-import Button from '../components/Button';
-import { useToast } from '../components/Toast';
-import { useData, useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
-import { isSelfUserId, openSelfProfile, resolveUserId } from '../utils/navigation';
+import MissingParamsFallback from '../../components/MissingParamsFallback';
+import ProfileView from '../../components/ProfileView';
+import Button from '../../components/Button';
+import { useToast } from '../../components/Toast';
+import { useData, useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
+import { isSelfUserId, openSelfProfile, resolveUserId } from '../../utils/navigation';
 
 // Expert Profile: bio, profession, suburb, contact, posts, follower count, follow.
 export default function ExpertProfileScreen({ navigation, route }) {
