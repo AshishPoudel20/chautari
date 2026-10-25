@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import { StackActions } from '@react-navigation/native';
-import Avatar from '../components/Avatar';
-import Button from '../components/Button';
-import { useTheme } from '../theme/ThemeContext';
-import { PROFILE_AVATAR_SIZE } from '../constants/media';
-import { prepareImageForUpload } from '../services/mediaStorage';
+import Avatar from '../../components/Avatar';
+import Button from '../../components/Button';
+import { useTheme } from '../../theme/ThemeContext';
+import { PROFILE_AVATAR_SIZE } from '../../constants/media';
+import { prepareImageForUpload } from '../../services/mediaStorage';
 
 /** Crop confirm only — stages to file:// JPEG; upload happens on Edit Profile Save (or onboarding Finish). */
 export default function ProfilePhotoPreviewScreen({ navigation, route }) {

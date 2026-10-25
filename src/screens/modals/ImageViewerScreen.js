@@ -11,9 +11,9 @@ import {
   PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../theme/ThemeContext';
-import { useGoBack, useAndroidBackHandler } from '../hooks/useGoBack';
-import { viewerPhotoUrls } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { useGoBack, useAndroidBackHandler } from '../../hooks/useGoBack';
+import { viewerPhotoUrls } from '../../utils/photos';
 
 const DISMISS_DRAG = 100;
 const DISMISS_VELOCITY = 0.75;

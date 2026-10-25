@@ -4,12 +4,12 @@ import {
   KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { useHeaderHeight } from '@react-navigation/elements';
-import Button from '../components/Button';
-import { Input } from '../components/ui';
-import { useToast } from '../components/Toast';
-import { useData } from '../data/store';
-import { useNetwork } from '../data/network';
-import { useTheme } from '../theme/ThemeContext';
+import Button from '../../components/Button';
+import { Input } from '../../components/ui';
+import { useToast } from '../../components/Toast';
+import { useData } from '../../data/store';
+import { useNetwork } from '../../data/network';
+import { useTheme } from '../../theme/ThemeContext';
 
 const REASONS = {
   content: ['Spam or advertising', 'Misinformation', 'Harassment or hate', 'Inappropriate content', 'Off-topic', 'Other'],

@@ -28,17 +28,17 @@ import ExpertProfessionalSetupScreen from '../screens/experts/ExpertProfessional
 import NotificationsScreen from '../screens/home/NotificationsScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
-import ReportScreen from '../screens/ReportScreen';
+import ReportScreen from '../screens/modals/ReportScreen';
 import HelpScreen from '../screens/settings/HelpScreen';
 import TermsScreen from '../screens/settings/TermsScreen';
 import PrivacyScreen from '../screens/settings/PrivacyScreen';
 import AboutScreen from '../screens/settings/AboutScreen';
 import DeleteAccountScreen from '../screens/settings/DeleteAccountScreen';
-import ImageViewerScreen from '../screens/ImageViewerScreen';
+import ImageViewerScreen from '../screens/modals/ImageViewerScreen';
 import MyPostsScreen from '../screens/profile/MyPostsScreen';
 import SavedPostsScreen from '../screens/profile/SavedPostsScreen';
 import ArrivalChecklistScreen from '../screens/checklist/ArrivalChecklistScreen';
-import ProfilePhotoPreviewScreen from '../screens/ProfilePhotoPreviewScreen';
+import ProfilePhotoPreviewScreen from '../screens/modals/ProfilePhotoPreviewScreen';
 
 const Stack = createNativeStackNavigator();
 
