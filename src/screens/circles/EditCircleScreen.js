@@ -1,24 +1,24 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import KeyboardScreen from '../components/KeyboardScreen';
-import Button from '../components/Button';
-import SinglePhotoPicker from '../components/SinglePhotoPicker';
-import PhotoSourceSheet from '../components/PhotoSourceSheet';
-import CircleChip from '../components/CircleChip';
-import { Field, Input, CharCount } from '../components/ui';
-import { useData, useSelectors } from '../data/store';
-import { useNavigationGuard } from '../utils/navigation';
-import { useNetwork } from '../data/network';
-import { useTheme } from '../theme/ThemeContext';
-import { useToast } from '../components/Toast';
-import AccentSwatch from '../components/AccentSwatch';
-import { useImagePicker } from '../hooks/useImagePicker';
-import { isSupabaseConfigured } from '../lib/supabase';
-import { uploadCircleImage } from '../services/mediaStorage';
-import { isLocalPhotoUri, photoUrl } from '../utils/photos';
+import KeyboardScreen from '../../components/KeyboardScreen';
+import Button from '../../components/Button';
+import SinglePhotoPicker from '../../components/SinglePhotoPicker';
+import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import CircleChip from '../../components/CircleChip';
+import { Field, Input, CharCount } from '../../components/ui';
+import { useData, useSelectors } from '../../data/store';
+import { useNavigationGuard } from '../../utils/navigation';
+import { useNetwork } from '../../data/network';
+import { useTheme } from '../../theme/ThemeContext';
+import { useToast } from '../../components/Toast';
+import AccentSwatch from '../../components/AccentSwatch';
+import { useImagePicker } from '../../hooks/useImagePicker';
+import { isSupabaseConfigured } from '../../lib/supabase';
+import { uploadCircleImage } from '../../services/mediaStorage';
+import { isLocalPhotoUri, photoUrl } from '../../utils/photos';
 import {
   CIRCLE_ACCENT_PRESETS, findSimilarCircles, isCircleNameTaken,
-} from '../data/circles';
+} from '../../data/circles';
 
 const NAME_MIN = 3;
 const NAME_MAX = 50;

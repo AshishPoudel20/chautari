@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../theme/ThemeContext';
 
 import HomeScreen from '../screens/home/HomeScreen';
-import CirclesDirectoryScreen from '../screens/CirclesDirectoryScreen';
+import CirclesDirectoryScreen from '../screens/circles/CirclesDirectoryScreen';
 import MyProfileScreen from '../screens/MyProfileScreen';
 import ExpertsStack from './ExpertsStack';
 

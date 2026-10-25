@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CircleDirectoryRow from '../components/CircleDirectoryRow';
-import { useData, useSelectors } from '../data/store';
-import { useLiveDataRefresh } from '../hooks/useLiveDataRefresh';
-import { useNavigationGuard } from '../utils/navigation';
-import { useTheme } from '../theme/ThemeContext';
+import CircleDirectoryRow from '../../components/CircleDirectoryRow';
+import { useData, useSelectors } from '../../data/store';
+import { useLiveDataRefresh } from '../../hooks/useLiveDataRefresh';
+import { useNavigationGuard } from '../../utils/navigation';
+import { useTheme } from '../../theme/ThemeContext';
 import {
   buildYourCirclesList,
   buildPopularList,
@@ -22,7 +22,7 @@ import {
   CIRCLE_DIR_ALL_PAGE_SIZE,
   CIRCLE_DIR_YOUR_JOINED_CAP,
   CIRCLE_DIR_SECTIONS,
-} from '../utils/circleDirectory';
+} from '../../utils/circleDirectory';
 
 function filterByQuery(circles, query) {
   const q = query.trim().toLowerCase();
