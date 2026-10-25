@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Alert, InteractionManager, Linking, Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { prepareImageForUpload } from '../services/mediaStorage';
 
@@ -8,7 +8,7 @@ const LIBRARY_DENIED_MESSAGE = 'Photo access is off. Enable it in Settings to ch
 /** Let a dismissed modal finish animating before presenting the library picker (iOS). */
 export function waitForPickerPresentation() {
   return new Promise((resolve) => {
-    InteractionManager.runAfterInteractions(() => {
+    requestIdleCallback(() => {
       requestAnimationFrame(() => {
         setTimeout(resolve, Platform.OS === 'ios' ? 400 : 0);
       });
@@ -56,7 +56,7 @@ async function prepareAsset(asset) {
 }
 
 const PROFILE_PICKER_OPTIONS = {
-  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  mediaTypes: ['images'],
   allowsEditing: true,
   aspect: [1, 1],
   quality: 1,
@@ -90,7 +90,7 @@ export function useImagePicker() {
     const multi = allowsMultipleSelection && selectionLimit > 1;
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: false,
         quality: 1,
         exif: false,

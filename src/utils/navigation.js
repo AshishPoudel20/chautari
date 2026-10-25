@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { InteractionManager, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { useGoBack as useSafeGoBack } from '../hooks/useGoBack';
 
 const GUARD_MS = 400;
@@ -60,7 +60,7 @@ export function useNavigationGuard(navigation) {
     if (locked.current) return;
     locked.current = true;
     action();
-    InteractionManager.runAfterInteractions(() => {
+    requestIdleCallback(() => {
       setTimeout(() => {
         locked.current = false;
       }, GUARD_MS);
@@ -85,7 +85,7 @@ export function useNavigationGuard(navigation) {
 
 /** Defer until Alert / action sheet has fully dismissed — prevents ghost overlays blocking taps. */
 export function runAfterAlert(action) {
-  InteractionManager.runAfterInteractions(() => {
+  requestIdleCallback(() => {
     const run = () => action();
     if (Platform.OS === 'ios') {
       // iOS keeps a transparent modal layer briefly after Alert dismiss.

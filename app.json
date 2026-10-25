@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B7A6B"
-    },
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -19,10 +14,12 @@
       }
     },
     "android": {
+      "package": "com.ashishpoudeltete.chautari",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES"
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0B7A6B",
@@ -48,7 +45,23 @@
           "photosPermission": "Allow Chautari to access your photos to attach images.",
           "cameraPermission": "Chautari needs camera access so you can take photos for posts and your profile."
         }
+      ],
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0B7A6B"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c0f583d9-e0f1-42ff-92c1-43c599a87040"
+      }
+    },
+    "owner": "ashishpoudeltete"
   }
 }
