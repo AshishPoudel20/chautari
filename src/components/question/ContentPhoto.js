@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, Image, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { displayPhotoUrl } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { displayPhotoUrl } from '../../utils/photos';
 
 export default function ContentPhoto({ photo, onPress, size = 72 }) {
   const { colors, radius } = useTheme();

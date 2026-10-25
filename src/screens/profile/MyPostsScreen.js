@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
-import ExpertPostQuota from '../../components/ExpertPostQuota';
+import ExpertPostQuota from '../../components/question/ExpertPostQuota';
 import QuestionFeedList from '../../components/feed/QuestionFeedList';
 import { EmptyState } from '../../components/common/ui';
 import { useSelectors } from '../../data/store';

@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { displayPhotoUrl } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { displayPhotoUrl } from '../../utils/photos';
 
 /**
  * Photo picker strip — local preview, upload spinner, remove, add tile.

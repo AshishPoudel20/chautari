@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import { Animated, Pressable, Text, StyleSheet, Easing, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { compactNumber, milestoneCrossed } from '../utils/format';
+import { useTheme } from '../../theme/ThemeContext';
+import { compactNumber, milestoneCrossed } from '../../utils/format';
 
 // Instant, tactile upvote — isolated tap target (min 44×44), never bubbles to parent cards.
 export default function UpvoteButton({ count = 0, active, onToggle, size = 'md' }) {

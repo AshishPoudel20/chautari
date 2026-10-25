@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
 import Button from '../../components/common/Button';
-import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import PhotoSourceSheet from '../../components/question/PhotoSourceSheet';
 import KeyboardScreen from '../../components/common/KeyboardScreen';
-import ExpertProfessionalFields from '../../components/ExpertProfessionalFields';
+import ExpertProfessionalFields from '../../components/question/ExpertProfessionalFields';
 import { useData, useSelectors } from '../../data/store';
 import { useTheme } from '../../theme/ThemeContext';
 import { useNetwork } from '../../data/network';

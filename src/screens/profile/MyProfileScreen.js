@@ -8,7 +8,7 @@ import { useSelectors } from '../../data/store';
 import { useLiveDataRefresh } from '../../hooks/useLiveDataRefresh';
 import { useTheme } from '../../theme/ThemeContext';
 import { useNavigationGuard } from '../../utils/navigation';
-import ExpertPostQuota from '../../components/ExpertPostQuota';
+import ExpertPostQuota from '../../components/question/ExpertPostQuota';
 import KarmaBadge from '../../components/common/KarmaBadge';
 import { compactNumber } from '../../utils/format';
 import FoundingMemberBadge from '../../components/common/FoundingMemberBadge';

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Avatar from '../../components/common/Avatar';
 import KeyboardScreen from '../../components/common/KeyboardScreen';
 import Button from '../../components/common/Button';
-import PhotoSourceSheet from '../../components/PhotoSourceSheet';
+import PhotoSourceSheet from '../../components/question/PhotoSourceSheet';
 import { Field, Input, Chip } from '../../components/common/ui';
 import { useToast } from '../../components/common/Toast';
 import { useData, useSelectors } from '../../data/store';

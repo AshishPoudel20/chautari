@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Modal, Platform, Pressable, Text, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { waitForPickerPresentation } from '../hooks/useImagePicker';
+import { useTheme } from '../../theme/ThemeContext';
+import { waitForPickerPresentation } from '../../hooks/useImagePicker';
 
 /** Bottom sheet: camera, library, optional remove. Renders in a root Modal above all screen content. */
 export default function PhotoSourceSheet({

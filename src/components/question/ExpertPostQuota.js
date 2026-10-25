@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useSelectors } from '../data/store';
-import { useTheme } from '../theme/ThemeContext';
+import { useSelectors } from '../../data/store';
+import { useTheme } from '../../theme/ThemeContext';
 
 function QuotaLine({ text, atLimit, styles }) {
   return (
