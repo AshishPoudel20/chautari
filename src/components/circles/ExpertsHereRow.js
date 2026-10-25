@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
-import Avatar from './common/Avatar';
-import VerifiedBadge from './common/VerifiedBadge';
-import { useTheme } from '../theme/ThemeContext';
-import { professionLabel } from '../data/categories';
+import Avatar from '../common/Avatar';
+import VerifiedBadge from '../common/VerifiedBadge';
+import { useTheme } from '../../theme/ThemeContext';
+import { professionLabel } from '../../data/categories';
 
 export default function ExpertsHereRow({ experts, onExpertPress }) {
   const { colors, spacing, font, radius, shadow } = useTheme();

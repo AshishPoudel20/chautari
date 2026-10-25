@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CircleDirectoryRow from '../../components/CircleDirectoryRow';
+import CircleDirectoryRow from '../../components/circles/CircleDirectoryRow';
 import { useData, useSelectors } from '../../data/store';
 import { useLiveDataRefresh } from '../../hooks/useLiveDataRefresh';
 import { useNavigationGuard } from '../../utils/navigation';

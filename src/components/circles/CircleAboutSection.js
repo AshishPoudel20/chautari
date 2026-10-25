@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { formatShortDate } from '../utils/format';
+import { useTheme } from '../../theme/ThemeContext';
+import { formatShortDate } from '../../utils/format';
 
 const DESC_COLLAPSE = 120;
 

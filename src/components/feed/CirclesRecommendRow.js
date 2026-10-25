@@ -4,7 +4,7 @@ import { useData, useSelectors } from '../../data/store';
 import { useNavigationGuard } from '../../utils/navigation';
 import { useTheme } from '../../theme/ThemeContext';
 import { resolveCircleAccent } from '../../data/circles';
-import CircleIcon from '../CircleIcon';
+import CircleIcon from '../circles/CircleIcon';
 
 export default function CirclesRecommendRow({ navigation, limit = 5 }) {
   const { dispatch } = useData();

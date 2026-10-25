@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MissingParamsFallback from '../../components/common/MissingParamsFallback';
-import CircleDirectoryRow from '../../components/CircleDirectoryRow';
+import CircleDirectoryRow from '../../components/circles/CircleDirectoryRow';
 import { useData, useSelectors } from '../../data/store';
 import { useNavigationGuard } from '../../utils/navigation';
 import { useTheme } from '../../theme/ThemeContext';

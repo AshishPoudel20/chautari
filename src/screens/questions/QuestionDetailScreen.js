@@ -5,7 +5,7 @@ import KeyboardScreen from '../../components/common/KeyboardScreen';
 import Avatar from '../../components/common/Avatar';
 import VerifiedBadge from '../../components/common/VerifiedBadge';
 import UpvoteButton from '../../components/question/UpvoteButton';
-import CircleChip from '../../components/CircleChip';
+import CircleChip from '../../components/circles/CircleChip';
 import KarmaBadge from '../../components/common/KarmaBadge';
 import ContentPhoto from '../../components/question/ContentPhoto';
 import PhotoStrip from '../../components/question/PhotoStrip';

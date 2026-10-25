@@ -10,7 +10,7 @@ import { Field, Input, CharCount } from '../../components/common/ui';
 import ExpertPostQuota from '../../components/question/ExpertPostQuota';
 import ExpertPostModeToggle from '../../components/question/ExpertPostModeToggle';
 import ExpertProfessionalConfirm from '../../components/question/ExpertProfessionalConfirm';
-import CircleChip from '../../components/CircleChip';
+import CircleChip from '../../components/circles/CircleChip';
 import { useData, useSelectors } from '../../data/store';
 import { useNetwork } from '../../data/network';
 import { useNavigationGuard } from '../../utils/navigation';

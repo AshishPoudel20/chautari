@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, Text, StyleSheet, View } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { circleChipPresentation, resolveCircleAccent } from '../data/circles';
+import { useTheme } from '../../theme/ThemeContext';
+import { circleChipPresentation, resolveCircleAccent } from '../../data/circles';
 import CircleIcon from './CircleIcon';
 
 export default function CircleChip({

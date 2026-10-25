@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { accentSwatchPresentation } from '../data/circles';
+import { useTheme } from '../../theme/ThemeContext';
+import { accentSwatchPresentation } from '../../data/circles';
 
 export default function AccentSwatch({ accentId, selected, onPress }) {
   const { isDark, colors } = useTheme();

@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
-import { circleIconPresentation } from '../data/circles';
-import { displayPhotoUrl } from '../utils/photos';
+import { useTheme } from '../../theme/ThemeContext';
+import { circleIconPresentation } from '../../data/circles';
+import { displayPhotoUrl } from '../../utils/photos';
 
 const SIZES = {
   chip: { box: 22, font: 11, radius: 6 },

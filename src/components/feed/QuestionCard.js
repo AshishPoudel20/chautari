@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Avatar from '../common/Avatar';
-import CircleChip from '../CircleChip';
+import CircleChip from '../circles/CircleChip';
 import VerifiedBadge from '../common/VerifiedBadge';
 import ExpertMarker from './ExpertMarker';
 import QuestionCardPhotoThumb from './QuestionCardPhotoThumb';

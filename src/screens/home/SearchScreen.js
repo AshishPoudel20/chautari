@@ -7,7 +7,7 @@ import { Input, Chip, EmptyState } from '../../components/common/ui';
 import { useSelectors } from '../../data/store';
 import { useNavigationGuard, openAuthorProfile } from '../../utils/navigation';
 import { SUBURBS } from '../../data/categories';
-import CircleChip from '../../components/CircleChip';
+import CircleChip from '../../components/circles/CircleChip';
 import { useTheme } from '../../theme/ThemeContext';
 
 const DATE_RANGES = [
