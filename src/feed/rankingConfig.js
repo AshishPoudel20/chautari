@@ -12,7 +12,7 @@ export const WEIGHTS = {
 
 export const PAGE_SIZE = 10;
 
-/** Target share of discovery posts in For You (4:1 merge ≈ 20%). See FEED_COMPOSITION.md */
+/** Target share of discovery posts in For You (4:1 merge ≈ 20%). See docs/FEED_COMPOSITION.md */
 export const DISCOVERY_RATIO = 0.20;
 
 /**
