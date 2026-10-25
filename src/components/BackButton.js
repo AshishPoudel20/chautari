@@ -31,7 +31,6 @@ export const ALWAYS_BACK_ROUTES = new Set([
   'AskComposer',
   'Report',
   'ImageViewer',
-  'CategoryFeed',
 ]);
 
 /**
